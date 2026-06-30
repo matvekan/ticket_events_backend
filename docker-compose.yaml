@@ -1,0 +1,85 @@
+networks:
+  ticket_network:
+    name: ticketNetwork
+
+volumes:
+  pg-data:
+
+services:
+  nginx:
+    container_name: tick_nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./app:/var/www
+    depends_on:
+      - php
+    networks:
+      - ticket_network
+
+  php:
+    container_name: tick_php
+    build:
+      context: docker/php
+    volumes:
+      - ./app:/var/www
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tickets_back?serverVersion=16&charset=utf8
+    networks:
+      - ticket_network
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tick-postgres
+    environment:
+      POSTGRES_DB: tickets_back
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - ticket_network
+
+  redis:
+    container_name: tick_redis
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - ticket_network
+
+  rabbitmq:
+    container_name: tick_rabbitmq
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - ticket_network
+
+  elasticsearch:
+    container_name: tick_es
+    image: elasticsearch:8.12.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - ticket_network
+
+  clickhouse:
+    container_name: tick_clickhouse
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    networks:
+      - ticket_network

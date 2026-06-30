@@ -1,0 +1,74 @@
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            Symfony\Component\Messenger\MessageBusInterface $commandBus: '@command.bus'
+            Symfony\Component\Messenger\MessageBusInterface $queryBus: '@query.bus'
+            Symfony\Component\Messenger\MessageBusInterface $eventBus: '@event.bus'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Domain/'
+            - '../src/Application/Dto/'
+            - '../src/Application/Event/'
+            - '../src/Application/Command/'
+            - '../src/Application/Query/'
+            - '../src/Kernel.php'
+
+    App\Application\Dto\Factory\:
+        resource: '../src/Application/Dto/Factory/'
+
+    Symfony\Bundle\SecurityBundle\Security:
+        alias: security.helper
+        public: true
+
+    App\Application\Command\CommandBusInterface:
+        class: App\Infrastructure\Messenger\MessengerCommandBus
+
+    App\Application\Query\QueryBusInterface:
+        class: App\Infrastructure\Messenger\MessengerQueryBus
+
+    App\Application\Event\EventBusInterface:
+        class: App\Infrastructure\EventBus\MessengerEventBus
+
+    App\Application\Transaction\TransactionManagerInterface:
+        class: App\Infrastructure\Doctrine\DoctrineTransactionManager
+
+    App\Domain\Repository\UserRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineUserRepository
+
+    App\Domain\Repository\EventRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineEventRepository
+
+    App\Domain\Repository\VenueRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineVenueRepository
+
+    App\Domain\Repository\SeatRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineSeatRepository
+
+    App\Domain\Repository\EventSeatRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineEventSeatRepository
+
+    App\Domain\Repository\OrderRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineOrderRepository
+
+    App\Domain\Repository\TicketRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineTicketRepository
+
+    Elastic\Elasticsearch\Client:
+        factory: [App\Infrastructure\Elasticsearch\ClientFactory, 'create']
+
+    ClickHouseDB\Client:
+        arguments:
+            $connectParams:
+                host: '%env(string:CLICKHOUSE_HOST)%'
+                port: '%env(int:CLICKHOUSE_PORT)%'
+                username: '%env(string:CLICKHOUSE_USER)%'
+                password: '%env(string:CLICKHOUSE_PASSWORD)%'
+            $settings:
+                database: '%env(string:CLICKHOUSE_DB)%'
+                timeout: 10
