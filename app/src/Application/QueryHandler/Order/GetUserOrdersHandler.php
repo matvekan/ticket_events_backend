@@ -15,7 +15,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetUserOrdersHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly OrderRepositoryInterface $orderRepo,
+        private readonly OrderRepositoryInterface $orders,
         private readonly OrderDtoFactory $orderDtoFactory,
     ) {
     }
@@ -23,7 +23,7 @@ final class GetUserOrdersHandler implements QueryHandlerInterface
     /** @return OrderDto[] */
     public function __invoke(GetUserOrdersQuery $query): array
     {
-        $orders = $this->orderRepo->findByUserId($query->userId);
+        $orders = $this->orders->findByUserId($query->userId);
 
         return $this->orderDtoFactory->fromOrderList($orders);
     }

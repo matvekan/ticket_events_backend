@@ -15,14 +15,14 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetEventDetailsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly EventRepositoryInterface $eventRepo,
+        private readonly EventRepositoryInterface $events,
         private readonly EventDtoFactory $eventDtoFactory,
     ) {
     }
 
     public function __invoke(GetEventDetailsQuery $query): ?EventDetailsDto
     {
-        $event = $this->eventRepo->findById($query->eventId);
+        $event = $this->events->findById($query->eventId);
         if (!$event) {
             return null;
         }

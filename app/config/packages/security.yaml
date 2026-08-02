@@ -4,9 +4,7 @@ security:
 
     providers:
         doctrine:
-            entity:
-                class: App\Domain\Entity\User
-                property: email
+            id: App\Infrastructure\Security\DoctrineUserProvider
 
     firewalls:
         dev:

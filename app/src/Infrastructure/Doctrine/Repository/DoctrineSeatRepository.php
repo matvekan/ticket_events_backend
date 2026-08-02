@@ -9,29 +9,28 @@ use App\Domain\Repository\SeatRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
-final class DoctrineSeatRepository extends AbstractDoctrineRepository implements SeatRepositoryInterface
+final class DoctrineSeatRepository implements SeatRepositoryInterface
 {
-    private const ENTITY = Seat::class;
-
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        parent::__construct($entityManager);
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function findById(Uuid $id): ?Seat
     {
-        return $this->em()->find(self::ENTITY, $id);
+        return $this->entityManager->find(Seat::class, $id);
     }
 
     public function findByVenueId(Uuid $venueId): array
     {
-        return $this->em()
-            ->getRepository(self::ENTITY)
+        return $this->entityManager
+            ->getRepository(Seat::class)
             ->findBy(['venue' => $venueId]);
     }
 
     public function save(Seat $seat): void
     {
-        $this->saveAndFlush($seat);
+        $this->entityManager->persist($seat);
+        $this->entityManager->flush();
     }
 }

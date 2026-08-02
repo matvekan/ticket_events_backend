@@ -10,29 +10,28 @@ use App\Domain\ValueObject\EventStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
-final class DoctrineEventRepository extends AbstractDoctrineRepository implements EventRepositoryInterface
+final class DoctrineEventRepository implements EventRepositoryInterface
 {
-    private const ENTITY = Event::class;
-
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        parent::__construct($entityManager);
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function findById(Uuid $id): ?Event
     {
-        return $this->em()->find(self::ENTITY, $id);
+        return $this->entityManager->find(Event::class, $id);
     }
 
     public function findAllPublished(): array
     {
-        return $this->em()
-            ->getRepository(self::ENTITY)
+        return $this->entityManager
+            ->getRepository(Event::class)
             ->findBy(['status' => EventStatus::Published]);
     }
 
     public function save(Event $event): void
     {
-        $this->saveAndFlush($event);
+        $this->entityManager->persist($event);
+        $this->entityManager->flush();
     }
 }

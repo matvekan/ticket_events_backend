@@ -9,29 +9,28 @@ use App\Domain\Repository\OrderRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
-final class DoctrineOrderRepository extends AbstractDoctrineRepository implements OrderRepositoryInterface
+final class DoctrineOrderRepository implements OrderRepositoryInterface
 {
-    private const ENTITY = Order::class;
-
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        parent::__construct($entityManager);
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function findById(Uuid $id): ?Order
     {
-        return $this->em()->find(self::ENTITY, $id);
+        return $this->entityManager->find(Order::class, $id);
     }
 
     public function findByUserId(Uuid $userId): array
     {
-        return $this->em()
-            ->getRepository(self::ENTITY)
+        return $this->entityManager
+            ->getRepository(Order::class)
             ->findBy(['user' => $userId]);
     }
 
     public function save(Order $order): void
     {
-        $this->saveAndFlush($order);
+        $this->entityManager->persist($order);
+        $this->entityManager->flush();
     }
 }

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Application\Dto;
 
-final class VenueDto
+readonly class VenueDto
 {
     public function __construct(
-        public readonly string $id,
-        public readonly string $name,
-        public readonly string $address,
-        public readonly string $city,
+        public string $id,
+        public string $name,
+        public string $address,
+        public string $city,
     ) {
     }
 }

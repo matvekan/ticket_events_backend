@@ -4,47 +4,52 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use App\Domain\ValueObject\Price;
+use App\Domain\ValueObject\TicketCode;
+use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
-#[ORM\Table(name: 'tickets')]
-class Ticket extends AbstractEntity
+class Ticket
 {
-    #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'tickets')]
-    #[ORM\JoinColumn(nullable: false)]
+    private Uuid $id;
     private Order $order;
-
-    #[ORM\OneToOne(targetEntity: EventSeat::class)]
-    #[ORM\JoinColumn(nullable: false, unique: true)]
     private EventSeat $eventSeat;
+    private TicketCode $code;
 
-    #[ORM\Column(length: 255, unique: true)]
-    private string $code;
-
-    public function __construct(Order $order, EventSeat $eventSeat, string $code)
+    private function __construct(Order $order, EventSeat $eventSeat, TicketCode $code)
     {
+        $this->id = Uuid::v7();
         $this->order = $order;
         $this->eventSeat = $eventSeat;
         $this->code = $code;
     }
 
-    public function getOrder(): Order
+    public static function create(Order $order, EventSeat $eventSeat, TicketCode $code): self
+    {
+        return new self($order, $eventSeat, $code);
+    }
+
+    public function id(): Uuid
+    {
+        return $this->id;
+    }
+
+    public function order(): Order
     {
         return $this->order;
     }
 
-    public function getEventSeat(): EventSeat
+    public function eventSeat(): EventSeat
     {
         return $this->eventSeat;
     }
 
-    public function getCode(): string
+    public function code(): TicketCode
     {
         return $this->code;
     }
 
-    public function getPriceAmount(): int
+    public function price(): Price
     {
-        return $this->eventSeat->getPriceAmount();
+        return $this->eventSeat->price();
     }
 }

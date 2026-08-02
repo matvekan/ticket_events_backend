@@ -4,31 +4,24 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\ValueObject\SeatNumber;
+use App\Domain\ValueObject\SeatRow;
+use App\Domain\ValueObject\SeatSector;
 use App\Domain\ValueObject\SeatType;
-use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
-#[ORM\Table(name: 'seats')]
-class Seat extends AbstractEntity
+class Seat
 {
-    #[ORM\ManyToOne(targetEntity: Venue::class, inversedBy: 'seats')]
-    #[ORM\JoinColumn(nullable: false)]
+    private Uuid $id;
     private Venue $venue;
-
-    #[ORM\Column(length: 10)]
-    private string $row;
-
-    #[ORM\Column(type: 'integer')]
-    private int $number;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $sector = null;
-
-    #[ORM\Column(type: 'string', enumType: SeatType::class, length: 20)]
+    private SeatRow $row;
+    private SeatNumber $number;
+    private ?SeatSector $sector = null;
     private SeatType $type;
 
-    public function __construct(Venue $venue, string $row, int $number, SeatType $type, ?string $sector = null)
+    private function __construct(Venue $venue, SeatRow $row, SeatNumber $number, SeatType $type, ?SeatSector $sector = null)
     {
+        $this->id = Uuid::v7();
         $this->venue = $venue;
         $this->row = $row;
         $this->number = $number;
@@ -36,32 +29,42 @@ class Seat extends AbstractEntity
         $this->sector = $sector;
     }
 
-    public function getVenue(): Venue
+    public static function create(Venue $venue, SeatRow $row, SeatNumber $number, SeatType $type, ?SeatSector $sector = null): self
+    {
+        return new self($venue, $row, $number, $type, $sector);
+    }
+
+    public function id(): Uuid
+    {
+        return $this->id;
+    }
+
+    public function venue(): Venue
     {
         return $this->venue;
     }
 
-    public function setVenue(Venue $venue): void
+    public function assignToVenue(Venue $venue): void
     {
         $this->venue = $venue;
     }
 
-    public function getRow(): string
+    public function row(): SeatRow
     {
         return $this->row;
     }
 
-    public function getNumber(): int
+    public function number(): SeatNumber
     {
         return $this->number;
     }
 
-    public function getSector(): ?string
+    public function sector(): ?SeatSector
     {
         return $this->sector;
     }
 
-    public function getType(): SeatType
+    public function type(): SeatType
     {
         return $this->type;
     }

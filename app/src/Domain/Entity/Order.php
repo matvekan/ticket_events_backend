@@ -4,80 +4,78 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Event\EventRecordingCapability;
+use App\Domain\Event\OrderCancelledEvent;
+use App\Domain\Event\OrderPaidEvent;
+use App\Domain\Event\OrderRefundedEvent;
+use App\Domain\Event\SeatsReservedEvent;
 use App\Domain\ValueObject\OrderStatus;
+use App\Domain\ValueObject\Price;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
-#[ORM\Table(name: 'orders')]
-class Order extends AbstractEntity
+class Order
 {
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'orders')]
-    #[ORM\JoinColumn(nullable: false)]
+    use EventRecordingCapability;
+    private Uuid $id;
     private User $user;
-
-    #[ORM\Column(type: 'integer')]
-    private int $totalAmount;
-
-    #[ORM\Column(length: 3)]
-    private string $totalCurrency;
-
-    #[ORM\Column(type: 'string', enumType: OrderStatus::class, length: 20)]
+    private Price $totalPrice;
     private OrderStatus $status;
-
-    #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
-
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
     /** @var Collection<int, Ticket> */
-    #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'order', cascade: ['persist'])]
     private Collection $tickets;
 
-    public function __construct(User $user)
+    private function __construct(User $user)
     {
+        $this->id = Uuid::v7();
         $this->user = $user;
+        $this->totalPrice = Price::fromAmount(0);
         $this->status = OrderStatus::Pending;
         $this->createdAt = new \DateTimeImmutable();
         $this->tickets = new ArrayCollection();
-        $this->totalAmount = 0;
-        $this->totalCurrency = 'RUB';
     }
 
-    public function getUser(): User
+    public static function create(User $user): self
+    {
+        return new self($user);
+    }
+
+    public function markSeatsAsReserved(): void
+    {
+        $eventSeatIds = $this->tickets->map(fn (Ticket $t): Uuid => $t->eventSeat()->id())->toArray();
+        $this->recordThat(new SeatsReservedEvent($this->id, $this->user->id(), $eventSeatIds));
+    }
+
+    public function id(): Uuid
+    {
+        return $this->id;
+    }
+
+    public function user(): User
     {
         return $this->user;
     }
 
-    public function getTotalAmount(): int
+    public function totalPrice(): Price
     {
-        return $this->totalAmount;
+        return $this->totalPrice;
     }
 
-    public function getTotalCurrency(): string
-    {
-        return $this->totalCurrency;
-    }
-
-    public function getTotalAsFloat(): float
-    {
-        return $this->totalAmount / 100;
-    }
-
-    public function getStatus(): OrderStatus
+    public function status(): OrderStatus
     {
         return $this->status;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
 
     /** @return Collection<int, Ticket> */
-    public function getTickets(): Collection
+    public function tickets(): Collection
     {
         return $this->tickets;
     }
@@ -86,7 +84,10 @@ class Order extends AbstractEntity
     {
         if (!$this->tickets->contains($ticket)) {
             $this->tickets->add($ticket);
-            $this->totalAmount += $ticket->getPriceAmount();
+            $this->totalPrice = Price::fromAmount(
+                $this->totalPrice->amount() + $ticket->price()->amount(),
+                $this->totalPrice->currency(),
+            );
         }
     }
 
@@ -98,6 +99,9 @@ class Order extends AbstractEntity
 
         $this->status = OrderStatus::Paid;
         $this->updatedAt = new \DateTimeImmutable();
+
+        $ticketIds = array_map(fn (Ticket $t): Uuid => $t->id(), $this->tickets->toArray());
+        $this->recordThat(new OrderPaidEvent($this->id, $this->user->id(), $this->totalPrice->amount(), $ticketIds));
     }
 
     public function cancel(): void
@@ -108,6 +112,9 @@ class Order extends AbstractEntity
 
         $this->status = OrderStatus::Cancelled;
         $this->updatedAt = new \DateTimeImmutable();
+
+        $eventSeatIds = $this->tickets->map(fn (Ticket $t): Uuid => $t->eventSeat()->id())->toArray();
+        $this->recordThat(new OrderCancelledEvent($this->id, $this->user->id(), $eventSeatIds));
     }
 
     public function refund(): void
@@ -118,5 +125,8 @@ class Order extends AbstractEntity
 
         $this->status = OrderStatus::Refunded;
         $this->updatedAt = new \DateTimeImmutable();
+
+        $eventSeatIds = $this->tickets->map(fn (Ticket $t): Uuid => $t->eventSeat()->id())->toArray();
+        $this->recordThat(new OrderRefundedEvent($this->id, $this->user->id(), $this->totalPrice->amount(), $eventSeatIds));
     }
 }

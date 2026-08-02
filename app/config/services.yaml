@@ -59,8 +59,12 @@ services:
     App\Domain\Repository\TicketRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineTicketRepository
 
+    App\Infrastructure\Elasticsearch\ClientFactory:
+        arguments:
+            $hosts: '%env(string:ELASTICSEARCH_HOSTS)%'
+
     Elastic\Elasticsearch\Client:
-        factory: [App\Infrastructure\Elasticsearch\ClientFactory, 'create']
+        factory: ['@App\Infrastructure\Elasticsearch\ClientFactory', 'create']
 
     ClickHouseDB\Client:
         arguments:
@@ -69,6 +73,6 @@ services:
                 port: '%env(int:CLICKHOUSE_PORT)%'
                 username: '%env(string:CLICKHOUSE_USER)%'
                 password: '%env(string:CLICKHOUSE_PASSWORD)%'
+                timeout: 10
             $settings:
                 database: '%env(string:CLICKHOUSE_DB)%'
-                timeout: 10

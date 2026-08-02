@@ -18,13 +18,13 @@ final class TicketDtoFactory
     public function fromTicket(Ticket $ticket): TicketDto
     {
         return new TicketDto(
-            id: $ticket->getId()->toRfc4122(),
-            code: $ticket->getCode(),
-            eventSeatId: $ticket->getEventSeat()->getId()->toRfc4122(),
-            eventTitle: $ticket->getEventSeat()->getEvent()->getTitle(),
-            eventDate: $ticket->getEventSeat()->getEvent()->getDate()->format('c'),
-            venueName: $ticket->getEventSeat()->getEvent()->getVenue()->getName(),
-            priceAmount: $ticket->getPriceAmount(),
+            id: $ticket->id()->toRfc4122(),
+            code: (string) $ticket->code(),
+            eventSeatId: $ticket->eventSeat()->id()->toRfc4122(),
+            eventTitle: (string) $ticket->eventSeat()->event()->title(),
+            eventDate: $ticket->eventSeat()->event()->date()->format('c'),
+            venueName: (string) $ticket->eventSeat()->event()->venue()->name(),
+            priceAmount: $ticket->price()->amount(),
         );
     }
 }

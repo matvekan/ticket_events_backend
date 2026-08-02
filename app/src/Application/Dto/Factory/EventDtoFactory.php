@@ -9,7 +9,7 @@ use App\Application\Dto\EventDto;
 use App\Application\Dto\SeatDto;
 use App\Domain\Entity\Event;
 use App\Domain\Entity\EventSeat;
-use App\Domain\ValueObject\SeatStatus;
+
 
 final class EventDtoFactory
 {
@@ -29,15 +29,15 @@ final class EventDtoFactory
         $prices = $this->getPriceRange($event);
 
         return new EventDto(
-            id: $event->getId()->toRfc4122(),
-            title: $event->getTitle(),
-            description: $event->getDescription(),
-            date: $event->getDate()->format('c'),
-            venueName: $event->getVenue()->getName(),
-            venueCity: $event->getVenue()->getCity(),
+            id: $event->id()->toRfc4122(),
+            title: (string) $event->title(),
+            description: (string) $event->description(),
+            date: $event->date()->format('c'),
+            venueName: (string) $event->venue()->name(),
+            venueCity: (string) $event->venue()->city(),
             priceMin: $prices['min'],
             priceMax: $prices['max'],
-            status: $event->getStatus()->value,
+            status: $event->status()->value,
         );
     }
 
@@ -47,20 +47,20 @@ final class EventDtoFactory
 
         $availableSeats = array_map(
             fn (EventSeat $eventSeat): SeatDto => $this->seatDtoFactory->fromEventSeat($eventSeat),
-            $event->getEventSeats()->filter(fn (EventSeat $es): bool => $es->isAvailable())->toArray(),
+            $event->eventSeats()->filter(fn (EventSeat $es): bool => $es->isAvailable())->toArray(),
         );
 
         return new EventDetailsDto(
-            id: $event->getId()->toRfc4122(),
-            title: $event->getTitle(),
-            description: $event->getDescription(),
-            date: $event->getDate()->format('c'),
-            venueName: $event->getVenue()->getName(),
-            venueAddress: $event->getVenue()->getAddress(),
-            venueCity: $event->getVenue()->getCity(),
+            id: $event->id()->toRfc4122(),
+            title: (string) $event->title(),
+            description: (string) $event->description(),
+            date: $event->date()->format('c'),
+            venueName: (string) $event->venue()->name(),
+            venueAddress: (string) $event->venue()->address(),
+            venueCity: (string) $event->venue()->city(),
             priceMin: $prices['min'],
             priceMax: $prices['max'],
-            status: $event->getStatus()->value,
+            status: $event->status()->value,
             availableSeats: $availableSeats,
         );
     }
@@ -69,8 +69,8 @@ final class EventDtoFactory
     private function getPriceRange(Event $event): array
     {
         $prices = array_map(
-            fn (EventSeat $eventSeat): float => $eventSeat->getPriceAsFloat(),
-            $event->getEventSeats()->toArray(),
+            fn (EventSeat $eventSeat): float => $eventSeat->price()->asFloat(),
+            $event->eventSeats()->toArray(),
         );
 
         return [

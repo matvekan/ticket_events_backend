@@ -15,14 +15,14 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetVenueHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly VenueRepositoryInterface $venueRepo,
+        private readonly VenueRepositoryInterface $venues,
         private readonly VenueDtoFactory $venueDtoFactory,
     ) {
     }
 
     public function __invoke(GetVenueQuery $query): ?VenueDto
     {
-        $venue = $this->venueRepo->findById($query->venueId);
+        $venue = $this->venues->findById($query->venueId);
         if (!$venue) {
             return null;
         }

@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Dto\Factory;
 
 use App\Application\Dto\OrderDto;
-use App\Application\Dto\TicketDto;
 use App\Domain\Entity\Order;
-use App\Domain\Entity\Ticket;
 
 final class OrderDtoFactory
 {
@@ -19,11 +17,11 @@ final class OrderDtoFactory
     public function fromOrder(Order $order): OrderDto
     {
         return new OrderDto(
-            id: $order->getId()->toRfc4122(),
-            status: $order->getStatus()->value,
-            total: $order->getTotalAsFloat(),
-            createdAt: $order->getCreatedAt()->format('c'),
-            tickets: $this->ticketDtoFactory->fromTicketList($order->getTickets()->toArray()),
+            id: $order->id()->toRfc4122(),
+            status: $order->status()->value,
+            total: $order->totalPrice()->asFloat(),
+            createdAt: $order->createdAt()->format('c'),
+            tickets: $this->ticketDtoFactory->fromTicketList($order->tickets()->toArray()),
         );
     }
 

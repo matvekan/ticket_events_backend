@@ -9,29 +9,28 @@ use App\Domain\Repository\TicketRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
-final class DoctrineTicketRepository extends AbstractDoctrineRepository implements TicketRepositoryInterface
+final class DoctrineTicketRepository implements TicketRepositoryInterface
 {
-    private const ENTITY = Ticket::class;
-
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        parent::__construct($entityManager);
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function findById(Uuid $id): ?Ticket
     {
-        return $this->em()->find(self::ENTITY, $id);
+        return $this->entityManager->find(Ticket::class, $id);
     }
 
     public function findByOrderId(Uuid $orderId): array
     {
-        return $this->em()
-            ->getRepository(self::ENTITY)
+        return $this->entityManager
+            ->getRepository(Ticket::class)
             ->findBy(['order' => $orderId]);
     }
 
     public function save(Ticket $ticket): void
     {
-        $this->saveAndFlush($ticket);
+        $this->entityManager->persist($ticket);
+        $this->entityManager->flush();
     }
 }

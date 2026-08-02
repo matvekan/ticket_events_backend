@@ -15,11 +15,17 @@ doctrine:
         auto_mapping: true
         mappings:
             App:
-                type: attribute
+                type: xml
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Domain/Entity'
+                dir: '%kernel.project_dir%/config/doctrine/orm'
                 prefix: 'App\Domain\Entity'
                 alias: App
+            AppValueObject:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/config/doctrine/orm'
+                prefix: 'App\Domain\ValueObject'
+                alias: AppValueObject
 
 when@test:
     doctrine:

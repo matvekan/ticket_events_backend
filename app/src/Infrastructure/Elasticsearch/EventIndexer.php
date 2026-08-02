@@ -15,14 +15,14 @@ final class EventIndexer
 
     public function __construct(
         private readonly Client $elasticsearch,
-        private readonly EventRepositoryInterface $eventRepo,
+        private readonly EventRepositoryInterface $events,
         private readonly EventDtoFactory $eventDtoFactory,
     ) {
     }
 
     public function indexEvent(Uuid $eventId): void
     {
-        $event = $this->eventRepo->findById($eventId);
+        $event = $this->events->findById($eventId);
         if (!$event) {
             return;
         }

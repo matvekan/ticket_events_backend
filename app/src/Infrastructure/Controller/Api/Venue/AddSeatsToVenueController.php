@@ -6,6 +6,7 @@ namespace App\Infrastructure\Controller\Api\Venue;
 
 use App\Application\Command\CommandBusInterface;
 use App\Application\Command\Venue\AddSeatsToVenueCommand;
+use App\Application\Dto\SeatData;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,9 +23,16 @@ final class AddSeatsToVenueController
     {
         $data = $request->toArray();
 
+        $seats = array_map(fn (array $s): SeatData => new SeatData(
+            row: $s['row'],
+            number: $s['number'],
+            type: $s['type'],
+            sector: $s['sector'] ?? null,
+        ), $data['seats'] ?? []);
+
         $this->commandBus->dispatch(new AddSeatsToVenueCommand(
             venueId: Uuid::fromRfc4122($id),
-            seats: $data['seats'] ?? [],
+            seats: $seats,
         ));
 
         return new JsonResponse(['message' => 'Seats added.'], JsonResponse::HTTP_CREATED);

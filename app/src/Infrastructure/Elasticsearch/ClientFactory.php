@@ -9,9 +9,14 @@ use Elastic\Elasticsearch\ClientBuilder;
 
 final class ClientFactory
 {
-    public static function create(): Client
+    public function __construct(
+        private readonly string $hosts,
+    ) {
+    }
+
+    public function create(): Client
     {
-        $hosts = array_map('trim', explode(',', $_SERVER['ELASTICSEARCH_HOSTS'] ?? 'http://elasticsearch:9200'));
+        $hosts = array_map('trim', explode(',', $this->hosts));
 
         return ClientBuilder::create()
             ->setHosts($hosts)

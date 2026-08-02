@@ -13,11 +13,11 @@ final class SeatDtoFactory
     public function fromSeat(Seat $seat): SeatDto
     {
         return new SeatDto(
-            id: $seat->getId()->toRfc4122(),
-            row: $seat->getRow(),
-            number: $seat->getNumber(),
-            sector: $seat->getSector(),
-            type: $seat->getType()->value,
+            id: $seat->id()->toRfc4122(),
+            row: (string) $seat->row(),
+            number: $seat->number()->toValue(),
+            sector: $seat->sector() !== null ? (string) $seat->sector() : null,
+            type: $seat->type()->value,
         );
     }
 
@@ -29,14 +29,15 @@ final class SeatDtoFactory
 
     public function fromEventSeat(EventSeat $eventSeat): SeatDto
     {
+        $seat = $eventSeat->seat();
         return new SeatDto(
-            id: $eventSeat->getId()->toRfc4122(),
-            row: $eventSeat->getSeat()->getRow(),
-            number: $eventSeat->getSeat()->getNumber(),
-            sector: $eventSeat->getSeat()->getSector(),
-            type: $eventSeat->getSeat()->getType()->value,
-            priceAmount: $eventSeat->getPriceAmount(),
-            status: $eventSeat->getStatus()->value,
+            id: $eventSeat->id()->toRfc4122(),
+            row: (string) $seat->row(),
+            number: $seat->number()->toValue(),
+            sector: $seat->sector() !== null ? (string) $seat->sector() : null,
+            type: $seat->type()->value,
+            priceAmount: $eventSeat->price()->amount(),
+            status: $eventSeat->status()->value,
         );
     }
 

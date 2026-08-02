@@ -15,7 +15,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class ListEventsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly EventRepositoryInterface $eventRepo,
+        private readonly EventRepositoryInterface $events,
         private readonly EventDtoFactory $eventDtoFactory,
     ) {
     }
@@ -23,7 +23,7 @@ final class ListEventsHandler implements QueryHandlerInterface
     /** @return EventDto[] */
     public function __invoke(ListEventsQuery $query): array
     {
-        $events = $this->eventRepo->findAllPublished();
+        $events = $this->events->findAllPublished();
 
         return $this->eventDtoFactory->fromEventList($events);
     }

@@ -27,6 +27,7 @@ services:
       - ./app:/var/www
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tickets_back?serverVersion=16&charset=utf8
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     networks:
       - ticket_network
     depends_on:
@@ -75,11 +76,35 @@ services:
     networks:
       - ticket_network
 
+  messenger-consumer:
+    container_name: tick_consumer
+    build:
+      context: docker/php
+    volumes:
+      - ./app:/var/www
+    command: php bin/console messenger:consume events -vv --time-limit=3600
+    restart: always
+    depends_on:
+      - postgres
+      - rabbitmq
+      - elasticsearch
+      - clickhouse
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tickets_back?serverVersion=16&charset=utf8
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - ticket_network
+
   clickhouse:
     container_name: tick_clickhouse
     image: clickhouse/clickhouse-server:latest
+    environment:
+      CLICKHOUSE_USER: ticket_user
+      CLICKHOUSE_PASSWORD: ticket_pass
     ports:
       - "8123:8123"
       - "9000:9000"
+    volumes:
+      - ./docker/clickhouse/init.sql:/docker-entrypoint-initdb.d/01-init.sql
     networks:
       - ticket_network

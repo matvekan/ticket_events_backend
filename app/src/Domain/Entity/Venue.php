@@ -4,51 +4,57 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\ValueObject\VenueAddress;
+use App\Domain\ValueObject\VenueCity;
+use App\Domain\ValueObject\VenueName;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
-#[ORM\Table(name: 'venues')]
-class Venue extends AbstractEntity
+class Venue
 {
-    #[ORM\Column(length: 255)]
-    private string $name;
-
-    #[ORM\Column(length: 255)]
-    private string $address;
-
-    #[ORM\Column(length: 255)]
-    private string $city;
-
-    #[ORM\OneToMany(targetEntity: Seat::class, mappedBy: 'venue', cascade: ['persist'])]
+    private Uuid $id;
+    private VenueName $name;
+    private VenueAddress $address;
+    private VenueCity $city;
     private Collection $seats;
 
-    public function __construct(string $name, string $address, string $city)
+    private function __construct(VenueName $name, VenueAddress $address, VenueCity $city)
     {
+        $this->id = Uuid::v7();
         $this->name = $name;
         $this->address = $address;
         $this->city = $city;
         $this->seats = new ArrayCollection();
     }
 
-    public function getName(): string
+    public static function create(VenueName $name, VenueAddress $address, VenueCity $city): self
+    {
+        return new self($name, $address, $city);
+    }
+
+    public function id(): Uuid
+    {
+        return $this->id;
+    }
+
+    public function name(): VenueName
     {
         return $this->name;
     }
 
-    public function getAddress(): string
+    public function address(): VenueAddress
     {
         return $this->address;
     }
 
-    public function getCity(): string
+    public function city(): VenueCity
     {
         return $this->city;
     }
 
     /** @return Collection<int, Seat> */
-    public function getSeats(): Collection
+    public function seats(): Collection
     {
         return $this->seats;
     }
@@ -57,7 +63,7 @@ class Venue extends AbstractEntity
     {
         if (!$this->seats->contains($seat)) {
             $this->seats->add($seat);
-            $seat->setVenue($this);
+            $seat->assignToVenue($this);
         }
     }
 }

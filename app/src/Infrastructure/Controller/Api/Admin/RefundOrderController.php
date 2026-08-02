@@ -24,7 +24,7 @@ final class RefundOrderController
     {
         $this->commandBus->dispatch(new RefundOrderCommand(
             orderId: Uuid::fromRfc4122($id),
-            adminId: $this->security->getUser()->getId(),
+            adminId: $this->security->getUser()->id(),
         ));
 
         return new JsonResponse(['message' => 'Order refunded.']);

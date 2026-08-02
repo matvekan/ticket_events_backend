@@ -4,47 +4,38 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Event\EventCreatedEvent;
+use App\Domain\Event\EventRecordingCapability;
+use App\Domain\Event\EventStatusChangedEvent;
+use App\Domain\ValueObject\EventDescription;
 use App\Domain\ValueObject\EventStatus;
+use App\Domain\ValueObject\EventTitle;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
-#[ORM\Entity]
-#[ORM\Table(name: 'events')]
-class Event extends AbstractEntity
+class Event
 {
-    #[ORM\Column(length: 255)]
-    private string $title;
-
-    #[ORM\Column(type: 'text')]
-    private string $description;
-
-    #[ORM\Column(type: 'datetime_immutable')]
+    use EventRecordingCapability;
+    private Uuid $id;
+    private EventTitle $title;
+    private EventDescription $description;
     private \DateTimeImmutable $date;
-
-    #[ORM\ManyToOne(targetEntity: Venue::class)]
-    #[ORM\JoinColumn(nullable: false)]
     private Venue $venue;
-
-    #[ORM\Column(type: 'string', enumType: EventStatus::class, length: 20)]
     private EventStatus $status;
-
-    #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
-
-    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
     /** @var Collection<int, EventSeat> */
-    #[ORM\OneToMany(targetEntity: EventSeat::class, mappedBy: 'event', cascade: ['persist'])]
     private Collection $eventSeats;
 
-    public function __construct(
-        string $title,
-        string $description,
+    private function __construct(
+        EventTitle $title,
+        EventDescription $description,
         \DateTimeImmutable $date,
         Venue $venue
     ) {
+        $this->id = Uuid::v7();
         $this->title = $title;
         $this->description = $description;
         $this->date = $date;
@@ -52,29 +43,45 @@ class Event extends AbstractEntity
         $this->status = EventStatus::Draft;
         $this->createdAt = new \DateTimeImmutable();
         $this->eventSeats = new ArrayCollection();
+
+        $this->recordThat(new EventCreatedEvent($this->id, (string) $this->title));
     }
 
-    public function getTitle(): string
+    public static function create(
+        EventTitle $title,
+        EventDescription $description,
+        \DateTimeImmutable $date,
+        Venue $venue
+    ): self {
+        return new self($title, $description, $date, $venue);
+    }
+
+    public function id(): Uuid
+    {
+        return $this->id;
+    }
+
+    public function title(): EventTitle
     {
         return $this->title;
     }
 
-    public function getDescription(): string
+    public function description(): EventDescription
     {
         return $this->description;
     }
 
-    public function getDate(): \DateTimeImmutable
+    public function date(): \DateTimeImmutable
     {
         return $this->date;
     }
 
-    public function getVenue(): Venue
+    public function venue(): Venue
     {
         return $this->venue;
     }
 
-    public function getStatus(): EventStatus
+    public function status(): EventStatus
     {
         return $this->status;
     }
@@ -87,6 +94,8 @@ class Event extends AbstractEntity
 
         $this->status = EventStatus::Published;
         $this->updatedAt = new \DateTimeImmutable();
+
+        $this->recordThat(new EventStatusChangedEvent($this->id, (string) $this->title, $this->status->value));
     }
 
     public function cancel(): void
@@ -97,6 +106,8 @@ class Event extends AbstractEntity
 
         $this->status = EventStatus::Cancelled;
         $this->updatedAt = new \DateTimeImmutable();
+
+        $this->recordThat(new EventStatusChangedEvent($this->id, (string) $this->title, $this->status->value));
     }
 
     public function markSoldOut(): void
@@ -110,7 +121,7 @@ class Event extends AbstractEntity
     }
 
     /** @return Collection<int, EventSeat> */
-    public function getEventSeats(): Collection
+    public function eventSeats(): Collection
     {
         return $this->eventSeats;
     }
@@ -119,7 +130,7 @@ class Event extends AbstractEntity
     {
         if (!$this->eventSeats->contains($eventSeat)) {
             $this->eventSeats->add($eventSeat);
-            $eventSeat->setEvent($this);
+            $eventSeat->assignToEvent($this);
         }
     }
 }

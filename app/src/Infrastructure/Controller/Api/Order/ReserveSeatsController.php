@@ -26,7 +26,7 @@ final class ReserveSeatsController
         $data = $request->toArray();
 
         $this->commandBus->dispatch(new ReserveSeatsCommand(
-            userId: $this->security->getUser()->getId(),
+            userId: $this->security->getUser()->id(),
             eventSeatIds: array_map(fn (string $id): Uuid => Uuid::fromRfc4122($id), $data['seatIds'] ?? []),
         ));
 

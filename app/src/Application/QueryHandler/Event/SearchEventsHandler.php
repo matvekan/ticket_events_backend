@@ -15,7 +15,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class SearchEventsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly EventRepositoryInterface $eventRepo,
+        private readonly EventRepositoryInterface $events,
         private readonly EventDtoFactory $eventDtoFactory,
     ) {
     }
@@ -24,7 +24,7 @@ final class SearchEventsHandler implements QueryHandlerInterface
     public function __invoke(SearchEventsQuery $query): array
     {
         // TODO: Replace with Elasticsearch when infrastructure is ready
-        $events = $this->eventRepo->findAllPublished();
+        $events = $this->events->findAllPublished();
 
         return $this->eventDtoFactory->fromEventList($events);
     }

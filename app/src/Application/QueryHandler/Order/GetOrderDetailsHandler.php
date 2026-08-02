@@ -15,14 +15,14 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetOrderDetailsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly OrderRepositoryInterface $orderRepo,
+        private readonly OrderRepositoryInterface $orders,
         private readonly OrderDtoFactory $orderDtoFactory,
     ) {
     }
 
     public function __invoke(GetOrderDetailsQuery $query): ?OrderDto
     {
-        $order = $this->orderRepo->findById($query->orderId);
+        $order = $this->orders->findById($query->orderId);
         if (!$order) {
             return null;
         }

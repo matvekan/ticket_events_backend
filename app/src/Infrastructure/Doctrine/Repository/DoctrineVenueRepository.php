@@ -9,27 +9,26 @@ use App\Domain\Repository\VenueRepositoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
-final class DoctrineVenueRepository extends AbstractDoctrineRepository implements VenueRepositoryInterface
+final class DoctrineVenueRepository implements VenueRepositoryInterface
 {
-    private const ENTITY = Venue::class;
-
-    public function __construct(EntityManagerInterface $entityManager)
-    {
-        parent::__construct($entityManager);
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+    ) {
     }
 
     public function findById(Uuid $id): ?Venue
     {
-        return $this->em()->find(self::ENTITY, $id);
+        return $this->entityManager->find(Venue::class, $id);
     }
 
     public function findAll(): array
     {
-        return $this->em()->getRepository(self::ENTITY)->findAll();
+        return $this->entityManager->getRepository(Venue::class)->findAll();
     }
 
     public function save(Venue $venue): void
     {
-        $this->saveAndFlush($venue);
+        $this->entityManager->persist($venue);
+        $this->entityManager->flush();
     }
 }

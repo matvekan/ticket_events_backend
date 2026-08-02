@@ -13,19 +13,19 @@ final class SendPaymentConfirmation
 {
     public function __construct(
         private readonly OrderMailer $mailer,
-        private readonly UserRepositoryInterface $userRepo,
+        private readonly UserRepositoryInterface $users,
     ) {
     }
 
     public function __invoke(OrderPaidEvent $event): void
     {
-        $user = $this->userRepo->findById($event->getUserId());
+        $user = $this->users->findById($event->getUserId());
         if (!$user) {
             return;
         }
 
         $this->mailer->sendPaymentConfirmation(
-            (string) $user->getEmail(),
+            (string) $user->email(),
             (string) $event->getOrderId(),
         );
     }

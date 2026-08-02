@@ -15,7 +15,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetAvailableSeatsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly EventSeatRepositoryInterface $eventSeatRepo,
+        private readonly EventSeatRepositoryInterface $eventSeats,
         private readonly SeatDtoFactory $seatDtoFactory,
     ) {
     }
@@ -23,7 +23,7 @@ final class GetAvailableSeatsHandler implements QueryHandlerInterface
     /** @return SeatDto[] */
     public function __invoke(GetAvailableSeatsQuery $query): array
     {
-        $eventSeats = $this->eventSeatRepo->findAvailableByEventId($query->eventId);
+        $eventSeats = $this->eventSeats->findAvailableByEventId($query->eventId);
 
         return $this->seatDtoFactory->fromAvailableSeats($eventSeats);
     }

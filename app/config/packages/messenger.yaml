@@ -10,11 +10,14 @@ framework:
 
         transports:
             sync: 'sync://'
-
+            events:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN_EVENTS)%'
+                options:
+                    auto_setup: true
         routing:
-            'App\Domain\Event\SeatsReservedEvent': sync
-            'App\Domain\Event\OrderPaidEvent': sync
-            'App\Domain\Event\OrderCancelledEvent': sync
-            'App\Domain\Event\OrderRefundedEvent': sync
-            'App\Domain\Event\EventCreatedEvent': sync
-            'App\Domain\Event\EventStatusChangedEvent': sync
+            'App\Domain\Event\SeatsReservedEvent': events
+            'App\Domain\Event\OrderPaidEvent': events
+            'App\Domain\Event\OrderCancelledEvent': events
+            'App\Domain\Event\OrderRefundedEvent': events
+            'App\Domain\Event\EventCreatedEvent': events
+            'App\Domain\Event\EventStatusChangedEvent': events
