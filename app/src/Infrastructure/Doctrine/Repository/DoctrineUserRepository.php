@@ -27,6 +27,11 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         return $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
     }
 
+    public function findByPasswordResetTokenHash(string $tokenHash): ?User
+    {
+        return $this->entityManager->getRepository(User::class)->findOneBy(['resetPasswordTokenHash' => $tokenHash]);
+    }
+
     public function save(User $user): void
     {
         $this->entityManager->persist($user);

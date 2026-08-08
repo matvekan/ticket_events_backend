@@ -33,4 +33,13 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
         $this->entityManager->persist($seat);
         $this->entityManager->flush();
     }
+
+    public function saveAll(array $seats): void
+    {
+        foreach ($seats as $seat) {
+            $this->entityManager->persist($seat);
+        }
+
+        $this->entityManager->flush();
+    }
 }

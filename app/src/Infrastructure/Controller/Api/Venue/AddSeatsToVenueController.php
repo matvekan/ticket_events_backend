@@ -7,6 +7,8 @@ namespace App\Infrastructure\Controller\Api\Venue;
 use App\Application\Command\CommandBusInterface;
 use App\Application\Command\Venue\AddSeatsToVenueCommand;
 use App\Application\Dto\SeatData;
+use App\Domain\Exception\BusinessRuleViolationException;
+use App\Domain\ValueObject\SeatType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -23,12 +25,27 @@ final class AddSeatsToVenueController
     {
         $data = $request->toArray();
 
-        $seats = array_map(fn (array $s): SeatData => new SeatData(
-            row: $s['row'],
-            number: $s['number'],
-            type: $s['type'],
-            sector: $s['sector'] ?? null,
-        ), $data['seats'] ?? []);
+        $seats = [];
+        foreach ($data['seats'] ?? [] as $seat) {
+            if (!is_array($seat) || !isset($seat['row'], $seat['number'], $seat['type'])) {
+                throw new BusinessRuleViolationException('Each seat must contain "row", "number" and "type".');
+            }
+
+            if (SeatType::tryFrom((string) $seat['type']) === null) {
+                throw new BusinessRuleViolationException(sprintf(
+                    'Invalid seat type "%s". Allowed types: %s.',
+                    (string) $seat['type'],
+                    implode(', ', SeatType::validTypes()),
+                ));
+            }
+
+            $seats[] = new SeatData(
+                row: (string) $seat['row'],
+                number: (int) $seat['number'],
+                type: (string) $seat['type'],
+                sector: isset($seat['sector']) ? (string) $seat['sector'] : null,
+            );
+        }
 
         $this->commandBus->dispatch(new AddSeatsToVenueCommand(
             venueId: Uuid::fromRfc4122($id),

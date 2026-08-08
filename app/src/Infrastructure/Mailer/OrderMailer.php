@@ -11,13 +11,14 @@ final class OrderMailer
 {
     public function __construct(
         private readonly MailerInterface $mailer,
+        private readonly string $mailerFrom,
     ) {
     }
 
     public function sendPaymentConfirmation(string $userEmail, string $orderId): void
     {
         $email = (new Email())
-            ->from('noreply@tickets.local')
+            ->from($this->mailerFrom)
             ->to($userEmail)
             ->subject('Payment Confirmed')
             ->text(sprintf('Your order %s has been paid successfully.', $orderId));

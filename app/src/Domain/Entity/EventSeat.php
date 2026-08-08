@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\ValueObject\Price;
 use App\Domain\ValueObject\SeatStatus;
 use Symfony\Component\Uid\Uuid;
@@ -68,7 +69,7 @@ class EventSeat
     public function reserve(): void
     {
         if ($this->status !== SeatStatus::Free) {
-            throw new \DomainException('Seat is not available for reservation.');
+            throw new BusinessRuleViolationException('Seat is not available for reservation.');
         }
 
         $this->status = SeatStatus::Reserved;
@@ -77,7 +78,7 @@ class EventSeat
     public function sell(): void
     {
         if ($this->status !== SeatStatus::Reserved) {
-            throw new \DomainException('Only reserved seats can be sold.');
+            throw new BusinessRuleViolationException('Only reserved seats can be sold.');
         }
 
         $this->status = SeatStatus::Sold;
@@ -86,7 +87,7 @@ class EventSeat
     public function release(): void
     {
         if ($this->status !== SeatStatus::Reserved) {
-            throw new \DomainException('Only reserved seats can be released.');
+            throw new BusinessRuleViolationException('Only reserved seats can be released.');
         }
 
         $this->status = SeatStatus::Free;
@@ -95,7 +96,7 @@ class EventSeat
     public function unsell(): void
     {
         if ($this->status !== SeatStatus::Sold) {
-            throw new \DomainException('Only sold seats can be unsold.');
+            throw new BusinessRuleViolationException('Only sold seats can be unsold.');
         }
 
         $this->status = SeatStatus::Free;

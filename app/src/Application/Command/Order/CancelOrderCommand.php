@@ -13,6 +13,9 @@ final class CancelOrderCommand implements CommandInterface
     public function __construct(
         #[Assert\Uuid]
         public readonly Uuid $orderId,
+
+        #[Assert\Uuid]
+        public readonly ?Uuid $userId = null,
     ) {
     }
 }

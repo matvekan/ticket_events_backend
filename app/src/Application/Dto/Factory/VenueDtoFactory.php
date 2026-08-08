@@ -16,6 +16,8 @@ final class VenueDtoFactory
             name: (string) $venue->name(),
             address: (string) $venue->address(),
             city: (string) $venue->city(),
+            latitude: $venue->latitude(),
+            longitude: $venue->longitude(),
         );
     }
 

@@ -15,4 +15,7 @@ interface SeatRepositoryInterface
     public function findByVenueId(Uuid $venueId): array;
 
     public function save(Seat $seat): void;
+
+    /** @param Seat[] $seats */
+    public function saveAll(array $seats): void;
 }

@@ -141,6 +141,8 @@
       <path value="$PROJECT_DIR$/app/vendor/symfony/http-client" />
       <path value="$PROJECT_DIR$/app/vendor/symfony/http-client-contracts" />
       <path value="$PROJECT_DIR$/app/vendor/symfony/dom-crawler" />
+      <path value="$PROJECT_DIR$/app/vendor/symfony/doctrine-messenger" />
+      <path value="$PROJECT_DIR$/app/vendor/symfony/scheduler" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="8.4" />

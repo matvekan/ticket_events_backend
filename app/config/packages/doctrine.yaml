@@ -23,7 +23,7 @@ doctrine:
             AppValueObject:
                 type: xml
                 is_bundle: false
-                dir: '%kernel.project_dir%/config/doctrine/orm'
+                dir: '%kernel.project_dir%/config/doctrine/value_object'
                 prefix: 'App\Domain\ValueObject'
                 alias: AppValueObject
 

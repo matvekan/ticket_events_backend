@@ -23,7 +23,7 @@ final class ListEventsHandler implements QueryHandlerInterface
     /** @return EventDto[] */
     public function __invoke(ListEventsQuery $query): array
     {
-        $events = $this->events->findAllPublished();
+        $events = $this->events->findPublished($query->limit, ($query->page - 1) * $query->limit);
 
         return $this->eventDtoFactory->fromEventList($events);
     }

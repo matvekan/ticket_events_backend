@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\QueryHandler\Seat;
 
+use App\Application\Cache\SeatAvailabilityCacheInterface;
 use App\Application\Dto\Factory\SeatDtoFactory;
 use App\Application\Dto\SeatDto;
 use App\Application\Query\QueryHandlerInterface;
@@ -17,14 +18,22 @@ final class GetAvailableSeatsHandler implements QueryHandlerInterface
     public function __construct(
         private readonly EventSeatRepositoryInterface $eventSeats,
         private readonly SeatDtoFactory $seatDtoFactory,
+        private readonly SeatAvailabilityCacheInterface $seatAvailabilityCache,
     ) {
     }
 
     /** @return SeatDto[] */
     public function __invoke(GetAvailableSeatsQuery $query): array
     {
-        $eventSeats = $this->eventSeats->findAvailableByEventId($query->eventId);
+        $cached = $this->seatAvailabilityCache->getAvailable($query->eventId);
+        if ($cached !== null) {
+            return $cached;
+        }
 
-        return $this->seatDtoFactory->fromAvailableSeats($eventSeats);
+        $eventSeats = $this->eventSeats->findAvailableByEventId($query->eventId);
+        $seats = $this->seatDtoFactory->fromAvailableSeats($eventSeats);
+        $this->seatAvailabilityCache->setAvailable($query->eventId, $seats);
+
+        return $seats;
     }
 }

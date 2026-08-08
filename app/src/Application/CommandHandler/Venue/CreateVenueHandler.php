@@ -19,6 +19,6 @@ final readonly class CreateVenueHandler implements CommandHandlerInterface
 
     public function __invoke(CreateVenueCommand $command): void
     {
-        $this->venueService->create($command->name, $command->address, $command->city);
+        $this->venueService->create($command->name, $command->address, $command->city, $command->latitude, $command->longitude);
     }
 }

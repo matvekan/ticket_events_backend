@@ -14,5 +14,11 @@ interface EventRepositoryInterface
     /** @return Event[] */
     public function findAllPublished(): array;
 
+    /** @return Event[] */
+    public function findPublished(int $limit, int $offset): array;
+
+    /** @return Event[] */
+    public function findAll(): array;
+
     public function save(Event $event): void;
 }

@@ -9,6 +9,7 @@ use App\Domain\Event\OrderCancelledEvent;
 use App\Domain\Event\OrderPaidEvent;
 use App\Domain\Event\OrderRefundedEvent;
 use App\Domain\Event\SeatsReservedEvent;
+use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\Price;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -91,10 +92,20 @@ class Order
         }
     }
 
+    public function removeTicket(Ticket $ticket): void
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            $this->totalPrice = Price::fromAmount(
+                $this->totalPrice->amount() - $ticket->price()->amount(),
+                $this->totalPrice->currency(),
+            );
+        }
+    }
+
     public function pay(): void
     {
         if ($this->status !== OrderStatus::Pending) {
-            throw new \DomainException('Only pending orders can be paid.');
+            throw new BusinessRuleViolationException('Only pending orders can be paid.');
         }
 
         $this->status = OrderStatus::Paid;
@@ -107,7 +118,7 @@ class Order
     public function cancel(): void
     {
         if ($this->status !== OrderStatus::Pending) {
-            throw new \DomainException('Only pending orders can be cancelled.');
+            throw new BusinessRuleViolationException('Only pending orders can be cancelled.');
         }
 
         $this->status = OrderStatus::Cancelled;
@@ -120,7 +131,7 @@ class Order
     public function refund(): void
     {
         if ($this->status !== OrderStatus::Paid) {
-            throw new \DomainException('Only paid orders can be refunded.');
+            throw new BusinessRuleViolationException('Only paid orders can be refunded.');
         }
 
         $this->status = OrderStatus::Refunded;

@@ -10,11 +10,16 @@ framework:
 
         transports:
             sync: 'sync://'
+            scheduler_default:
+                dsn: 'schedule://default'
+                retry_strategy:
+                    max_retries: 0
             events:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN_EVENTS)%'
                 options:
                     auto_setup: true
         routing:
+            'App\Application\Message\SendPasswordResetEmail': events
             'App\Domain\Event\SeatsReservedEvent': events
             'App\Domain\Event\OrderPaidEvent': events
             'App\Domain\Event\OrderCancelledEvent': events

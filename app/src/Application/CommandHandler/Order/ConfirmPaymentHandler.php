@@ -19,6 +19,6 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
 
     public function __invoke(ConfirmPaymentCommand $command): void
     {
-        $this->paymentService->confirmPayment($command->orderId);
+        $this->paymentService->confirmPayment($command->orderId, $command->userId);
     }
 }

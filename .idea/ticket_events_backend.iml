@@ -133,6 +133,8 @@
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/http-client" />
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/http-client-contracts" />
       <excludeFolder url="file://$MODULE_DIR$/app/vendor/theseer/tokenizer" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/doctrine-messenger" />
+      <excludeFolder url="file://$MODULE_DIR$/app/vendor/symfony/scheduler" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

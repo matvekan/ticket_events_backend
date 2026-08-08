@@ -14,5 +14,8 @@ interface OrderRepositoryInterface
     /** @return Order[] */
     public function findByUserId(Uuid $userId): array;
 
+    /** @return Order[] */
+    public function findPendingExpired(\DateTimeImmutable $cutoff): array;
+
     public function save(Order $order): void;
 }

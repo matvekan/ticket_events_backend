@@ -58,6 +58,8 @@ final class EventDtoFactory
             venueName: (string) $event->venue()->name(),
             venueAddress: (string) $event->venue()->address(),
             venueCity: (string) $event->venue()->city(),
+            venueLatitude: $event->venue()->latitude(),
+            venueLongitude: $event->venue()->longitude(),
             priceMin: $prices['min'],
             priceMax: $prices['max'],
             status: $event->status()->value,

@@ -26,7 +26,21 @@ final class DoctrineEventRepository implements EventRepositoryInterface
     {
         return $this->entityManager
             ->getRepository(Event::class)
-            ->findBy(['status' => EventStatus::Published]);
+            ->findBy(['status' => EventStatus::Published], ['date' => 'DESC']);
+    }
+
+    public function findPublished(int $limit, int $offset): array
+    {
+        return $this->entityManager
+            ->getRepository(Event::class)
+            ->findBy(['status' => EventStatus::Published], ['date' => 'DESC'], $limit, $offset);
+    }
+
+    public function findAll(): array
+    {
+        return $this->entityManager
+            ->getRepository(Event::class)
+            ->findBy([], ['date' => 'DESC']);
     }
 
     public function save(Event $event): void

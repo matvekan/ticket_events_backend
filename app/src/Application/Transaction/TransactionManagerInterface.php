@@ -6,5 +6,12 @@ namespace App\Application\Transaction;
 
 interface TransactionManagerInterface
 {
-    public function transactional(callable $fn): void;
+    /**
+     * Executes the callable inside a database transaction.
+     *
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    public function transactional(callable $fn): mixed;
 }

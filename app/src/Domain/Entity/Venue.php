@@ -17,20 +17,24 @@ class Venue
     private VenueName $name;
     private VenueAddress $address;
     private VenueCity $city;
+    private ?float $latitude = null;
+    private ?float $longitude = null;
     private Collection $seats;
 
-    private function __construct(VenueName $name, VenueAddress $address, VenueCity $city)
+    private function __construct(VenueName $name, VenueAddress $address, VenueCity $city, ?float $latitude, ?float $longitude)
     {
         $this->id = Uuid::v7();
         $this->name = $name;
         $this->address = $address;
         $this->city = $city;
+        $this->latitude = $latitude;
+        $this->longitude = $longitude;
         $this->seats = new ArrayCollection();
     }
 
-    public static function create(VenueName $name, VenueAddress $address, VenueCity $city): self
+    public static function create(VenueName $name, VenueAddress $address, VenueCity $city, ?float $latitude = null, ?float $longitude = null): self
     {
-        return new self($name, $address, $city);
+        return new self($name, $address, $city, $latitude, $longitude);
     }
 
     public function id(): Uuid
@@ -53,17 +57,13 @@ class Venue
         return $this->city;
     }
 
-    /** @return Collection<int, Seat> */
-    public function seats(): Collection
+    public function latitude(): ?float
     {
-        return $this->seats;
+        return $this->latitude;
     }
 
-    public function addSeat(Seat $seat): void
+    public function longitude(): ?float
     {
-        if (!$this->seats->contains($seat)) {
-            $this->seats->add($seat);
-            $seat->assignToVenue($this);
-        }
+        return $this->longitude;
     }
 }

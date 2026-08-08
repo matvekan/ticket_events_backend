@@ -12,7 +12,7 @@ readonly class SeatDto
         public int $number,
         public ?string $sector,
         public string $type,
-        public ?int $priceAmount = null,
+        public ?float $priceAmount = null,
         public ?string $status = null,
     ) {
     }

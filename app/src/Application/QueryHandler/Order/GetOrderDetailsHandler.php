@@ -27,6 +27,10 @@ final class GetOrderDetailsHandler implements QueryHandlerInterface
             return null;
         }
 
+        if ($query->userId !== null && !$order->user()->id()->equals($query->userId)) {
+            return null;
+        }
+
         return $this->orderDtoFactory->fromOrder($order);
     }
 }

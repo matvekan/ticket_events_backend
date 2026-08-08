@@ -14,5 +14,7 @@ interface UserRepositoryInterface
 
     public function findByEmail(Email $email): ?User;
 
+    public function findByPasswordResetTokenHash(string $tokenHash): ?User;
+
     public function save(User $user): void;
 }

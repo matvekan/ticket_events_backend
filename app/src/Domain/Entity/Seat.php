@@ -44,11 +44,6 @@ class Seat
         return $this->venue;
     }
 
-    public function assignToVenue(Venue $venue): void
-    {
-        $this->venue = $venue;
-    }
-
     public function row(): SeatRow
     {
         return $this->row;

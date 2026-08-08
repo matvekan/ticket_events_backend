@@ -11,6 +11,8 @@ readonly class VenueDto
         public string $name,
         public string $address,
         public string $city,
+        public ?float $latitude,
+        public ?float $longitude,
     ) {
     }
 }

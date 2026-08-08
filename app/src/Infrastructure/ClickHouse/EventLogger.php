@@ -45,6 +45,13 @@ SQL;
         $this->write('order_refunds', $orderId, $userId, $amount);
     }
 
+    public function ensureTables(): void
+    {
+        foreach (['seat_reservations', 'order_payments', 'order_cancellations', 'order_refunds'] as $table) {
+            $this->ensureTable($table);
+        }
+    }
+
     private function write(string $table, string $orderId, string $userId, int $amount): void
     {
         $this->ensureTable($table);

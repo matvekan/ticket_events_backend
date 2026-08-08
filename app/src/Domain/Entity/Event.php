@@ -7,6 +7,7 @@ namespace App\Domain\Entity;
 use App\Domain\Event\EventCreatedEvent;
 use App\Domain\Event\EventRecordingCapability;
 use App\Domain\Event\EventStatusChangedEvent;
+use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\ValueObject\EventDescription;
 use App\Domain\ValueObject\EventStatus;
 use App\Domain\ValueObject\EventTitle;
@@ -89,7 +90,7 @@ class Event
     public function publish(): void
     {
         if ($this->status !== EventStatus::Draft) {
-            throw new \DomainException('Only draft events can be published.');
+            throw new BusinessRuleViolationException('Only draft events can be published.');
         }
 
         $this->status = EventStatus::Published;
@@ -101,23 +102,13 @@ class Event
     public function cancel(): void
     {
         if ($this->status === EventStatus::Cancelled) {
-            throw new \DomainException('Event is already cancelled.');
+            throw new BusinessRuleViolationException('Event is already cancelled.');
         }
 
         $this->status = EventStatus::Cancelled;
         $this->updatedAt = new \DateTimeImmutable();
 
         $this->recordThat(new EventStatusChangedEvent($this->id, (string) $this->title, $this->status->value));
-    }
-
-    public function markSoldOut(): void
-    {
-        if ($this->status !== EventStatus::Published) {
-            throw new \DomainException('Only published events can be marked as sold out.');
-        }
-
-        $this->status = EventStatus::SoldOut;
-        $this->updatedAt = new \DateTimeImmutable();
     }
 
     /** @return Collection<int, EventSeat> */

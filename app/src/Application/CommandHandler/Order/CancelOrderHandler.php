@@ -19,6 +19,6 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
 
     public function __invoke(CancelOrderCommand $command): void
     {
-        $this->orderService->cancel($command->orderId);
+        $this->orderService->cancel($command->orderId, $command->userId);
     }
 }

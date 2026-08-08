@@ -76,13 +76,13 @@ services:
     networks:
       - ticket_network
 
-  messenger-consumer:
-    container_name: tick_consumer
+  worker:
+    container_name: tick_worker
     build:
       context: docker/php
     volumes:
       - ./app:/var/www
-    command: php bin/console messenger:consume events -vv --time-limit=3600
+    command: php bin/console messenger:consume events scheduler_default -vv --time-limit=3600
     restart: always
     depends_on:
       - postgres

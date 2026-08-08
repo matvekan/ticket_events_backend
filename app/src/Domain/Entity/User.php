@@ -22,6 +22,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Email $email;
     private array $roles = [];
     private ?string $password = null;
+    private ?string $resetPasswordTokenHash = null;
+    private ?\DateTimeImmutable $resetPasswordTokenExpiresAt = null;
     private Collection $orders;
 
     private function __construct(Name $name, Email $email)
@@ -53,11 +55,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function roles(): array
-    {
-        return $this->roles;
-    }
-
     public function getRoles(): array
     {
         return $this->roles;
@@ -68,11 +65,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->roles = $roles;
     }
 
-    public function password(): ?string
-    {
-        return $this->password;
-    }
-
     public function getPassword(): ?string
     {
         return $this->password;
@@ -81,6 +73,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function updatePassword(?string $password): void
     {
         $this->password = $password;
+    }
+
+    public function setPasswordResetToken(string $tokenHash, \DateTimeImmutable $expiresAt): void
+    {
+        $this->resetPasswordTokenHash = $tokenHash;
+        $this->resetPasswordTokenExpiresAt = $expiresAt;
+    }
+
+    public function clearPasswordResetToken(): void
+    {
+        $this->resetPasswordTokenHash = null;
+        $this->resetPasswordTokenExpiresAt = null;
+    }
+
+    public function isPasswordResetTokenValid(\DateTimeImmutable $now): bool
+    {
+        return $this->resetPasswordTokenHash !== null
+            && $this->resetPasswordTokenExpiresAt !== null
+            && $this->resetPasswordTokenExpiresAt > $now;
     }
 
     public function getUserIdentifier(): string

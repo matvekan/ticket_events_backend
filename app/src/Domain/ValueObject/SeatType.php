@@ -15,19 +15,4 @@ enum SeatType: string
     {
         return array_map(fn (self $case): string => $case->value, self::cases());
     }
-
-    public function isStandard(): bool
-    {
-        return $this === self::Standard;
-    }
-
-    public function isVIP(): bool
-    {
-        return $this === self::VIP;
-    }
-
-    public function isPremium(): bool
-    {
-        return $this === self::Premium;
-    }
 }

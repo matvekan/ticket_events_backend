@@ -11,6 +11,8 @@ interface TicketRepositoryInterface
 {
     public function findById(Uuid $id): ?Ticket;
 
+    public function findByCode(string $code): ?Ticket;
+
     /** @return Ticket[] */
     public function findByOrderId(Uuid $orderId): array;
 

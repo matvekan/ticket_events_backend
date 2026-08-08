@@ -1,4 +1,6 @@
 parameters:
+    frontend_url: '%env(FRONTEND_URL)%'
+    mailer_from: '%env(MAILER_FROM)%'
 
 services:
     _defaults:
@@ -8,6 +10,8 @@ services:
             Symfony\Component\Messenger\MessageBusInterface $commandBus: '@command.bus'
             Symfony\Component\Messenger\MessageBusInterface $queryBus: '@query.bus'
             Symfony\Component\Messenger\MessageBusInterface $eventBus: '@event.bus'
+            string $frontendUrl: '%frontend_url%'
+            string $mailerFrom: '%mailer_from%'
 
     App\:
         resource: '../src/'
@@ -17,6 +21,7 @@ services:
             - '../src/Application/Event/'
             - '../src/Application/Command/'
             - '../src/Application/Query/'
+            - '../src/Infrastructure/Cache/'
             - '../src/Kernel.php'
 
     App\Application\Dto\Factory\:
@@ -38,6 +43,11 @@ services:
     App\Application\Transaction\TransactionManagerInterface:
         class: App\Infrastructure\Doctrine\DoctrineTransactionManager
 
+    App\Application\Cache\SeatAvailabilityCacheInterface:
+        class: App\Infrastructure\Cache\RedisSeatAvailabilityCache
+        arguments:
+            $cache: '@cache.seat_availability'
+
     App\Domain\Repository\UserRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineUserRepository
 
@@ -58,6 +68,9 @@ services:
 
     App\Domain\Repository\TicketRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineTicketRepository
+
+    App\Domain\Repository\PaymentRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrinePaymentRepository
 
     App\Infrastructure\Elasticsearch\ClientFactory:
         arguments:

@@ -33,14 +33,14 @@ class Ticket
         return $this->id;
     }
 
-    public function order(): Order
-    {
-        return $this->order;
-    }
-
     public function eventSeat(): EventSeat
     {
         return $this->eventSeat;
+    }
+
+    public function order(): Order
+    {
+        return $this->order;
     }
 
     public function code(): TicketCode
