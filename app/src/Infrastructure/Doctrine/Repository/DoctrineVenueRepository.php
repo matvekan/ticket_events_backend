@@ -29,6 +29,5 @@ final class DoctrineVenueRepository implements VenueRepositoryInterface
     public function save(Venue $venue): void
     {
         $this->entityManager->persist($venue);
-        $this->entityManager->flush();
     }
 }

@@ -9,12 +9,10 @@ use App\Domain\ValueObject\Name;
 use App\Domain\ValueObject\Role;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
 
-#[UniqueEntity(fields: ['email'], message: 'Email already used.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     private Uuid $id;

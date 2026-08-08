@@ -46,6 +46,5 @@ final class DoctrineEventRepository implements EventRepositoryInterface
     public function save(Event $event): void
     {
         $this->entityManager->persist($event);
-        $this->entityManager->flush();
     }
 }

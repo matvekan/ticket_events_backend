@@ -16,6 +16,11 @@ final class DoctrineTransactionManager implements TransactionManagerInterface
 
     public function transactional(callable $fn): mixed
     {
-        return $this->entityManager->wrapInTransaction($fn);
+        return $this->entityManager->wrapInTransaction(function () use ($fn): mixed {
+            $result = $fn();
+            $this->entityManager->flush();
+
+            return $result;
+        });
     }
 }

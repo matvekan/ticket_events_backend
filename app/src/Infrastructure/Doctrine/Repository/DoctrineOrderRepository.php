@@ -45,6 +45,5 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
     public function save(Order $order): void
     {
         $this->entityManager->persist($order);
-        $this->entityManager->flush();
     }
 }

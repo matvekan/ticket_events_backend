@@ -39,6 +39,5 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
     public function save(Ticket $ticket): void
     {
         $this->entityManager->persist($ticket);
-        $this->entityManager->flush();
     }
 }

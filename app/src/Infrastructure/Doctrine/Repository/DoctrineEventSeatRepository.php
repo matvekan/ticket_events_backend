@@ -54,6 +54,5 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
     public function save(EventSeat $eventSeat): void
     {
         $this->entityManager->persist($eventSeat);
-        $this->entityManager->flush();
     }
 }
