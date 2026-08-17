@@ -44,17 +44,4 @@ class ChatRoom
     {
         return $this->createdAt;
     }
-
-    /** @return Collection<int, ChatMessage> */
-    public function messages(): Collection
-    {
-        return $this->messages;
-    }
-
-    public function addMessage(ChatMessage $message): void
-    {
-        if (!$this->messages->contains($message)) {
-            $this->messages->add($message);
-        }
-    }
 }

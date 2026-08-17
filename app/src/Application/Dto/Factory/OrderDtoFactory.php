@@ -20,6 +20,7 @@ final class OrderDtoFactory
             id: $order->id()->toRfc4122(),
             status: $order->status()->value,
             total: $order->totalPrice()->amount(),
+            totalCurrency: $order->totalPrice()->currency(),
             createdAt: $order->createdAt()->format('c'),
             tickets: $this->ticketDtoFactory->fromTicketList($order->tickets()->toArray()),
         );

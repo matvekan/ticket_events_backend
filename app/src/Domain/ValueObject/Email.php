@@ -12,6 +12,8 @@ final class Email implements StringValueObject
 
     public function __construct(string $email)
     {
+        $email = mb_strtolower(trim($email));
+
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException('Invalid email address.');
         }

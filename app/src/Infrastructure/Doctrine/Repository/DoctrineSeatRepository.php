@@ -31,11 +31,6 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
         return $this->repository->findBy(['venue' => $venueId]);
     }
 
-    public function save(Seat $seat): void
-    {
-        $this->entityManager->persist($seat);
-    }
-
     public function saveAll(array $seats): void
     {
         foreach ($seats as $seat) {

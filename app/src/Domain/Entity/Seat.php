@@ -16,7 +16,7 @@ class Seat
     private Venue $venue;
     private SeatRow $row;
     private SeatNumber $number;
-    private ?SeatSector $sector = null;
+    private ?SeatSector $sector;
     private SeatType $type;
 
     private function __construct(

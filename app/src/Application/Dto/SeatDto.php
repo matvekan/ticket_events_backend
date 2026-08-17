@@ -13,6 +13,7 @@ readonly class SeatDto
         public ?string $sector,
         public string $type,
         public ?int $priceAmount = null,
+        public ?string $priceCurrency = null,
         public ?string $status = null,
     ) {
     }

@@ -27,11 +27,6 @@ final class DoctrineChatMessageRepository implements ChatMessageRepositoryInterf
         return $this->repository->findBy(['room' => $roomId], ['createdAt' => 'ASC']);
     }
 
-    public function findLatestByRoomId(Uuid $roomId): ?ChatMessage
-    {
-        return $this->repository->findOneBy(['room' => $roomId], ['createdAt' => 'DESC']);
-    }
-
     public function findLatestForRooms(array $rooms): array
     {
         if ($rooms === []) {

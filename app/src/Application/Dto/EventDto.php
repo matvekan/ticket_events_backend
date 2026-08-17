@@ -15,6 +15,7 @@ readonly class EventDto
         public string $venueCity,
         public int $priceMin,
         public int $priceMax,
+        public string $priceCurrency,
         public string $status,
     ) {
     }

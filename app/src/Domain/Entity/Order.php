@@ -24,7 +24,7 @@ class Order
     private Price $totalPrice;
     private OrderStatus $status;
     private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?\DateTimeImmutable $updatedAt;
 
     /** @var Collection<int, Ticket> */
     private Collection $tickets;

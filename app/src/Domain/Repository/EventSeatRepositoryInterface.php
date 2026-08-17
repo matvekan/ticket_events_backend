@@ -16,6 +16,4 @@ interface EventSeatRepositoryInterface
 
     /** @return EventSeat[] */
     public function findAvailableByEventId(Uuid $eventId): array;
-
-    public function save(EventSeat $eventSeat): void;
 }

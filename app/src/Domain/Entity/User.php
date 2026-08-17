@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\ValueObject\Email;
 use App\Domain\ValueObject\Name;
 use App\Domain\ValueObject\Role;
@@ -19,9 +20,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Name $name;
     private Email $email;
     private array $roles = [];
-    private ?string $password = null;
-    private ?string $resetPasswordTokenHash = null;
-    private ?\DateTimeImmutable $resetPasswordTokenExpiresAt = null;
+    private ?string $password;
+    private ?string $resetPasswordTokenHash;
+    private ?\DateTimeImmutable $resetPasswordTokenExpiresAt;
     private Collection $orders;
 
     private function __construct(Name $name, Email $email)
@@ -60,7 +61,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function updateRoles(array $roles): void
     {
-        $this->roles = $roles;
+        foreach ($roles as $role) {
+            if (!is_string($role) || Role::tryFrom($role) === null) {
+                throw new BusinessRuleViolationException(sprintf('Invalid role "%s".', is_scalar($role) ? (string) $role : get_debug_type($role)));
+            }
+        }
+
+        $this->roles = array_values(array_unique($roles));
     }
 
     public function getPassword(): ?string

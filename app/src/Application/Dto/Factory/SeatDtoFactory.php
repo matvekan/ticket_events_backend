@@ -37,6 +37,7 @@ final class SeatDtoFactory
             sector: $seat->sector() !== null ? (string) $seat->sector() : null,
             type: $seat->type()->value,
             priceAmount: $eventSeat->price()->amount(),
+            priceCurrency: $eventSeat->price()->currency(),
             status: $eventSeat->status()->value,
         );
     }
@@ -44,6 +45,6 @@ final class SeatDtoFactory
     /** @param EventSeat[] $eventSeats @return SeatDto[] */
     public function fromAvailableSeats(array $eventSeats): array
     {
-        return array_map(fn (EventSeat $es): SeatDto => $this->fromEventSeat($es), $eventSeats);
+        return array_map(fn (EventSeat $eventSeat): SeatDto => $this->fromEventSeat($eventSeat), $eventSeats);
     }
 }

@@ -25,7 +25,7 @@ class Event
     private Venue $venue;
     private EventStatus $status;
     private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?\DateTimeImmutable $updatedAt;
 
     /** @var Collection<int, EventSeat> */
     private Collection $eventSeats;
@@ -100,6 +100,10 @@ class Event
 
         if ($this->date < new \DateTimeImmutable()) {
             throw new BusinessRuleViolationException('Cannot publish an event in the past.');
+        }
+
+        if ($this->eventSeats->isEmpty()) {
+            throw new BusinessRuleViolationException('Cannot publish an event without seats.');
         }
 
         $this->status = EventStatus::Published;

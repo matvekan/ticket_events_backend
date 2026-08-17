@@ -101,6 +101,7 @@ final class SearchEventsHandler implements QueryHandlerInterface
                 venueCity: $source['venue_city'],
                 priceMin: (int) $source['price_min'],
                 priceMax: (int) $source['price_max'],
+                priceCurrency: $source['price_currency'] ?? 'RUB',
                 status: $source['status'],
             );
         }

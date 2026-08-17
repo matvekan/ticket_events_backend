@@ -40,6 +40,7 @@ final class EventIndexer
                 'venue_city' => $dto->venueCity,
                 'price_min' => $dto->priceMin,
                 'price_max' => $dto->priceMax,
+                'price_currency' => $dto->priceCurrency,
                 'status' => $dto->status,
             ],
         ]);

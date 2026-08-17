@@ -15,8 +15,8 @@ class Payment
     private int $amount;
     private PaymentStatus $status;
     private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $paidAt = null;
-    private ?\DateTimeImmutable $failedAt = null;
+    private ?\DateTimeImmutable $paidAt;
+    private ?\DateTimeImmutable $failedAt;
 
     private function __construct(Order $order, int $amount)
     {
@@ -50,21 +50,6 @@ class Payment
     public function status(): PaymentStatus
     {
         return $this->status;
-    }
-
-    public function createdAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
-
-    public function paidAt(): ?\DateTimeImmutable
-    {
-        return $this->paidAt;
-    }
-
-    public function failedAt(): ?\DateTimeImmutable
-    {
-        return $this->failedAt;
     }
 
     public function markPaid(): void

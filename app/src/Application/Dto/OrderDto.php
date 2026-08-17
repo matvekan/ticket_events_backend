@@ -11,6 +11,7 @@ readonly class OrderDto
         public string $id,
         public string $status,
         public int $total,
+        public string $totalCurrency,
         public string $createdAt,
         public array $tickets,
     ) {

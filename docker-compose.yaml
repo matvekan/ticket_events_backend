@@ -8,7 +8,7 @@ volumes:
 services:
   nginx:
     container_name: tick_nginx
-    image: nginx:latest
+    image: nginx:1.27-alpine
     ports:
       - "80:80"
     volumes:
@@ -27,6 +27,7 @@ services:
       dockerfile: docker/php/Dockerfile
     volumes:
       - ./app:/var/www
+    command: ["sh", "-c", "if [ ! -f config/jwt/private.pem ]; then php bin/console lexik:jwt:generate-keypair -q; fi; exec php-fpm"]
     env_file:
       - .env
     healthcheck:
@@ -41,6 +42,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   postgres:
@@ -63,7 +66,7 @@ services:
 
   redis:
     container_name: tick_redis
-    image: redis:alpine
+    image: redis:7.4-alpine
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -152,7 +155,7 @@ services:
 
   clickhouse:
     container_name: tick_clickhouse
-    image: clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:24.8.4.13
     env_file:
       - .env
     healthcheck:

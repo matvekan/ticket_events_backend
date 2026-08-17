@@ -22,11 +22,6 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
         $this->repository = $entityManager->getRepository(Ticket::class);
     }
 
-    public function findById(Uuid $id): ?Ticket
-    {
-        return $this->entityManager->find(Ticket::class, $id);
-    }
-
     public function findByCode(string $code): ?Ticket
     {
         return $this->repository->findOneBy(['code' => new TicketCode($code)]);
@@ -35,10 +30,5 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
     public function findByOrderId(Uuid $orderId): array
     {
         return $this->repository->findBy(['order' => $orderId]);
-    }
-
-    public function save(Ticket $ticket): void
-    {
-        $this->entityManager->persist($ticket);
     }
 }

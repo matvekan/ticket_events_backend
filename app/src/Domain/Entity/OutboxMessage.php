@@ -12,7 +12,7 @@ final class OutboxMessage
     private string $messageClass;
     private string $body;
     private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $sentAt = null;
+    private ?\DateTimeImmutable $sentAt;
     private int $attempts = 0;
 
     public function __construct(string $messageClass, string $body)
@@ -36,21 +36,6 @@ final class OutboxMessage
     public function body(): string
     {
         return $this->body;
-    }
-
-    public function createdAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
-
-    public function sentAt(): ?\DateTimeImmutable
-    {
-        return $this->sentAt;
-    }
-
-    public function attempts(): int
-    {
-        return $this->attempts;
     }
 
     public function markFailed(): void

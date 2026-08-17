@@ -46,9 +46,4 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
     {
         return $this->repository->findBy(['event' => $eventId, 'status' => SeatStatus::Free]);
     }
-
-    public function save(EventSeat $eventSeat): void
-    {
-        $this->entityManager->persist($eventSeat);
-    }
 }

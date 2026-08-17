@@ -12,8 +12,6 @@ interface ChatMessageRepositoryInterface
     /** @return ChatMessage[] */
     public function findByRoomId(Uuid $roomId): array;
 
-    public function findLatestByRoomId(Uuid $roomId): ?ChatMessage;
-
     public function save(ChatMessage $message): void;
 
     /**

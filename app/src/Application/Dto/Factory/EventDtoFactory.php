@@ -37,6 +37,7 @@ final class EventDtoFactory
             venueCity: (string) $event->venue()->city(),
             priceMin: $prices['min'],
             priceMax: $prices['max'],
+            priceCurrency: $prices['currency'],
             status: $event->status()->value,
         );
     }
@@ -62,12 +63,13 @@ final class EventDtoFactory
             venueLongitude: $event->venue()->longitude(),
             priceMin: $prices['min'],
             priceMax: $prices['max'],
+            priceCurrency: $prices['currency'],
             status: $event->status()->value,
             availableSeats: $availableSeats,
         );
     }
 
-    /** @return array{min: int, max: int} */
+    /** @return array{min: int, max: int, currency: string} */
     private function getPriceRange(Event $event): array
     {
         $prices = array_map(
@@ -75,9 +77,12 @@ final class EventDtoFactory
             $event->eventSeats()->toArray(),
         );
 
+        $firstSeat = $event->eventSeats()->first();
+
         return [
             'min' => !empty($prices) ? min($prices) : 0,
             'max' => !empty($prices) ? max($prices) : 0,
+            'currency' => $firstSeat !== false ? $firstSeat->price()->currency() : 'RUB',
         ];
     }
 }
