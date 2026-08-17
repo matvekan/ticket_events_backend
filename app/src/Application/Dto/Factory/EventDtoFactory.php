@@ -47,7 +47,7 @@ final class EventDtoFactory
 
         $availableSeats = array_map(
             fn (EventSeat $eventSeat): SeatDto => $this->seatDtoFactory->fromEventSeat($eventSeat),
-            $event->eventSeats()->filter(fn (EventSeat $es): bool => $es->isAvailable())->toArray(),
+            $event->eventSeats()->filter(fn (EventSeat $eventSeat): bool => $eventSeat->isAvailable())->toArray(),
         );
 
         return new EventDetailsDto(
@@ -67,17 +67,17 @@ final class EventDtoFactory
         );
     }
 
-    /** @return array{min: float, max: float} */
+    /** @return array{min: int, max: int} */
     private function getPriceRange(Event $event): array
     {
         $prices = array_map(
-            fn (EventSeat $eventSeat): float => $eventSeat->price()->asFloat(),
+            fn (EventSeat $eventSeat): int => $eventSeat->price()->amount(),
             $event->eventSeats()->toArray(),
         );
 
         return [
-            'min' => !empty($prices) ? min($prices) : 0.0,
-            'max' => !empty($prices) ? max($prices) : 0.0,
+            'min' => !empty($prices) ? min($prices) : 0,
+            'max' => !empty($prices) ? max($prices) : 0,
         ];
     }
 }

@@ -19,8 +19,13 @@ class Seat
     private ?SeatSector $sector = null;
     private SeatType $type;
 
-    private function __construct(Venue $venue, SeatRow $row, SeatNumber $number, SeatType $type, ?SeatSector $sector = null)
-    {
+    private function __construct(
+        Venue $venue,
+        SeatRow $row,
+        SeatNumber $number,
+        SeatType $type,
+        ?SeatSector $sector = null,
+    ) {
         $this->id = Uuid::v7();
         $this->venue = $venue;
         $this->row = $row;
@@ -29,8 +34,13 @@ class Seat
         $this->sector = $sector;
     }
 
-    public static function create(Venue $venue, SeatRow $row, SeatNumber $number, SeatType $type, ?SeatSector $sector = null): self
-    {
+    public static function create(
+        Venue $venue,
+        SeatRow $row,
+        SeatNumber $number,
+        SeatType $type,
+        ?SeatSector $sector = null,
+    ): self {
         return new self($venue, $row, $number, $type, $sector);
     }
 

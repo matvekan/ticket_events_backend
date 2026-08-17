@@ -12,10 +12,19 @@ interface EventRepositoryInterface
     public function findById(Uuid $id): ?Event;
 
     /** @return Event[] */
-    public function findAllPublished(): array;
-
-    /** @return Event[] */
     public function findPublished(int $limit, int $offset): array;
+
+    /**
+     * @return Event[]
+     */
+    public function searchPublished(
+        ?string $query,
+        ?string $city,
+        ?\DateTimeImmutable $dateFrom,
+        ?\DateTimeImmutable $dateTo,
+        int $limit,
+        int $offset,
+    ): array;
 
     /** @return Event[] */
     public function findAll(): array;

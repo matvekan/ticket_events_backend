@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                                      https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Domain\Entity\Order" table="orders">
+        <id name="id" type="uuid">
+            <generator strategy="CUSTOM"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        </id>
+
+        <many-to-one field="user" target-entity="App\Domain\Entity\User" inversed-by="orders">
+            <join-column name="user_id" nullable="false"/>
+        </many-to-one>
+        <embedded name="totalPrice" class="App\Domain\ValueObject\Price" column-prefix="total_"/>
+        <field name="status" type="string" enum-type="App\Domain\ValueObject\OrderStatus" length="20"/>
+        <field name="createdAt" type="datetime_immutable"/>
+        <field name="updatedAt" type="datetime_immutable" nullable="true"/>
+
+        <one-to-many field="tickets" target-entity="App\Domain\Entity\Ticket" mapped-by="order" orphan-removal="true">
+            <cascade>
+                <cascade-persist/>
+            </cascade>
+        </one-to-many>
+    </entity>
+</doctrine-mapping>

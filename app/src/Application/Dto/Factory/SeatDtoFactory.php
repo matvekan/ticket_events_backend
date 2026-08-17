@@ -36,7 +36,7 @@ final class SeatDtoFactory
             number: $seat->number()->toValue(),
             sector: $seat->sector() !== null ? (string) $seat->sector() : null,
             type: $seat->type()->value,
-            priceAmount: $eventSeat->price()->asFloat(),
+            priceAmount: $eventSeat->price()->amount(),
             status: $eventSeat->status()->value,
         );
     }

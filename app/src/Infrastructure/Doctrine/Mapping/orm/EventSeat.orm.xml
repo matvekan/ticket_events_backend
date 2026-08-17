@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                                      https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Domain\Entity\EventSeat" table="event_seats">
+        <id name="id" type="uuid">
+            <generator strategy="CUSTOM"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        </id>
+
+        <many-to-one field="event" target-entity="App\Domain\Entity\Event" inversed-by="eventSeats">
+            <join-column name="event_id" nullable="false"/>
+        </many-to-one>
+        <many-to-one field="seat" target-entity="App\Domain\Entity\Seat">
+            <join-column name="seat_id" nullable="false"/>
+        </many-to-one>
+
+        <embedded name="price" class="App\Domain\ValueObject\Price" column-prefix="price_"/>
+        <field name="status" type="string" enum-type="App\Domain\ValueObject\SeatStatus" length="20"/>
+
+        <unique-constraints>
+            <unique-constraint name="uniq_event_seat" columns="event_id,seat_id"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

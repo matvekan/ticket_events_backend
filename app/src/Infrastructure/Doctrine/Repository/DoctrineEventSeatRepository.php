@@ -9,25 +9,23 @@ use App\Domain\Repository\EventSeatRepositoryInterface;
 use App\Domain\ValueObject\SeatStatus;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
 
 final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 {
+    /** @var EntityRepository<EventSeat> */
+    private readonly EntityRepository $repository;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
     ) {
+        $this->repository = $entityManager->getRepository(EventSeat::class);
     }
 
     public function findById(Uuid $id): ?EventSeat
     {
         return $this->entityManager->find(EventSeat::class, $id);
-    }
-
-    public function findByEventId(Uuid $eventId): array
-    {
-        return $this->entityManager
-            ->getRepository(EventSeat::class)
-            ->findBy(['event' => $eventId]);
     }
 
     public function lockAndFindByIds(array $ids): array
@@ -46,9 +44,7 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 
     public function findAvailableByEventId(Uuid $eventId): array
     {
-        return $this->entityManager
-            ->getRepository(EventSeat::class)
-            ->findBy(['event' => $eventId, 'status' => SeatStatus::Free]);
+        return $this->repository->findBy(['event' => $eventId, 'status' => SeatStatus::Free]);
     }
 
     public function save(EventSeat $eventSeat): void

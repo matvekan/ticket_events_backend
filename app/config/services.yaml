@@ -1,6 +1,8 @@
 parameters:
     frontend_url: '%env(FRONTEND_URL)%'
     mailer_from: '%env(MAILER_FROM)%'
+    chat_ws_bind: '0.0.0.0'
+    chat_ws_port: 8080
 
 services:
     _defaults:
@@ -12,6 +14,8 @@ services:
             Symfony\Component\Messenger\MessageBusInterface $eventBus: '@event.bus'
             string $frontendUrl: '%frontend_url%'
             string $mailerFrom: '%mailer_from%'
+            string $chatWsBind: '%env(default:chat_ws_bind:string:CHAT_WS_BIND)%'
+            int $chatWsPort: '%env(default:chat_ws_port:int:CHAT_WS_PORT)%'
 
     App\:
         resource: '../src/'
@@ -40,6 +44,10 @@ services:
     App\Application\Event\EventBusInterface:
         class: App\Infrastructure\EventBus\MessengerEventBus
 
+    App\Application\MessageHandler\PublishOutboxMessagesHandler:
+        arguments:
+            $eventsTransport: '@messenger.transport.events'
+
     App\Application\Transaction\TransactionManagerInterface:
         class: App\Infrastructure\Doctrine\DoctrineTransactionManager
 
@@ -47,6 +55,15 @@ services:
         class: App\Infrastructure\Cache\RedisSeatAvailabilityCache
         arguments:
             $cache: '@cache.seat_availability'
+
+    # Infrastructure/Cache исключён из авто-регистрации (иначе RedisSeatAvailabilityCache
+    # зацикливается на себе при автовайринге), поэтому слушатели инвалидации кэша
+    # регистрируются явно. Без них события брони/отмены/возврата молча игнорируются.
+    App\Infrastructure\Cache\SeatCacheInvalidator: ~
+    App\Infrastructure\Cache\InvalidateSeatCacheOnSeatsReserved: ~
+    App\Infrastructure\Cache\InvalidateSeatCacheOnOrderCancelled: ~
+    App\Infrastructure\Cache\InvalidateSeatCacheOnOrderRefunded: ~
+    App\Infrastructure\Cache\InvalidateSeatCacheOnOrderPaid: ~
 
     App\Domain\Repository\UserRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineUserRepository
@@ -72,9 +89,15 @@ services:
     App\Domain\Repository\PaymentRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrinePaymentRepository
 
+    App\Domain\Repository\ChatRoomRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineChatRoomRepository
+
+    App\Domain\Repository\ChatMessageRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineChatMessageRepository
+
     App\Infrastructure\Elasticsearch\ClientFactory:
         arguments:
-            $hosts: '%env(string:ELASTICSEARCH_HOSTS)%'
+            $hosts: '%env(json:ELASTICSEARCH_HOSTS)%'
 
     Elastic\Elasticsearch\Client:
         factory: ['@App\Infrastructure\Elasticsearch\ClientFactory', 'create']

@@ -9,17 +9,16 @@ use Elastic\Elasticsearch\ClientBuilder;
 
 final class ClientFactory
 {
+    /** @param list<string> $hosts */
     public function __construct(
-        private readonly string $hosts,
+        private readonly array $hosts,
     ) {
     }
 
     public function create(): Client
     {
-        $hosts = array_map('trim', explode(',', $this->hosts));
-
         return ClientBuilder::create()
-            ->setHosts($hosts)
+            ->setHosts($this->hosts)
             ->build();
     }
 }

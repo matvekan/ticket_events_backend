@@ -24,7 +24,7 @@ final class TicketDtoFactory
             eventTitle: (string) $ticket->eventSeat()->event()->title(),
             eventDate: $ticket->eventSeat()->event()->date()->format('c'),
             venueName: (string) $ticket->eventSeat()->event()->venue()->name(),
-            priceAmount: $ticket->price()->asFloat(),
+            priceAmount: $ticket->price()->amount(),
         );
     }
 }

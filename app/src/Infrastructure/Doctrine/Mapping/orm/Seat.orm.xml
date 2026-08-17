@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                                      https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Domain\Entity\Seat" table="seats">
+        <id name="id" type="uuid">
+            <generator strategy="CUSTOM"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        </id>
+
+        <many-to-one field="venue" target-entity="App\Domain\Entity\Venue" inversed-by="seats">
+            <join-column name="venue_id" nullable="false"/>
+        </many-to-one>
+
+        <field name="row" type="seat_row" length="10"/>
+        <field name="number" type="seat_number"/>
+        <field name="sector" type="seat_sector" length="50" nullable="true"/>
+        <field name="type" type="string" enum-type="App\Domain\ValueObject\SeatType" length="20"/>
+
+        <unique-constraints>
+            <unique-constraint name="uniq_venue_row_number" columns="venue_id,row,number"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

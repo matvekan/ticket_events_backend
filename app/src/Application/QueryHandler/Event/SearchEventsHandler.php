@@ -35,7 +35,16 @@ final class SearchEventsHandler implements QueryHandlerInterface
                 ])
                 ->asArray();
         } catch (\Throwable) {
-            return $this->eventDtoFactory->fromEventList($this->events->findAllPublished());
+            $events = $this->events->searchPublished(
+                $query->query,
+                $query->city,
+                $query->dateFrom,
+                $query->dateTo,
+                $query->limit,
+                max(0, ($query->page - 1) * $query->limit),
+            );
+
+            return $this->eventDtoFactory->fromEventList($events);
         }
 
         return $this->mapHits($results);
@@ -90,8 +99,8 @@ final class SearchEventsHandler implements QueryHandlerInterface
                 date: $source['date'],
                 venueName: $source['venue_name'],
                 venueCity: $source['venue_city'],
-                priceMin: (float) $source['price_min'],
-                priceMax: (float) $source['price_max'],
+                priceMin: (int) $source['price_min'],
+                priceMax: (int) $source['price_max'],
                 status: $source['status'],
             );
         }

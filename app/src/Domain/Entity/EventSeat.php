@@ -19,6 +19,10 @@ class EventSeat
 
     private function __construct(Event $event, Seat $seat, Price $price)
     {
+        if (!$seat->venue()->id()->equals($event->venue()->id())) {
+            throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
+        }
+
         $this->id = Uuid::v7();
         $this->event = $event;
         $this->seat = $seat;
@@ -26,8 +30,12 @@ class EventSeat
         $this->status = SeatStatus::Free;
     }
 
-    public static function create(Event $event, Seat $seat, int $priceAmount, string $priceCurrency = 'RUB'): self
-    {
+    public static function create(
+        Event $event,
+        Seat $seat,
+        int $priceAmount,
+        string $priceCurrency = 'RUB',
+    ): self {
         return new self($event, $seat, Price::fromAmount($priceAmount, $priceCurrency));
     }
 
@@ -43,6 +51,10 @@ class EventSeat
 
     public function assignToEvent(Event $event): void
     {
+        if (!$this->seat->venue()->id()->equals($event->venue()->id())) {
+            throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
+        }
+
         $this->event = $event;
     }
 

@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\Mailer;
+namespace App\Infrastructure\Messenger;
 
 use App\Domain\Event\OrderPaidEvent;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Infrastructure\Mailer\OrderMailer;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'event.bus')]

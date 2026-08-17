@@ -21,8 +21,8 @@ final class MessengerQueryBus implements QueryBusInterface
     {
         try {
             $envelope = $this->queryBus->dispatch($query);
-        } catch (HandlerFailedException $e) {
-            throw $e->getPrevious() ?? $e;
+        } catch (HandlerFailedException $handlerException) {
+            throw $handlerException->getPrevious() ?? $handlerException;
         }
 
         $handledStamp = $envelope->last(HandledStamp::class);

@@ -10,7 +10,7 @@ readonly class OrderDto
     public function __construct(
         public string $id,
         public string $status,
-        public float $total,
+        public int $total,
         public string $createdAt,
         public array $tickets,
     ) {

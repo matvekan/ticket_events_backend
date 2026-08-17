@@ -39,6 +39,11 @@ class Event
         $this->id = Uuid::v7();
         $this->title = $title;
         $this->description = $description;
+
+        if ($date < new \DateTimeImmutable()) {
+            throw new BusinessRuleViolationException('Event date must be in the future.');
+        }
+
         $this->date = $date;
         $this->venue = $venue;
         $this->status = EventStatus::Draft;
@@ -93,10 +98,18 @@ class Event
             throw new BusinessRuleViolationException('Only draft events can be published.');
         }
 
+        if ($this->date < new \DateTimeImmutable()) {
+            throw new BusinessRuleViolationException('Cannot publish an event in the past.');
+        }
+
         $this->status = EventStatus::Published;
         $this->updatedAt = new \DateTimeImmutable();
 
-        $this->recordThat(new EventStatusChangedEvent($this->id, (string) $this->title, $this->status->value));
+        $this->recordThat(new EventStatusChangedEvent(
+            $this->id,
+            (string) $this->title,
+            $this->status->value,
+        ));
     }
 
     public function cancel(): void
@@ -108,7 +121,11 @@ class Event
         $this->status = EventStatus::Cancelled;
         $this->updatedAt = new \DateTimeImmutable();
 
-        $this->recordThat(new EventStatusChangedEvent($this->id, (string) $this->title, $this->status->value));
+        $this->recordThat(new EventStatusChangedEvent(
+            $this->id,
+            (string) $this->title,
+            $this->status->value,
+        ));
     }
 
     /** @return Collection<int, EventSeat> */

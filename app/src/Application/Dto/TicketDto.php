@@ -13,7 +13,7 @@ readonly class TicketDto
         public string $eventTitle,
         public string $eventDate,
         public string $venueName,
-        public float $priceAmount,
+        public int $priceAmount,
     ) {
     }
 }

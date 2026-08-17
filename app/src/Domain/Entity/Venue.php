@@ -17,12 +17,17 @@ class Venue
     private VenueName $name;
     private VenueAddress $address;
     private VenueCity $city;
-    private ?float $latitude = null;
-    private ?float $longitude = null;
+    private ?float $latitude;
+    private ?float $longitude;
     private Collection $seats;
 
-    private function __construct(VenueName $name, VenueAddress $address, VenueCity $city, ?float $latitude, ?float $longitude)
-    {
+    private function __construct(
+        VenueName $name,
+        VenueAddress $address,
+        VenueCity $city,
+        ?float $latitude,
+        ?float $longitude,
+    ) {
         $this->id = Uuid::v7();
         $this->name = $name;
         $this->address = $address;
@@ -32,8 +37,13 @@ class Venue
         $this->seats = new ArrayCollection();
     }
 
-    public static function create(VenueName $name, VenueAddress $address, VenueCity $city, ?float $latitude = null, ?float $longitude = null): self
-    {
+    public static function create(
+        VenueName $name,
+        VenueAddress $address,
+        VenueCity $city,
+        ?float $latitude = null,
+        ?float $longitude = null,
+    ): self {
         return new self($name, $address, $city, $latitude, $longitude);
     }
 

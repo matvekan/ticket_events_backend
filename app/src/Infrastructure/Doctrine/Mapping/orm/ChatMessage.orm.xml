@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                                      https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Domain\Entity\ChatMessage" table="chat_messages">
+        <indexes>
+            <index name="idx_chat_messages_room_created" columns="room_id,created_at"/>
+        </indexes>
+
+        <id name="id" type="uuid">
+            <generator strategy="CUSTOM"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        </id>
+
+        <many-to-one field="room" target-entity="App\Domain\Entity\ChatRoom" inversed-by="messages">
+            <join-column name="room_id" nullable="false"/>
+        </many-to-one>
+        <many-to-one field="sender" target-entity="App\Domain\Entity\User">
+            <join-column name="sender_id" nullable="false"/>
+        </many-to-one>
+        <field name="text" type="string" length="2000"/>
+        <field name="createdAt" type="datetime_immutable"/>
+    </entity>
+</doctrine-mapping>

@@ -8,13 +8,18 @@ use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\Email;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Component\Uid\Uuid;
 
 final class DoctrineUserRepository implements UserRepositoryInterface
 {
+    /** @var EntityRepository<User> */
+    private readonly EntityRepository $repository;
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
     ) {
+        $this->repository = $entityManager->getRepository(User::class);
     }
 
     public function findById(Uuid $id): ?User
@@ -24,12 +29,12 @@ final class DoctrineUserRepository implements UserRepositoryInterface
 
     public function findByEmail(Email $email): ?User
     {
-        return $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+        return $this->repository->findOneBy(['email' => $email]);
     }
 
     public function findByPasswordResetTokenHash(string $tokenHash): ?User
     {
-        return $this->entityManager->getRepository(User::class)->findOneBy(['resetPasswordTokenHash' => $tokenHash]);
+        return $this->repository->findOneBy(['resetPasswordTokenHash' => $tokenHash]);
     }
 
     public function save(User $user): void

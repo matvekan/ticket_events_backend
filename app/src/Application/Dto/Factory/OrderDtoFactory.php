@@ -19,7 +19,7 @@ final class OrderDtoFactory
         return new OrderDto(
             id: $order->id()->toRfc4122(),
             status: $order->status()->value,
-            total: $order->totalPrice()->asFloat(),
+            total: $order->totalPrice()->amount(),
             createdAt: $order->createdAt()->format('c'),
             tickets: $this->ticketDtoFactory->fromTicketList($order->tickets()->toArray()),
         );

@@ -17,8 +17,8 @@ readonly class EventDetailsDto
         public string $venueCity,
         public ?float $venueLatitude,
         public ?float $venueLongitude,
-        public float $priceMin,
-        public float $priceMax,
+        public int $priceMin,
+        public int $priceMax,
         public string $status,
         public array $availableSeats,
     ) {

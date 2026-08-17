@@ -15,32 +15,45 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./app:/var/www
     depends_on:
-      - php
+      php:
+        condition: service_healthy
     networks:
       - ticket_network
 
   php:
     container_name: tick_php
     build:
-      context: docker/php
+      context: .
+      dockerfile: docker/php/Dockerfile
     volumes:
       - ./app:/var/www
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tickets_back?serverVersion=16&charset=utf8
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1','9000') ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - ticket_network
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   postgres:
     image: postgres:16-alpine
     container_name: tick-postgres
-    environment:
-      POSTGRES_DB: tickets_back
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     ports:
       - "5432:5432"
     volumes:
@@ -51,6 +64,11 @@ services:
   redis:
     container_name: tick_redis
     image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "6379:6379"
     networks:
@@ -59,6 +77,12 @@ services:
   rabbitmq:
     container_name: tick_rabbitmq
     image: rabbitmq:3-management-alpine
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -71,6 +95,12 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     ports:
       - "9200:9200"
     networks:
@@ -79,28 +109,58 @@ services:
   worker:
     container_name: tick_worker
     build:
-      context: docker/php
+      context: .
+      dockerfile: docker/php/Dockerfile
     volumes:
       - ./app:/var/www
     command: php bin/console messenger:consume events scheduler_default -vv --time-limit=3600
     restart: always
     depends_on:
-      - postgres
-      - rabbitmq
-      - elasticsearch
-      - clickhouse
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tickets_back?serverVersion=16&charset=utf8
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    env_file:
+      - .env
+    networks:
+      - ticket_network
+
+  chat:
+    container_name: tick_chat
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - ./app:/var/www
+    command: php bin/console app:chat-server
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
     networks:
       - ticket_network
 
   clickhouse:
     container_name: tick_clickhouse
     image: clickhouse/clickhouse-server:latest
-    environment:
-      CLICKHOUSE_USER: ticket_user
-      CLICKHOUSE_PASSWORD: ticket_pass
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "-q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     ports:
       - "8123:8123"
       - "9000:9000"

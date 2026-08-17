@@ -13,8 +13,8 @@ readonly class EventDto
         public string $date,
         public string $venueName,
         public string $venueCity,
-        public float $priceMin,
-        public float $priceMax,
+        public int $priceMin,
+        public int $priceMax,
         public string $status,
     ) {
     }

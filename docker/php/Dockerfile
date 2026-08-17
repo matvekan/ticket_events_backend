@@ -17,3 +17,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www
+
+COPY app/composer.json app/composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts --no-autoloader \
+    && composer dump-autoload --no-dev --classmap-authoritative

@@ -17,13 +17,13 @@ doctrine:
             App:
                 type: xml
                 is_bundle: false
-                dir: '%kernel.project_dir%/config/doctrine/orm'
+                dir: '%kernel.project_dir%/src/Infrastructure/Doctrine/Mapping/orm'
                 prefix: 'App\Domain\Entity'
                 alias: App
             AppValueObject:
                 type: xml
                 is_bundle: false
-                dir: '%kernel.project_dir%/config/doctrine/value_object'
+                dir: '%kernel.project_dir%/src/Infrastructure/Doctrine/Mapping/value_object'
                 prefix: 'App\Domain\ValueObject'
                 alias: AppValueObject
 

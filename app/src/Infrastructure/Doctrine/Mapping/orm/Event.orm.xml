@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                                      https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="App\Domain\Entity\Event" table="events">
+        <id name="id" type="uuid">
+            <generator strategy="CUSTOM"/>
+            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        </id>
+
+        <field name="title" type="event_title" length="100"/>
+        <field name="description" type="event_description"/>
+        <field name="date" type="datetime_immutable"/>
+        <many-to-one field="venue" target-entity="App\Domain\Entity\Venue">
+            <join-column name="venue_id" nullable="false"/>
+        </many-to-one>
+        <field name="status" type="string" enum-type="App\Domain\ValueObject\EventStatus" length="20"/>
+        <field name="createdAt" type="datetime_immutable"/>
+        <field name="updatedAt" type="datetime_immutable" nullable="true"/>
+
+        <one-to-many field="eventSeats" target-entity="App\Domain\Entity\EventSeat" mapped-by="event">
+            <cascade>
+                <cascade-persist/>
+            </cascade>
+        </one-to-many>
+    </entity>
+</doctrine-mapping>

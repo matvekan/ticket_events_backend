@@ -46,7 +46,9 @@ class Order
 
     public function markSeatsAsReserved(): void
     {
-        $eventSeatIds = $this->tickets->map(fn (Ticket $t): Uuid => $t->eventSeat()->id())->toArray();
+        $eventSeatIds = $this->tickets
+            ->map(fn (Ticket $ticket): Uuid => $ticket->eventSeat()->id())
+            ->toArray();
         $this->recordThat(new SeatsReservedEvent($this->id, $this->user->id(), $eventSeatIds));
     }
 
@@ -83,23 +85,36 @@ class Order
 
     public function addTicket(Ticket $ticket): void
     {
-        if (!$this->tickets->contains($ticket)) {
-            $this->tickets->add($ticket);
-            $this->totalPrice = Price::fromAmount(
-                $this->totalPrice->amount() + $ticket->price()->amount(),
-                $this->totalPrice->currency(),
-            );
+        if ($this->tickets->contains($ticket)) {
+            return;
         }
+
+        $first = $this->tickets->first();
+        if ($first !== false && $first->price()->currency() !== $ticket->price()->currency()) {
+            throw new BusinessRuleViolationException('All tickets in an order must share the same currency.');
+        }
+
+        $this->tickets->add($ticket);
+        $this->recalculateTotalPrice();
     }
 
     public function removeTicket(Ticket $ticket): void
     {
-        if ($this->tickets->removeElement($ticket)) {
-            $this->totalPrice = Price::fromAmount(
-                $this->totalPrice->amount() - $ticket->price()->amount(),
-                $this->totalPrice->currency(),
-            );
+        if (!$this->tickets->removeElement($ticket)) {
+            return;
         }
+
+        $this->recalculateTotalPrice();
+    }
+
+    private function recalculateTotalPrice(): void
+    {
+        $total = 0;
+        foreach ($this->tickets as $ticket) {
+            $total += $ticket->price()->amount();
+        }
+
+        $this->totalPrice = Price::fromAmount($total, $this->totalPrice->currency());
     }
 
     public function pay(): void
@@ -108,11 +123,20 @@ class Order
             throw new BusinessRuleViolationException('Only pending orders can be paid.');
         }
 
+        if ($this->tickets->isEmpty() || $this->totalPrice->amount() <= 0) {
+            throw new BusinessRuleViolationException('Cannot pay an order without tickets.');
+        }
+
         $this->status = OrderStatus::Paid;
         $this->updatedAt = new \DateTimeImmutable();
 
-        $ticketIds = array_map(fn (Ticket $t): Uuid => $t->id(), $this->tickets->toArray());
-        $this->recordThat(new OrderPaidEvent($this->id, $this->user->id(), $this->totalPrice->amount(), $ticketIds));
+        $ticketIds = array_map(fn (Ticket $ticket): Uuid => $ticket->id(), $this->tickets->toArray());
+        $this->recordThat(new OrderPaidEvent(
+            $this->id,
+            $this->user->id(),
+            $this->totalPrice->amount(),
+            $ticketIds,
+        ));
     }
 
     public function cancel(): void
@@ -121,10 +145,16 @@ class Order
             throw new BusinessRuleViolationException('Only pending orders can be cancelled.');
         }
 
+        if ($this->tickets->isEmpty()) {
+            throw new BusinessRuleViolationException('Cannot cancel an order without tickets.');
+        }
+
         $this->status = OrderStatus::Cancelled;
         $this->updatedAt = new \DateTimeImmutable();
 
-        $eventSeatIds = $this->tickets->map(fn (Ticket $t): Uuid => $t->eventSeat()->id())->toArray();
+        $eventSeatIds = $this->tickets
+            ->map(fn (Ticket $ticket): Uuid => $ticket->eventSeat()->id())
+            ->toArray();
         $this->recordThat(new OrderCancelledEvent($this->id, $this->user->id(), $eventSeatIds));
     }
 
@@ -134,10 +164,21 @@ class Order
             throw new BusinessRuleViolationException('Only paid orders can be refunded.');
         }
 
+        if ($this->tickets->isEmpty()) {
+            throw new BusinessRuleViolationException('Cannot refund an order without tickets.');
+        }
+
         $this->status = OrderStatus::Refunded;
         $this->updatedAt = new \DateTimeImmutable();
 
-        $eventSeatIds = $this->tickets->map(fn (Ticket $t): Uuid => $t->eventSeat()->id())->toArray();
-        $this->recordThat(new OrderRefundedEvent($this->id, $this->user->id(), $this->totalPrice->amount(), $eventSeatIds));
+        $eventSeatIds = $this->tickets
+            ->map(fn (Ticket $ticket): Uuid => $ticket->eventSeat()->id())
+            ->toArray();
+        $this->recordThat(new OrderRefundedEvent(
+            $this->id,
+            $this->user->id(),
+            $this->totalPrice->amount(),
+            $eventSeatIds,
+        ));
     }
 }
