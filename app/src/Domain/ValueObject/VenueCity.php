@@ -8,7 +8,9 @@ use Yokai\DoctrineValueObject\StringValueObject;
 
 final class VenueCity implements StringValueObject
 {
-    public function __construct(private string $city)
+    private string $city;
+
+    public function __construct(string $city)
     {
         $trimmed = trim($city);
         $length = mb_strlen($trimmed);

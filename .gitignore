@@ -1,2 +1,11 @@
 .env
 app/config/jwt/*.pem
+
+# IDE
+.idea/
+
+# Локальные скрипты и дампы запросов (Postman/бегунок)
+scripts/
+
+# Фронтенд живёт в отдельном репозитории (ticket-events-frontend)
+frontend/

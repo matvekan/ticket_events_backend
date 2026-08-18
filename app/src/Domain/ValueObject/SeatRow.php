@@ -8,7 +8,9 @@ use Yokai\DoctrineValueObject\StringValueObject;
 
 final class SeatRow implements StringValueObject
 {
-    public function __construct(private string $row)
+    private string $row;
+
+    public function __construct(string $row)
     {
         $trimmed = trim($row);
         $length = mb_strlen($trimmed);

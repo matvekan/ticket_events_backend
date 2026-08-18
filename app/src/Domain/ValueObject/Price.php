@@ -9,7 +9,7 @@ final class Price
     private int $amount;
     private string $currency;
 
-    private function __construct(int $amount, string $currency = 'RUB')
+    private function __construct(int $amount, string $currency = 'BYN')
     {
         if ($amount < 0) {
             throw new \InvalidArgumentException('Price amount must be non-negative.');
@@ -23,7 +23,7 @@ final class Price
         $this->currency = strtoupper($currency);
     }
 
-    public static function fromAmount(int $amount, string $currency = 'RUB'): self
+    public static function fromAmount(int $amount, string $currency = 'BYN'): self
     {
         return new self($amount, $currency);
     }

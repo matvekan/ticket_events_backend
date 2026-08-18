@@ -118,12 +118,11 @@ final readonly class ChatService
         $rooms = $this->rooms->findAll();
         $latestByRoomId = $this->messages->findLatestForRooms($rooms);
 
-        usort($rooms, static function (ChatRoom $a, ChatRoom $b) use ($latestByRoomId): int {
-            $aTime = $latestByRoomId[$a->id()->toRfc4122()]?->createdAt() ?? $a->createdAt();
-            $bTime = $latestByRoomId[$b->id()->toRfc4122()]?->createdAt() ?? $b->createdAt();
+        $lastCreatedAt = static fn (ChatRoom $room): \DateTimeImmutable => (
+            $latestByRoomId[$room->id()->toRfc4122()] ?? null
+        )?->createdAt() ?? $room->createdAt();
 
-            return $bTime <=> $aTime;
-        });
+        usort($rooms, static fn (ChatRoom $a, ChatRoom $b): int => $lastCreatedAt($b) <=> $lastCreatedAt($a));
 
         return array_map(
             static fn (ChatRoom $room): array => [

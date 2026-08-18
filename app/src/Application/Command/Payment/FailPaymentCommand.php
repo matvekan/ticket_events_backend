@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Command\Event;
+namespace App\Application\Command\Payment;
 
 use App\Application\Command\CommandInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class CancelEventCommand implements CommandInterface
+final class FailPaymentCommand implements CommandInterface
 {
     public function __construct(
         #[Assert\Uuid]
-        public readonly string $eventId,
+        public readonly string $paymentId,
     ) {
     }
 }

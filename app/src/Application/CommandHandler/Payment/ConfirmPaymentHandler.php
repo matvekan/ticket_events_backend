@@ -5,35 +5,33 @@ declare(strict_types=1);
 namespace App\Application\CommandHandler\Payment;
 
 use App\Application\Command\CommandHandlerInterface;
-use App\Application\Command\Payment\StartPaymentCommand;
+use App\Application\Command\Payment\ConfirmPaymentCommand;
+use App\Application\Event\EventBusInterface;
 use App\Application\Transaction\TransactionManagerInterface;
-use App\Domain\Entity\Payment;
-use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
-use App\Domain\ValueObject\OrderStatus;
-use App\Domain\ValueObject\PaymentStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Uid\Uuid;
 
 #[AsMessageHandler]
-final readonly class StartPaymentHandler implements CommandHandlerInterface
+final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
 {
     public function __construct(
         private OrderRepositoryInterface $orders,
         private PaymentRepositoryInterface $payments,
+        private EventBusInterface $eventBus,
         private TransactionManagerInterface $transactionManager,
     ) {
     }
 
-    public function __invoke(StartPaymentCommand $command): Payment
+    public function __invoke(ConfirmPaymentCommand $command): void
     {
         $orderId = Uuid::fromString($command->orderId);
         $userId = $command->userId !== null ? Uuid::fromString($command->userId) : null;
 
-        return $this->transactionManager->transactional(function () use ($orderId, $userId): Payment {
+        $events = $this->transactionManager->transactional(function () use ($orderId, $userId): array {
             $order = $this->orders->findById($orderId);
             if (!$order) {
                 throw new EntityNotFoundException('Order not found.');
@@ -43,26 +41,24 @@ final readonly class StartPaymentHandler implements CommandHandlerInterface
                 throw new AccessDeniedException('You do not own this order.');
             }
 
-            if ($order->status() !== OrderStatus::Pending) {
-                throw new BusinessRuleViolationException('Only pending orders can be paid.');
+            foreach ($order->tickets() as $ticket) {
+                $ticket->eventSeat()->sell();
             }
 
-            $existing = $this->payments->findByOrderId($orderId);
-            if ($existing !== null) {
-                if ($existing->status() === PaymentStatus::Pending) {
-                    return $existing;
-                }
+            $order->pay();
+            $this->orders->save($order);
 
-                $existing->restart();
-                $this->payments->save($existing);
-
-                return $existing;
+            $payment = $this->payments->findByOrderId($orderId);
+            if ($payment !== null) {
+                $payment->markPaid();
+                $this->payments->save($payment);
             }
 
-            $payment = Payment::create($order, $order->totalPrice()->amount());
-            $this->payments->save($payment);
-
-            return $payment;
+            return $order->releaseEvents();
         });
+
+        foreach ($events as $event) {
+            $this->eventBus->dispatch($event);
+        }
     }
 }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Controller;
 
-use App\Application\Service\Order\PaymentService;
+use App\Application\Command\CommandBusInterface;
+use App\Application\Command\Payment\ConfirmPaymentCommand;
+use App\Application\Command\Payment\FailPaymentCommand;
 use App\Domain\Repository\PaymentRepositoryInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,7 +17,7 @@ final class MockBankController
 {
     public function __construct(
         private readonly PaymentRepositoryInterface $payments,
-        private readonly PaymentService $paymentService,
+        private readonly CommandBusInterface $commandBus,
         private readonly string $frontendUrl,
     ) {
     }
@@ -29,7 +31,7 @@ final class MockBankController
         }
 
         $order = $payment->order();
-        $amount = number_format($payment->amount() / 100, 2, ',', ' ') . ' ₽';
+        $amount = number_format($payment->amount() / 100, 2, ',', ' ') . ' Br';
 
         $html = <<<HTML
 <!DOCTYPE html>
@@ -115,7 +117,9 @@ HTML;
 
         sleep(1);
 
-        $this->paymentService->confirmPayment($payment->order()->id());
+        $this->commandBus->dispatch(new ConfirmPaymentCommand(
+            orderId: $payment->order()->id()->toRfc4122(),
+        ));
 
         return $this->redirectBack('success', $payment->order()->id()->toRfc4122());
     }
@@ -123,12 +127,9 @@ HTML;
     #[Route('/{paymentId}/decline', name: 'decline', methods: ['POST'])]
     public function decline(string $paymentId): Response
     {
-        $payment = $this->payments->findById(\Symfony\Component\Uid\Uuid::fromRfc4122($paymentId));
-        if ($payment !== null) {
-            $this->paymentService->failPayment($payment->id());
-        }
+        $this->commandBus->dispatch(new FailPaymentCommand($paymentId));
 
-        return $this->redirectBack('failed', $payment?->order()->id()->toRfc4122());
+        return $this->redirectBack('failed');
     }
 
     private function redirectBack(string $result, ?string $orderId = null): RedirectResponse

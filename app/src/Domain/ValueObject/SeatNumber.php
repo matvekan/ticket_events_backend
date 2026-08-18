@@ -8,7 +8,9 @@ use Yokai\DoctrineValueObject\IntegerValueObject;
 
 final class SeatNumber implements IntegerValueObject
 {
-    public function __construct(private int $number)
+    private int $number;
+
+    public function __construct(int $number)
     {
         if ($number < 1) {
             throw new \InvalidArgumentException('Seat number must be positive.');

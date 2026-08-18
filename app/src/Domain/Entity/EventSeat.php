@@ -34,7 +34,7 @@ class EventSeat
         Event $event,
         Seat $seat,
         int $priceAmount,
-        string $priceCurrency = 'RUB',
+        string $priceCurrency = 'BYN',
     ): self {
         return new self($event, $seat, Price::fromAmount($priceAmount, $priceCurrency));
     }

@@ -8,7 +8,9 @@ use Yokai\DoctrineValueObject\StringValueObject;
 
 final class EventTitle implements StringValueObject
 {
-    public function __construct(private string $title)
+    private string $title;
+
+    public function __construct(string $title)
     {
         $trimmed = trim($title);
         $length = mb_strlen($trimmed);

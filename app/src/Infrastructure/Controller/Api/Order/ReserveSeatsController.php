@@ -10,7 +10,6 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/orders', name: 'order.reserve', methods: ['POST'])]
 final class ReserveSeatsController
@@ -24,11 +23,8 @@ final class ReserveSeatsController
     public function __invoke(#[MapRequestPayload] ReserveSeatsRequest $payload): JsonResponse
     {
         $this->commandBus->dispatch(new ReserveSeatsCommand(
-            userId: $this->security->getUser()->id(),
-            eventSeatIds: array_map(
-                fn (string $id): Uuid => Uuid::fromRfc4122($id),
-                $payload->seatIds,
-            ),
+            userId: $this->security->getUser()->id()->toRfc4122(),
+            eventSeatIds: $payload->seatIds,
         ));
 
         return new JsonResponse(['message' => 'Seats reserved.'], JsonResponse::HTTP_CREATED);

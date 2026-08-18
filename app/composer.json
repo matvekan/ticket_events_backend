@@ -37,6 +37,7 @@
         "yokai/doctrine-value-object": "^0.2.0"
     },
     "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "*",
         "phpunit/phpunit": "^11.0",
         "symfony/browser-kit": "8.1.*",
         "symfony/http-client": "8.1.*",

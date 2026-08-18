@@ -6,7 +6,7 @@ namespace App\Application\Dto;
 
 readonly class EventDetailsDto
 {
-    /** @param SeatDto[] $availableSeats */
+    /** @param SeatDto[] $seats */
     public function __construct(
         public string $id,
         public string $title,
@@ -21,7 +21,7 @@ readonly class EventDetailsDto
         public int $priceMax,
         public string $priceCurrency,
         public string $status,
-        public array $availableSeats,
+        public array $seats,
     ) {
     }
 }

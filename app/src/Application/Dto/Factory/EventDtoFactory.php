@@ -46,9 +46,9 @@ final class EventDtoFactory
     {
         $prices = $this->getPriceRange($event);
 
-        $availableSeats = array_map(
+        $seats = array_map(
             fn (EventSeat $eventSeat): SeatDto => $this->seatDtoFactory->fromEventSeat($eventSeat),
-            $event->eventSeats()->filter(fn (EventSeat $eventSeat): bool => $eventSeat->isAvailable())->toArray(),
+            $event->eventSeats()->toArray(),
         );
 
         return new EventDetailsDto(
@@ -65,7 +65,7 @@ final class EventDtoFactory
             priceMax: $prices['max'],
             priceCurrency: $prices['currency'],
             status: $event->status()->value,
-            availableSeats: $availableSeats,
+            seats: $seats,
         );
     }
 
@@ -82,7 +82,7 @@ final class EventDtoFactory
         return [
             'min' => !empty($prices) ? min($prices) : 0,
             'max' => !empty($prices) ? max($prices) : 0,
-            'currency' => $firstSeat !== false ? $firstSeat->price()->currency() : 'RUB',
+            'currency' => $firstSeat !== false ? $firstSeat->price()->currency() : 'BYN',
         ];
     }
 }

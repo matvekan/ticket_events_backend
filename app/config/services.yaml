@@ -35,6 +35,9 @@ services:
         alias: security.helper
         public: true
 
+    Doctrine\Bundle\FixturesBundle\Loader\SymfonyFixturesLoader:
+        alias: doctrine.fixtures.loader
+
     App\Application\Command\CommandBusInterface:
         class: App\Infrastructure\Messenger\MessengerCommandBus
 
