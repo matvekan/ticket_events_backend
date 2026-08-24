@@ -6,11 +6,12 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\EventSeat;
 use App\Domain\Repository\EventSeatRepositoryInterface;
+use App\Domain\ValueObject\EventId;
+use App\Domain\ValueObject\EventSeatId;
 use App\Domain\ValueObject\SeatStatus;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 {
@@ -23,18 +24,19 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
         $this->repository = $entityManager->getRepository(EventSeat::class);
     }
 
-    public function findById(Uuid $id): ?EventSeat
+    public function findById(EventSeatId $id): ?EventSeat
     {
-        return $this->entityManager->find(EventSeat::class, $id);
+        return $this->entityManager->find(EventSeat::class, $id->toString());
     }
 
     public function lockAndFindByIds(array $ids): array
     {
+        $stringIds = array_map(fn(EventSeatId $id) => $id->toString(), $ids);
         $qb = $this->entityManager->createQueryBuilder();
         $qb->select('es')
             ->from(EventSeat::class, 'es')
             ->where($qb->expr()->in('es.id', ':ids'))
-            ->setParameter('ids', $ids);
+            ->setParameter('ids', $stringIds);
 
         $query = $qb->getQuery();
         $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
@@ -42,8 +44,8 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
         return $query->getResult();
     }
 
-    public function findAvailableByEventId(Uuid $eventId): array
+    public function findAvailableByEventId(EventId $eventId): array
     {
-        return $this->repository->findBy(['event' => $eventId, 'status' => SeatStatus::Free]);
+        return $this->repository->findBy(['event' => $eventId->toString(), 'status' => SeatStatus::Free]);
     }
 }

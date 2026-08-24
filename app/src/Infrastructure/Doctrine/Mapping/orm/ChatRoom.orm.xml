@@ -9,9 +9,8 @@
             <unique-constraint name="uniq_chat_rooms_user" columns="user_id"/>
         </unique-constraints>
 
-        <id name="id" type="uuid">
-            <generator strategy="CUSTOM"/>
-            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
         </id>
 
         <one-to-one field="user" target-entity="App\Domain\Entity\User">

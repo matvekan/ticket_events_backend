@@ -21,7 +21,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
     name: 'app:chat-server',
-    description: 'Запускает WebSocket-сервер чата поддержки (порт из CHAT_WS_PORT, по умолчанию 8080).',
+    description: 'Runs the support chat WebSocket server (port from CHAT_WS_PORT, default 8080).',
 )]
 final class ChatServerCommand extends Command
 {

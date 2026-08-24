@@ -6,14 +6,15 @@ namespace App\Application\CommandHandler\Payment;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Payment\ConfirmPaymentCommand;
-use App\Application\Event\EventBusInterface;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\ValueObject\OrderId;
+use App\Domain\ValueObject\UserId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Uid\Uuid;
 
 #[AsMessageHandler]
 final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
@@ -21,23 +22,25 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
     public function __construct(
         private OrderRepositoryInterface $orders,
         private PaymentRepositoryInterface $payments,
-        private EventBusInterface $eventBus,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
     ) {
     }
 
     public function __invoke(ConfirmPaymentCommand $command): void
     {
-        $orderId = Uuid::fromString($command->orderId);
-        $userId = $command->userId !== null ? Uuid::fromString($command->userId) : null;
+        $orderId = $command->orderId();
+        $userId = $command->userId();
+        $orderIdVo = new OrderId($orderId->toRfc4122());
+        $userIdVo = $userId !== null ? new UserId($userId->toRfc4122()) : null;
 
-        $events = $this->transactionManager->transactional(function () use ($orderId, $userId): array {
-            $order = $this->orders->findById($orderId);
+        $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): array {
+            $order = $this->orders->findById($orderIdVo);
             if (!$order) {
                 throw new EntityNotFoundException('Order not found.');
             }
 
-            if ($userId !== null && !$order->user()->id()->equals($userId)) {
+            if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
                 throw new AccessDeniedException('You do not own this order.');
             }
 
@@ -45,20 +48,16 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
                 $ticket->eventSeat()->sell();
             }
 
-            $order->pay();
+            $order->pay($this->clock);
             $this->orders->save($order);
 
-            $payment = $this->payments->findByOrderId($orderId);
+            $payment = $this->payments->findByOrderId($orderIdVo);
             if ($payment !== null) {
-                $payment->markPaid();
+                $payment->markPaid($this->clock);
                 $this->payments->save($payment);
             }
 
             return $order->releaseEvents();
         });
-
-        foreach ($events as $event) {
-            $this->eventBus->dispatch($event);
-        }
     }
 }

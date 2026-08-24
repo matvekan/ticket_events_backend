@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
     name: 'app:clickhouse:init',
-    description: 'Создаёт таблицы аналитики в ClickHouse (идемпотентно).',
+    description: 'Creates analytics tables in ClickHouse (idempotent).',
 )]
 final class InitClickHouseCommand extends Command
 {
@@ -51,9 +51,10 @@ SQL;
             );
 
             $this->clickhouse->write($sql);
-            $output->writeln(sprintf('Таблица %s.%s готова.', $database, $table));
+            $output->writeln(sprintf('Table %s.%s is ready.', $database, $table));
         }
 
         return Command::SUCCESS;
     }
 }
+

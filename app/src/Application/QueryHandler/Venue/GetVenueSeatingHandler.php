@@ -9,6 +9,7 @@ use App\Application\Dto\SeatDto;
 use App\Application\Query\QueryHandlerInterface;
 use App\Application\Query\Venue\GetVenueSeatingQuery;
 use App\Domain\Repository\SeatRepositoryInterface;
+use App\Domain\ValueObject\VenueId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
@@ -23,7 +24,7 @@ final class GetVenueSeatingHandler implements QueryHandlerInterface
     /** @return SeatDto[] */
     public function __invoke(GetVenueSeatingQuery $query): array
     {
-        $seats = $this->seats->findByVenueId($query->venueId);
+        $seats = $this->seats->findByVenueId(new VenueId($query->venueId->toRfc4122()));
 
         return $this->seatDtoFactory->fromSeatList($seats);
     }

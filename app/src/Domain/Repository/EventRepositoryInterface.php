@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Repository;
 
 use App\Domain\Entity\Event;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\ValueObject\EventId;
 
 interface EventRepositoryInterface
 {
-    public function findById(Uuid $id): ?Event;
+    public function findById(EventId $id): ?Event;
 
     /** @return Event[] */
     public function findPublished(int $limit, int $offset): array;

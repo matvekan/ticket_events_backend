@@ -4,37 +4,37 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\VenueAddress;
 use App\Domain\ValueObject\VenueCity;
+use App\Domain\ValueObject\VenueId;
 use App\Domain\ValueObject\VenueName;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use Symfony\Component\Uid\Uuid;
 
 class Venue
 {
-    private Uuid $id;
+    private string $id;
     private VenueName $name;
     private VenueAddress $address;
     private VenueCity $city;
-    private ?float $latitude;
-    private ?float $longitude;
-    private Collection $seats;
+    private ?float $latitude = null;
+    private ?float $longitude = null;
+    /** @var Seat[] */
+    private $seats = [];
 
     private function __construct(
+        VenueId $id,
         VenueName $name,
         VenueAddress $address,
         VenueCity $city,
         ?float $latitude,
         ?float $longitude,
     ) {
-        $this->id = Uuid::v7();
+        $this->id = $id->toString();
         $this->name = $name;
         $this->address = $address;
         $this->city = $city;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
-        $this->seats = new ArrayCollection();
     }
 
     public static function create(
@@ -43,14 +43,19 @@ class Venue
         VenueCity $city,
         ?float $latitude = null,
         ?float $longitude = null,
+        ?IdGeneratorInterface $ids = null,
+        ?VenueId $id = null,
     ): self {
-        return new self($name, $address, $city, $latitude, $longitude);
+        $venueId = $id ?? new VenueId($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
+        return new self($venueId, $name, $address, $city, $latitude, $longitude);
     }
 
-    public function id(): Uuid
+    public function id(): VenueId
     {
-        return $this->id;
+        return new VenueId($this->id);
     }
+
+    public function rawId(): string { return $this->id; }
 
     public function name(): VenueName
     {

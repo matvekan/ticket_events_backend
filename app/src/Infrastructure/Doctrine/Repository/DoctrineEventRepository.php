@@ -6,10 +6,10 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\Event;
 use App\Domain\Repository\EventRepositoryInterface;
+use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\EventStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineEventRepository implements EventRepositoryInterface
 {
@@ -22,9 +22,9 @@ final class DoctrineEventRepository implements EventRepositoryInterface
         $this->repository = $entityManager->getRepository(Event::class);
     }
 
-    public function findById(Uuid $id): ?Event
+    public function findById(EventId $id): ?Event
     {
-        return $this->entityManager->find(Event::class, $id);
+        return $this->entityManager->find(Event::class, $id->toString());
     }
 
     public function findPublished(int $limit, int $offset): array

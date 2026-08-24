@@ -6,9 +6,9 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\Venue;
 use App\Domain\Repository\VenueRepositoryInterface;
+use App\Domain\ValueObject\VenueId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineVenueRepository implements VenueRepositoryInterface
 {
@@ -21,9 +21,9 @@ final class DoctrineVenueRepository implements VenueRepositoryInterface
         $this->repository = $entityManager->getRepository(Venue::class);
     }
 
-    public function findById(Uuid $id): ?Venue
+    public function findById(VenueId $id): ?Venue
     {
-        return $this->entityManager->find(Venue::class, $id);
+        return $this->entityManager->find(Venue::class, $id->toString());
     }
 
     public function findAll(): array

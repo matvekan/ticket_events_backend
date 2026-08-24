@@ -6,9 +6,10 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\Payment;
 use App\Domain\Repository\PaymentRepositoryInterface;
+use App\Domain\ValueObject\OrderId;
+use App\Domain\ValueObject\PaymentId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrinePaymentRepository implements PaymentRepositoryInterface
 {
@@ -21,14 +22,14 @@ final class DoctrinePaymentRepository implements PaymentRepositoryInterface
         $this->repository = $entityManager->getRepository(Payment::class);
     }
 
-    public function findById(Uuid $id): ?Payment
+    public function findById(PaymentId $id): ?Payment
     {
-        return $this->entityManager->find(Payment::class, $id);
+        return $this->entityManager->find(Payment::class, $id->toString());
     }
 
-    public function findByOrderId(Uuid $orderId): ?Payment
+    public function findByOrderId(OrderId $orderId): ?Payment
     {
-        return $this->repository->findOneBy(['order' => $orderId]);
+        return $this->repository->findOneBy(['order' => $orderId->toString()]);
     }
 
     public function save(Payment $payment): void

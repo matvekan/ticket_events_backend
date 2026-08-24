@@ -6,9 +6,10 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\Seat;
 use App\Domain\Repository\SeatRepositoryInterface;
+use App\Domain\ValueObject\SeatId;
+use App\Domain\ValueObject\VenueId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineSeatRepository implements SeatRepositoryInterface
 {
@@ -21,14 +22,14 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
         $this->repository = $entityManager->getRepository(Seat::class);
     }
 
-    public function findById(Uuid $id): ?Seat
+    public function findById(SeatId $id): ?Seat
     {
-        return $this->entityManager->find(Seat::class, $id);
+        return $this->entityManager->find(Seat::class, $id->toString());
     }
 
-    public function findByVenueId(Uuid $venueId): array
+    public function findByVenueId(VenueId $venueId): array
     {
-        return $this->repository->findBy(['venue' => $venueId]);
+        return $this->repository->findBy(['venue' => $venueId->toString()]);
     }
 
     public function saveAll(array $seats): void

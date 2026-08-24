@@ -4,23 +4,26 @@ declare(strict_types=1);
 
 namespace App\Domain\Event;
 
-use Symfony\Component\Uid\Uuid;
-
 final class EventCreatedEvent
 {
     public function __construct(
-        private readonly Uuid $eventId,
+        private readonly string $eventId,
         private readonly string $title,
     ) {
     }
 
-    public function getEventId(): Uuid
+    public function eventId(): string
     {
         return $this->eventId;
     }
 
-    public function getTitle(): string
+    public function title(): string
     {
         return $this->title;
     }
+
+    /** @deprecated use eventId() */
+    public function getEventId(): string { return $this->eventId(); }
+    /** @deprecated use title() */
+    public function getTitle(): string { return $this->title(); }
 }

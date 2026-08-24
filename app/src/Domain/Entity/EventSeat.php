@@ -5,25 +5,26 @@ declare(strict_types=1);
 namespace App\Domain\Entity;
 
 use App\Domain\Exception\BusinessRuleViolationException;
+use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\EventSeatId;
 use App\Domain\ValueObject\Price;
 use App\Domain\ValueObject\SeatStatus;
-use Symfony\Component\Uid\Uuid;
 
 class EventSeat
 {
-    private Uuid $id;
+    private string $id;
     private Event $event;
     private Seat $seat;
     private Price $price;
     private SeatStatus $status;
 
-    private function __construct(Event $event, Seat $seat, Price $price)
+    private function __construct(EventSeatId $id, Event $event, Seat $seat, Price $price)
     {
         if (!$seat->venue()->id()->equals($event->venue()->id())) {
             throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
         }
 
-        $this->id = Uuid::v7();
+        $this->id = $id->toString();
         $this->event = $event;
         $this->seat = $seat;
         $this->price = $price;
@@ -35,14 +36,19 @@ class EventSeat
         Seat $seat,
         int $priceAmount,
         string $priceCurrency = 'BYN',
+        ?IdGeneratorInterface $ids = null,
+        ?EventSeatId $id = null,
     ): self {
-        return new self($event, $seat, Price::fromAmount($priceAmount, $priceCurrency));
+        $eventSeatId = $id ?? new EventSeatId($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
+        return new self($eventSeatId, $event, $seat, Price::fromAmount($priceAmount, $priceCurrency));
     }
 
-    public function id(): Uuid
+    public function id(): EventSeatId
     {
-        return $this->id;
+        return new EventSeatId($this->id);
     }
+
+    public function rawId(): string { return $this->id; }
 
     public function event(): Event
     {

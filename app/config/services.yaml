@@ -54,6 +54,24 @@ services:
     App\Application\Transaction\TransactionManagerInterface:
         class: App\Infrastructure\Doctrine\DoctrineTransactionManager
 
+    App\Domain\Shared\ClockInterface:
+        class: App\Infrastructure\Shared\SystemClock
+
+    App\Domain\Shared\IdGeneratorInterface:
+        class: App\Infrastructure\Shared\UuidGenerator
+
+    App\Application\Port\EventSearchInterface:
+        class: App\Infrastructure\Elasticsearch\ElasticsearchEventSearchService
+
+    App\Application\Port\AnalyticsRepositoryInterface:
+        class: App\Infrastructure\ClickHouse\ClickHouseAnalyticsRepository
+
+    App\Domain\Repository\OutboxMessageRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineOutboxMessageRepository
+
+    App\Application\Port\EventReadRepositoryInterface:
+        class: App\Infrastructure\ReadModel\DoctrineEventReadRepository
+
     App\Application\Cache\SeatAvailabilityCacheInterface:
         class: App\Infrastructure\Cache\RedisSeatAvailabilityCache
         arguments:

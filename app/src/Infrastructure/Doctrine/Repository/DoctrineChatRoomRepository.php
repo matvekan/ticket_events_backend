@@ -6,9 +6,10 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\ChatRoom;
 use App\Domain\Repository\ChatRoomRepositoryInterface;
+use App\Domain\ValueObject\ChatRoomId;
+use App\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
 {
@@ -21,14 +22,14 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
         $this->repository = $entityManager->getRepository(ChatRoom::class);
     }
 
-    public function findById(Uuid $id): ?ChatRoom
+    public function findById(ChatRoomId $id): ?ChatRoom
     {
-        return $this->entityManager->find(ChatRoom::class, $id);
+        return $this->entityManager->find(ChatRoom::class, $id->toString());
     }
 
-    public function findByUserId(Uuid $userId): ?ChatRoom
+    public function findByUserId(UserId $userId): ?ChatRoom
     {
-        return $this->repository->findOneBy(['user' => $userId]);
+        return $this->repository->findOneBy(['user' => $userId->toString()]);
     }
 
     public function findAll(): array

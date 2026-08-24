@@ -7,9 +7,9 @@ namespace App\Infrastructure\Doctrine\Repository;
 use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\Email;
+use App\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineUserRepository implements UserRepositoryInterface
 {
@@ -22,9 +22,9 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         $this->repository = $entityManager->getRepository(User::class);
     }
 
-    public function findById(Uuid $id): ?User
+    public function findById(UserId $id): ?User
     {
-        return $this->entityManager->find(User::class, $id);
+        return $this->entityManager->find(User::class, $id->toString());
     }
 
     public function findByEmail(Email $email): ?User

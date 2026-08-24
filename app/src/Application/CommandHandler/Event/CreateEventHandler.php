@@ -6,7 +6,6 @@ namespace App\Application\CommandHandler\Event;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Event\CreateEventCommand;
-use App\Application\Event\EventBusInterface;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Entity\Event;
 use App\Domain\Entity\EventSeat;
@@ -15,10 +14,11 @@ use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\EventRepositoryInterface;
 use App\Domain\Repository\SeatRepositoryInterface;
 use App\Domain\Repository\VenueRepositoryInterface;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\EventDescription;
 use App\Domain\ValueObject\EventTitle;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Uuid;
 
 #[AsMessageHandler]
 final readonly class CreateEventHandler implements CommandHandlerInterface
@@ -27,15 +27,16 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
         private VenueRepositoryInterface $venues,
         private SeatRepositoryInterface $seats,
         private EventRepositoryInterface $events,
-        private EventBusInterface $eventBus,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
+        private IdGeneratorInterface $ids,
     ) {
     }
 
     public function __invoke(CreateEventCommand $command): void
     {
-        $events = $this->transactionManager->transactional(function () use ($command): array {
-            $venue = $this->venues->findById(Uuid::fromString($command->venueId));
+        $this->transactionManager->transactional(function () use ($command): array {
+            $venue = $this->venues->findById(new \App\Domain\ValueObject\VenueId($command->venueId()->toRfc4122()));
             if (!$venue) {
                 throw new EntityNotFoundException('Venue not found.');
             }
@@ -49,10 +50,12 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
                 new EventDescription($command->description),
                 $command->date,
                 $venue,
+                $this->clock,
+                $this->ids,
             );
 
             foreach ($command->seats as $seatData) {
-                $seat = $this->seats->findById(Uuid::fromString($seatData->seatId));
+                $seat = $this->seats->findById(new \App\Domain\ValueObject\SeatId($seatData->seatId()->toRfc4122()));
                 if (!$seat) {
                     throw new EntityNotFoundException('Seat not found.');
                 }
@@ -69,9 +72,5 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
 
             return $event->releaseEvents();
         });
-
-        foreach ($events as $domainEvent) {
-            $this->eventBus->dispatch($domainEvent);
-        }
     }
 }

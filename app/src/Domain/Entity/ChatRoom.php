@@ -4,36 +4,39 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\ChatRoomId;
 
 class ChatRoom
 {
-    private Uuid $id;
+    private string $id;
     private User $user;
     private \DateTimeImmutable $createdAt;
 
-    /** @var Collection<int, ChatMessage> */
-    private Collection $messages;
+    /** @var ChatMessage[] */
+    private $messages = [];
 
-    private function __construct(User $user)
+    private function __construct(ChatRoomId $id, User $user, \DateTimeImmutable $createdAt)
     {
-        $this->id = Uuid::v7();
+        $this->id = $id->toString();
         $this->user = $user;
-        $this->createdAt = new \DateTimeImmutable();
-        $this->messages = new ArrayCollection();
+        $this->createdAt = $createdAt;
     }
 
-    public static function create(User $user): self
+    public static function create(User $user, ?ClockInterface $clock = null, ?IdGeneratorInterface $ids = null, ?ChatRoomId $id = null): self
     {
-        return new self($user);
+        $clock = $clock ?? new \App\Infrastructure\Shared\SystemClock();
+        $chatId = $id ?? new ChatRoomId($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
+        return new self($chatId, $user, $clock->now());
     }
 
-    public function id(): Uuid
+    public function id(): ChatRoomId
     {
-        return $this->id;
+        return new ChatRoomId($this->id);
     }
+
+    public function rawId(): string { return $this->id; }
 
     public function user(): User
     {

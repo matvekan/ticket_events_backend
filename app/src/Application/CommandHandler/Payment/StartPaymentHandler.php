@@ -12,11 +12,12 @@ use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\PaymentStatus;
+use App\Domain\ValueObject\UserId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Uid\Uuid;
 
 #[AsMessageHandler]
 final readonly class StartPaymentHandler implements CommandHandlerInterface
@@ -28,18 +29,20 @@ final readonly class StartPaymentHandler implements CommandHandlerInterface
     ) {
     }
 
-    public function __invoke(StartPaymentCommand $command): Payment
+    public function __invoke(StartPaymentCommand $command): void
     {
-        $orderId = Uuid::fromString($command->orderId);
-        $userId = $command->userId !== null ? Uuid::fromString($command->userId) : null;
+        $orderId = $command->orderId();
+        $userId = $command->userId();
+        $orderIdVo = new OrderId($orderId->toRfc4122());
+        $userIdVo = $userId !== null ? new UserId($userId->toRfc4122()) : null;
 
-        return $this->transactionManager->transactional(function () use ($orderId, $userId): Payment {
-            $order = $this->orders->findById($orderId);
+        $this->transactionManager->transactional(function () use ($orderId, $orderIdVo, $userIdVo): void {
+            $order = $this->orders->findById($orderIdVo);
             if (!$order) {
                 throw new EntityNotFoundException('Order not found.');
             }
 
-            if ($userId !== null && !$order->user()->id()->equals($userId)) {
+            if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
                 throw new AccessDeniedException('You do not own this order.');
             }
 
@@ -47,22 +50,20 @@ final readonly class StartPaymentHandler implements CommandHandlerInterface
                 throw new BusinessRuleViolationException('Only pending orders can be paid.');
             }
 
-            $existing = $this->payments->findByOrderId($orderId);
+            $existing = $this->payments->findByOrderId($orderIdVo);
             if ($existing !== null) {
                 if ($existing->status() === PaymentStatus::Pending) {
-                    return $existing;
+                    return;
                 }
 
                 $existing->restart();
                 $this->payments->save($existing);
 
-                return $existing;
+                return;
             }
 
             $payment = Payment::create($order, $order->totalPrice()->amount());
             $this->payments->save($payment);
-
-            return $payment;
         });
     }
 }

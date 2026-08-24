@@ -6,12 +6,16 @@ namespace App\Application\Command\Venue;
 
 use App\Application\Command\CommandInterface;
 use App\Application\Dto\SeatData;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final class AddSeatsToVenueCommand implements CommandInterface
 {
+    public readonly Uuid $parsedVenueId;
+
     /** @param SeatData[] $seats */
     public function __construct(
+        #[Assert\NotBlank]
         #[Assert\Uuid]
         public readonly string $venueId,
 
@@ -22,5 +26,11 @@ final class AddSeatsToVenueCommand implements CommandInterface
         ])]
         public readonly array $seats,
     ) {
+        $this->parsedVenueId = Uuid::fromString($venueId);
+    }
+
+    public function venueId(): Uuid
+    {
+        return $this->parsedVenueId;
     }
 }

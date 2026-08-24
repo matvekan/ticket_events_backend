@@ -10,9 +10,18 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class GetUserOrdersQuery implements QueryInterface
 {
+    public readonly Uuid $parsedUserId;
+
     public function __construct(
+        #[Assert\NotBlank]
         #[Assert\Uuid]
-        public readonly Uuid $userId,
+        public readonly string $userId,
     ) {
+        $this->parsedUserId = Uuid::fromString($userId);
+    }
+
+    public function userId(): Uuid
+    {
+        return $this->parsedUserId;
     }
 }

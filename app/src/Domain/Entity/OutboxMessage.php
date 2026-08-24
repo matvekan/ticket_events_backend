@@ -4,26 +4,24 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
-use Symfony\Component\Uid\Uuid;
-
 final class OutboxMessage
 {
-    private Uuid $id;
+    private string $id;
     private string $messageClass;
     private string $body;
     private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $sentAt;
+    private ?\DateTimeImmutable $sentAt = null;
     private int $attempts = 0;
 
-    public function __construct(string $messageClass, string $body)
+    public function __construct(string $messageClass, string $body, ?\App\Domain\Shared\ClockInterface $clock = null, ?\App\Domain\Shared\IdGeneratorInterface $ids = null, ?string $id = null)
     {
-        $this->id = Uuid::v7();
+        $this->id = $id ?? ($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
         $this->messageClass = $messageClass;
         $this->body = $body;
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = $clock ? $clock->now() : new \DateTimeImmutable();
     }
 
-    public function id(): Uuid
+    public function id(): string
     {
         return $this->id;
     }

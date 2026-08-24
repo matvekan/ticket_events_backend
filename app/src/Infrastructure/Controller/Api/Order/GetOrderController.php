@@ -11,7 +11,6 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/orders/{id}', name: 'order.get', methods: ['GET'], requirements: ['id' => '[0-9a-f-]+'])]
 final class GetOrderController
@@ -25,8 +24,8 @@ final class GetOrderController
     public function __invoke(string $id): JsonResponse
     {
         $order = $this->queryBus->dispatch(new GetOrderDetailsQuery(
-            Uuid::fromRfc4122($id),
-            $this->security->getUser()?->id(),
+            orderId: $id,
+            userId: $this->security->getUser()?->id()?->toRfc4122(),
         ));
 
         if (!$order instanceof OrderDto) {

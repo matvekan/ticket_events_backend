@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Controller\Api\Chat;
 
+use App\Application\Command\Chat\OpenChatRoomCommand;
+use App\Application\Command\CommandBusInterface;
 use App\Application\Dto\Factory\ChatRoomDtoFactory;
-use App\Application\Service\Chat\ChatService;
+use App\Domain\Entity\ChatRoom;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class OpenChatRoomController
 {
     public function __construct(
-        private readonly ChatService $chatService,
+        private readonly CommandBusInterface $commandBus,
         private readonly ChatRoomDtoFactory $roomFactory,
         private readonly Security $security,
     ) {
@@ -23,7 +25,10 @@ final class OpenChatRoomController
 
     public function __invoke(): JsonResponse
     {
-        $room = $this->chatService->openRoom($this->security->getUser()->id());
+        $user = $this->security->getUser();
+        $userId = method_exists($user, 'id') ? $user->id()->toString() : $user->getUserIdentifier();
+        /** @var ChatRoom $room */
+        $room = $this->commandBus->dispatch(new OpenChatRoomCommand($userId));
 
         return new JsonResponse(
             $this->roomFactory->fromRoom($room),

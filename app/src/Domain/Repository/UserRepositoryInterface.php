@@ -6,11 +6,11 @@ namespace App\Domain\Repository;
 
 use App\Domain\Entity\User;
 use App\Domain\ValueObject\Email;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\ValueObject\UserId;
 
 interface UserRepositoryInterface
 {
-    public function findById(Uuid $id): ?User;
+    public function findById(UserId $id): ?User;
 
     public function findByEmail(Email $email): ?User;
 

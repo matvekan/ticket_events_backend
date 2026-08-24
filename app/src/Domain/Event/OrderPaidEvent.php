@@ -4,37 +4,29 @@ declare(strict_types=1);
 
 namespace App\Domain\Event;
 
-use Symfony\Component\Uid\Uuid;
-
 final class OrderPaidEvent
 {
-    /** @param Uuid[] $ticketIds */
+    /** @param string[] $ticketIds */
     public function __construct(
-        private readonly Uuid $orderId,
-        private readonly Uuid $userId,
+        private readonly string $orderId,
+        private readonly string $userId,
         private readonly int $totalAmount,
         private readonly array $ticketIds,
     ) {
     }
 
-    public function getOrderId(): Uuid
-    {
-        return $this->orderId;
-    }
+    public function orderId(): string { return $this->orderId; }
+    public function userId(): string { return $this->userId; }
+    public function totalAmount(): int { return $this->totalAmount; }
+    /** @return string[] */
+    public function ticketIds(): array { return $this->ticketIds; }
 
-    public function getUserId(): Uuid
-    {
-        return $this->userId;
-    }
-
-    public function getTotalAmount(): int
-    {
-        return $this->totalAmount;
-    }
-
-    /** @return Uuid[] */
-    public function getTicketIds(): array
-    {
-        return $this->ticketIds;
-    }
+    /** @deprecated */
+    public function getOrderId(): string { return $this->orderId(); }
+    /** @deprecated */
+    public function getUserId(): string { return $this->userId(); }
+    /** @deprecated */
+    public function getTotalAmount(): int { return $this->totalAmount(); }
+    /** @deprecated */
+    public function getTicketIds(): array { return $this->ticketIds(); }
 }

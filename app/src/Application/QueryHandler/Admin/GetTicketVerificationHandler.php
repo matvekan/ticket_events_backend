@@ -15,8 +15,6 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler(bus: 'query.bus')]
 final class GetTicketVerificationHandler implements QueryHandlerInterface
 {
-    private const TICKET_CODE_PATTERN = '/^TKT-[A-Z0-9]{8}$/';
-
     public function __construct(
         private readonly TicketRepositoryInterface $tickets,
     ) {
@@ -24,11 +22,7 @@ final class GetTicketVerificationHandler implements QueryHandlerInterface
 
     public function __invoke(GetTicketVerificationQuery $query): TicketVerificationDto
     {
-        $code = strtoupper(trim($query->code));
-
-        if (!preg_match(self::TICKET_CODE_PATTERN, $code)) {
-            return new TicketVerificationDto(false, 'Билет с таким кодом не найден.');
-        }
+        $code = $query->code;
 
         $ticket = $this->tickets->findByCode($code);
         if ($ticket === null) {

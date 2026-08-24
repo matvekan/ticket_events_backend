@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Security;
 
-use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\Email;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
@@ -26,7 +25,7 @@ class DoctrineUserProvider implements UserProviderInterface
             throw new UserNotFoundException(\sprintf('User with email "%s" not found.', $identifier));
         }
 
-        return $user;
+        return new DomainUserAdapter($user);
     }
 
     public function loadUserByUsername(string $username): UserInterface
@@ -36,11 +35,14 @@ class DoctrineUserProvider implements UserProviderInterface
 
     public function refreshUser(UserInterface $user): UserInterface
     {
-        return $this->loadUserByIdentifier($user->getUserIdentifier());
+        $domainUser = $user instanceof DomainUserAdapter ? $user->getUser() : null;
+        $identifier = $domainUser ? $domainUser->identifier() : $user->getUserIdentifier();
+
+        return $this->loadUserByIdentifier($identifier);
     }
 
     public function supportsClass(string $class): bool
     {
-        return $class === User::class || is_subclass_of($class, User::class);
+        return $class === DomainUserAdapter::class || is_subclass_of($class, DomainUserAdapter::class);
     }
 }

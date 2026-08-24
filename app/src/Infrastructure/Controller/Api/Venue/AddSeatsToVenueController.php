@@ -10,7 +10,6 @@ use App\Application\Dto\SeatData;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/venues/{id}/seats', name: 'venue.add_seats', methods: ['POST'])]
 final class AddSeatsToVenueController
@@ -34,7 +33,7 @@ final class AddSeatsToVenueController
         );
 
         $this->commandBus->dispatch(new AddSeatsToVenueCommand(
-            venueId: Uuid::fromRfc4122($id),
+            venueId: $id,
             seats: $seats,
         ));
 

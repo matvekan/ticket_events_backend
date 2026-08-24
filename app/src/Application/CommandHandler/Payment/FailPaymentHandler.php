@@ -10,9 +10,9 @@ use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\PaymentRepositoryInterface;
+use App\Domain\ValueObject\PaymentId;
 use App\Domain\ValueObject\PaymentStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Uuid;
 
 #[AsMessageHandler]
 final readonly class FailPaymentHandler implements CommandHandlerInterface
@@ -26,7 +26,7 @@ final readonly class FailPaymentHandler implements CommandHandlerInterface
     public function __invoke(FailPaymentCommand $command): void
     {
         $this->transactionManager->transactional(function () use ($command): void {
-            $payment = $this->payments->findById(Uuid::fromString($command->paymentId));
+            $payment = $this->payments->findById(new PaymentId($command->paymentId()->toRfc4122()));
             if (!$payment) {
                 throw new EntityNotFoundException('Payment not found.');
             }

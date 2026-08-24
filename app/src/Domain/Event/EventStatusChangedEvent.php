@@ -4,29 +4,23 @@ declare(strict_types=1);
 
 namespace App\Domain\Event;
 
-use Symfony\Component\Uid\Uuid;
-
 final class EventStatusChangedEvent
 {
     public function __construct(
-        private readonly Uuid $eventId,
+        private readonly string $eventId,
         private readonly string $title,
         private readonly string $newStatus,
     ) {
     }
 
-    public function getEventId(): Uuid
-    {
-        return $this->eventId;
-    }
+    public function eventId(): string { return $this->eventId; }
+    public function title(): string { return $this->title; }
+    public function newStatus(): string { return $this->newStatus; }
 
-    public function getTitle(): string
-    {
-        return $this->title;
-    }
-
-    public function getNewStatus(): string
-    {
-        return $this->newStatus;
-    }
+    /** @deprecated */
+    public function getEventId(): string { return $this->eventId(); }
+    /** @deprecated */
+    public function getTitle(): string { return $this->title(); }
+    /** @deprecated */
+    public function getNewStatus(): string { return $this->newStatus(); }
 }

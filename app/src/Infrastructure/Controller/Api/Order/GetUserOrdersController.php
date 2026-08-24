@@ -21,7 +21,9 @@ final class GetUserOrdersController
 
     public function __invoke(): JsonResponse
     {
-        return new JsonResponse($this->queryBus->dispatch(new GetUserOrdersQuery($this->security->getUser()->id())));
+        return new JsonResponse($this->queryBus->dispatch(new GetUserOrdersQuery(
+            $this->security->getUser()->id()->toRfc4122(),
+        )));
     }
 }
 

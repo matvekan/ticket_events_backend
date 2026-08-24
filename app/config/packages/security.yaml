@@ -1,6 +1,7 @@
 security:
     password_hashers:
         App\Domain\Entity\User: 'auto'
+        App\Infrastructure\Security\DomainUserAdapter: 'auto'
 
     providers:
         doctrine:

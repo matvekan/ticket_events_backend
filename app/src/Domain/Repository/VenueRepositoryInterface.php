@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Repository;
 
 use App\Domain\Entity\Venue;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\ValueObject\VenueId;
 
 interface VenueRepositoryInterface
 {
-    public function findById(Uuid $id): ?Venue;
+    public function findById(VenueId $id): ?Venue;
 
     /** @return Venue[] */
     public function findAll(): array;

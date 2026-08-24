@@ -10,56 +10,59 @@ use App\Domain\Event\OrderPaidEvent;
 use App\Domain\Event\OrderRefundedEvent;
 use App\Domain\Event\SeatsReservedEvent;
 use App\Domain\Exception\BusinessRuleViolationException;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\Price;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\ValueObject\UserId;
 
 class Order
 {
     use EventRecordingCapability;
-    private Uuid $id;
-    private User $user;
+    private string $id;
+    private string $userId;
     private Price $totalPrice;
     private OrderStatus $status;
     private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $updatedAt;
+    private ?\DateTimeImmutable $updatedAt = null;
 
-    /** @var Collection<int, Ticket> */
-    private Collection $tickets;
+    /** @var Ticket[]|\Traversable<int, Ticket>|null */
+    private $tickets = [];
 
-    private function __construct(User $user)
+    private function __construct(OrderId $id, UserId $userId, \DateTimeImmutable $createdAt)
     {
-        $this->id = Uuid::v7();
-        $this->user = $user;
+        $this->id = $id->toString();
+        $this->userId = $userId->toString();
         $this->totalPrice = Price::fromAmount(0);
         $this->status = OrderStatus::Pending;
-        $this->createdAt = new \DateTimeImmutable();
-        $this->tickets = new ArrayCollection();
+        $this->createdAt = $createdAt;
     }
 
-    public static function create(User $user): self
+    public static function create(UserId $userId, ClockInterface $clock, IdGeneratorInterface $ids): self
     {
-        return new self($user);
+        return new self(new OrderId($ids->generate()), $userId, $clock->now());
     }
 
     public function markSeatsAsReserved(): void
     {
-        $eventSeatIds = $this->tickets
-            ->map(fn (Ticket $ticket): Uuid => $ticket->eventSeat()->id())
-            ->toArray();
-        $this->recordThat(new SeatsReservedEvent($this->id, $this->user->id(), $eventSeatIds));
+        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeat()->id()->toString(), $this->ticketList());
+        $this->recordThat(new SeatsReservedEvent($this->id, $this->userId, $eventSeatIds));
     }
 
-    public function id(): Uuid
+    public function id(): OrderId
+    {
+        return new OrderId($this->id);
+    }
+
+    public function rawId(): string
     {
         return $this->id;
     }
 
-    public function user(): User
+    public function userId(): UserId
     {
-        return $this->user;
+        return new UserId($this->userId);
     }
 
     public function totalPrice(): Price
@@ -77,108 +80,117 @@ class Order
         return $this->createdAt;
     }
 
-    /** @return Collection<int, Ticket> */
-    public function tickets(): Collection
+    public function updatedAt(): ?\DateTimeImmutable
     {
-        return $this->tickets;
+        return $this->updatedAt;
+    }
+
+    /** @return Ticket[] */
+    public function tickets(): array
+    {
+        return $this->ticketList();
     }
 
     public function addTicket(Ticket $ticket): void
     {
-        if ($this->tickets->contains($ticket)) {
-            return;
+        $tickets = $this->ticketList();
+
+        foreach ($tickets as $existing) {
+            if ($existing->id()->equals($ticket->id())) {
+                return;
+            }
         }
 
-        $first = $this->tickets->first();
-        if ($first !== false && $first->price()->currency() !== $ticket->price()->currency()) {
+        if ($tickets !== [] && $tickets[0]->price()->currency() !== $ticket->price()->currency()) {
             throw new BusinessRuleViolationException('All tickets in an order must share the same currency.');
         }
 
-        $this->tickets->add($ticket);
-        $this->recalculateTotalPrice();
-    }
-
-    public function removeTicket(Ticket $ticket): void
-    {
-        if (!$this->tickets->removeElement($ticket)) {
-            return;
-        }
-
+        $tickets[] = $ticket;
+        $this->tickets = $tickets;
         $this->recalculateTotalPrice();
     }
 
     private function recalculateTotalPrice(): void
     {
         $total = 0;
-        foreach ($this->tickets as $ticket) {
+        foreach ($this->ticketList() as $ticket) {
             $total += $ticket->price()->amount();
         }
 
         $this->totalPrice = Price::fromAmount($total, $this->totalPrice->currency());
     }
 
-    public function pay(): void
+    public function pay(ClockInterface $clock): void
     {
         if ($this->status !== OrderStatus::Pending) {
             throw new BusinessRuleViolationException('Only pending orders can be paid.');
         }
 
-        if ($this->tickets->isEmpty() || $this->totalPrice->amount() <= 0) {
+        if ($this->ticketList() === [] || $this->totalPrice->amount() <= 0) {
             throw new BusinessRuleViolationException('Cannot pay an order without tickets.');
         }
 
         $this->status = OrderStatus::Paid;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = $clock->now();
 
-        $ticketIds = array_map(fn (Ticket $ticket): Uuid => $ticket->id(), $this->tickets->toArray());
+        $ticketIds = array_map(fn (Ticket $ticket) => $ticket->id()->toString(), $this->ticketList());
         $this->recordThat(new OrderPaidEvent(
             $this->id,
-            $this->user->id(),
+            $this->userId,
             $this->totalPrice->amount(),
             $ticketIds,
         ));
     }
 
-    public function cancel(): void
+    public function cancel(ClockInterface $clock): void
     {
         if ($this->status !== OrderStatus::Pending) {
             throw new BusinessRuleViolationException('Only pending orders can be cancelled.');
         }
 
-        if ($this->tickets->isEmpty()) {
+        if ($this->ticketList() === []) {
             throw new BusinessRuleViolationException('Cannot cancel an order without tickets.');
         }
 
         $this->status = OrderStatus::Cancelled;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = $clock->now();
 
-        $eventSeatIds = $this->tickets
-            ->map(fn (Ticket $ticket): Uuid => $ticket->eventSeat()->id())
-            ->toArray();
-        $this->recordThat(new OrderCancelledEvent($this->id, $this->user->id(), $eventSeatIds));
+        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeat()->id()->toString(), $this->ticketList());
+        $this->recordThat(new OrderCancelledEvent($this->id, $this->userId, $eventSeatIds));
     }
 
-    public function refund(): void
+    public function refund(ClockInterface $clock): void
     {
         if ($this->status !== OrderStatus::Paid) {
             throw new BusinessRuleViolationException('Only paid orders can be refunded.');
         }
 
-        if ($this->tickets->isEmpty()) {
+        if ($this->ticketList() === []) {
             throw new BusinessRuleViolationException('Cannot refund an order without tickets.');
         }
 
         $this->status = OrderStatus::Refunded;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = $clock->now();
 
-        $eventSeatIds = $this->tickets
-            ->map(fn (Ticket $ticket): Uuid => $ticket->eventSeat()->id())
-            ->toArray();
+        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeat()->id()->toString(), $this->ticketList());
         $this->recordThat(new OrderRefundedEvent(
             $this->id,
-            $this->user->id(),
+            $this->userId,
             $this->totalPrice->amount(),
             $eventSeatIds,
         ));
+    }
+
+    /** @return Ticket[] */
+    private function ticketList(): array
+    {
+        if (is_array($this->tickets)) {
+            return $this->tickets;
+        }
+
+        $tickets = iterator_to_array($this->tickets);
+        $this->tickets = $tickets;
+
+        return $tickets;
     }
 }

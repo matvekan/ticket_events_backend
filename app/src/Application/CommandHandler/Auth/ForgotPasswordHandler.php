@@ -9,6 +9,8 @@ use App\Application\Command\CommandHandlerInterface;
 use App\Application\Message\SendPasswordResetEmail;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\Email;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -18,8 +20,10 @@ final readonly class ForgotPasswordHandler implements CommandHandlerInterface
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private MessageBusInterface $commandBus,
+        private MessageBusInterface $messageBus,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
+        private IdGeneratorInterface $ids,
     ) {
     }
 
@@ -31,16 +35,17 @@ final readonly class ForgotPasswordHandler implements CommandHandlerInterface
             return;
         }
 
+        // IdGenerator generates hex token, Clock provides time
         $token = bin2hex(random_bytes(32));
 
         $this->transactionManager->transactional(function () use ($user, $token): void {
             $user->setPasswordResetToken(
                 hash('sha256', $token),
-                (new \DateTimeImmutable())->modify('+1 hour'),
+                $this->clock->now()->modify('+1 hour'),
             );
             $this->users->save($user);
         });
 
-        $this->commandBus->dispatch(new SendPasswordResetEmail($user->email()->toValue(), $token));
+        $this->messageBus->dispatch(new SendPasswordResetEmail($user->email()->toValue(), $token));
     }
 }

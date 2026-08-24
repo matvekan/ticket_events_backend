@@ -6,7 +6,6 @@ namespace App\Application\CommandHandler\Order;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Order\ReserveSeatsCommand;
-use App\Application\Event\EventBusInterface;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Entity\Order;
 use App\Domain\Entity\Ticket;
@@ -15,7 +14,12 @@ use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\EventSeatRepositoryInterface;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\EventSeatId;
+use App\Domain\ValueObject\EventStatus;
 use App\Domain\ValueObject\TicketCode;
+use App\Domain\ValueObject\UserId;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Uuid;
@@ -29,15 +33,19 @@ final readonly class ReserveSeatsHandler implements CommandHandlerInterface
         private UserRepositoryInterface $users,
         private EventSeatRepositoryInterface $eventSeats,
         private OrderRepositoryInterface $orders,
-        private EventBusInterface $eventBus,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
+        private IdGeneratorInterface $ids,
     ) {
     }
 
     public function __invoke(ReserveSeatsCommand $command): void
     {
-        $userId = Uuid::fromString($command->userId);
-        $eventSeatIds = array_map(Uuid::fromString(...), $command->eventSeatIds);
+        $userId = new UserId($command->userId()->toRfc4122());
+        $eventSeatIds = array_map(
+            static fn (Uuid $id): EventSeatId => new EventSeatId($id->toRfc4122()),
+            $command->eventSeatIds(),
+        );
 
         for ($attempt = 1; $attempt <= self::MAX_CODE_GENERATION_ATTEMPTS; $attempt++) {
             try {
@@ -52,10 +60,10 @@ final readonly class ReserveSeatsHandler implements CommandHandlerInterface
         }
     }
 
-    /** @param Uuid[] $eventSeatIds */
-    private function reserveOnce(Uuid $userId, array $eventSeatIds): void
+    /** @param EventSeatId[] $eventSeatIds */
+    private function reserveOnce(UserId $userId, array $eventSeatIds): void
     {
-        $events = $this->transactionManager->transactional(function () use ($userId, $eventSeatIds): array {
+        $this->transactionManager->transactional(function () use ($userId, $eventSeatIds): array {
             $user = $this->users->findById($userId);
             if (!$user) {
                 throw new EntityNotFoundException('User not found.');
@@ -74,17 +82,33 @@ final readonly class ReserveSeatsHandler implements CommandHandlerInterface
                 throw new EntityNotFoundException('Some of the selected seats do not exist.');
             }
 
+            $firstEvent = $seats[0]->event();
+            $firstEventId = $firstEvent->id()->toString();
+            foreach ($seats as $eventSeat) {
+                if ($eventSeat->event()->id()->toString() !== $firstEventId) {
+                    throw new BusinessRuleViolationException('All seats must belong to the same event.');
+                }
+            }
+
+            if ($firstEvent->status() !== EventStatus::Published) {
+                throw new BusinessRuleViolationException('Event is not published.');
+            }
+
+            if ($firstEvent->date() <= $this->clock->now()) {
+                throw new BusinessRuleViolationException('Event has already occurred or is in the past.');
+            }
+
             foreach ($seats as $eventSeat) {
                 if (!$eventSeat->isAvailable()) {
                     throw new BusinessRuleViolationException('Some seats are not available.');
                 }
             }
 
-            $order = Order::create($user);
+            $order = Order::create($user->id(), $this->clock, $this->ids);
 
             foreach ($seats as $eventSeat) {
                 $eventSeat->reserve();
-                $ticket = Ticket::create($order, $eventSeat, self::generateTicketCode());
+                $ticket = Ticket::create($order, $eventSeat, $this->generateTicketCode());
                 $order->addTicket($ticket);
             }
 
@@ -94,14 +118,11 @@ final readonly class ReserveSeatsHandler implements CommandHandlerInterface
 
             return $order->releaseEvents();
         });
-
-        foreach ($events as $event) {
-            $this->eventBus->dispatch($event);
-        }
     }
 
-    private static function generateTicketCode(): TicketCode
+    private function generateTicketCode(): TicketCode
     {
-        return new TicketCode(sprintf('TKT-%s', strtoupper(bin2hex(random_bytes(4)))));
+        // IdGenerator provides random bytes hex via generate() - use last 8 chars for ticket code
+        return new TicketCode(sprintf('TKT-%s', strtoupper(substr(bin2hex(random_bytes(4)), 0, 8))));
     }
 }

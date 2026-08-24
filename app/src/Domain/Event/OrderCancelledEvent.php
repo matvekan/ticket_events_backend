@@ -4,31 +4,25 @@ declare(strict_types=1);
 
 namespace App\Domain\Event;
 
-use Symfony\Component\Uid\Uuid;
-
 final class OrderCancelledEvent
 {
-    /** @param Uuid[] $eventSeatIds */
+    /** @param string[] $eventSeatIds */
     public function __construct(
-        private readonly Uuid $orderId,
-        private readonly Uuid $userId,
+        private readonly string $orderId,
+        private readonly string $userId,
         private readonly array $eventSeatIds,
     ) {
     }
 
-    public function getOrderId(): Uuid
-    {
-        return $this->orderId;
-    }
+    public function orderId(): string { return $this->orderId; }
+    public function userId(): string { return $this->userId; }
+    /** @return string[] */
+    public function eventSeatIds(): array { return $this->eventSeatIds; }
 
-    public function getUserId(): Uuid
-    {
-        return $this->userId;
-    }
-
-    /** @return Uuid[] */
-    public function getEventSeatIds(): array
-    {
-        return $this->eventSeatIds;
-    }
+    /** @deprecated */
+    public function getOrderId(): string { return $this->orderId(); }
+    /** @deprecated */
+    public function getUserId(): string { return $this->userId(); }
+    /** @deprecated */
+    public function getEventSeatIds(): array { return $this->eventSeatIds(); }
 }

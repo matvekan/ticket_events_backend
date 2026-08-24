@@ -48,7 +48,7 @@ final class EventDtoFactory
 
         $seats = array_map(
             fn (EventSeat $eventSeat): SeatDto => $this->seatDtoFactory->fromEventSeat($eventSeat),
-            $event->eventSeats()->toArray(),
+            $event->eventSeats(),
         );
 
         return new EventDetailsDto(
@@ -74,15 +74,13 @@ final class EventDtoFactory
     {
         $prices = array_map(
             fn (EventSeat $eventSeat): int => $eventSeat->price()->amount(),
-            $event->eventSeats()->toArray(),
+            $event->eventSeats(),
         );
 
-        $firstSeat = $event->eventSeats()->first();
-
         return [
-            'min' => !empty($prices) ? min($prices) : 0,
-            'max' => !empty($prices) ? max($prices) : 0,
-            'currency' => $firstSeat !== false ? $firstSeat->price()->currency() : 'BYN',
+            'min' => $prices !== [] ? min($prices) : 0,
+            'max' => $prices !== [] ? max($prices) : 0,
+            'currency' => $prices !== [] ? $event->eventSeats()[0]->price()->currency() : 'BYN',
         ];
     }
 }

@@ -13,6 +13,8 @@ use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\ChatMessageRepositoryInterface;
 use App\Domain\Repository\ChatRoomRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\ValueObject\ChatRoomId;
+use App\Domain\ValueObject\UserId;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Uid\Uuid;
 
@@ -31,7 +33,7 @@ final readonly class ChatService
     public function openRoom(Uuid $userId): ChatRoom
     {
         return $this->transactionManager->transactional(function () use ($userId): ChatRoom {
-            $user = $this->users->findById($userId);
+            $user = $this->users->findById(new UserId($userId->toRfc4122()));
             if (!$user) {
                 throw new EntityNotFoundException('User not found.');
             }
@@ -46,21 +48,10 @@ final readonly class ChatService
         });
     }
 
-    public function sendMessage(Uuid $roomId, Uuid $senderId, string $text): ChatMessage
+    public function sendMessage(Uuid $roomId, UserId $senderId, string $text): ChatMessage
     {
-        $text = trim($text);
-        if ($text === '') {
-            throw new BusinessRuleViolationException('Message text cannot be empty.');
-        }
-        if (mb_strlen($text) > ChatMessage::MAX_TEXT_LENGTH) {
-            throw new BusinessRuleViolationException(sprintf(
-                'Message text is too long (max %d characters).',
-                ChatMessage::MAX_TEXT_LENGTH,
-            ));
-        }
-
         $message = $this->transactionManager->transactional(function () use ($roomId, $senderId, $text): ChatMessage {
-            $room = $this->rooms->findById($roomId);
+            $room = $this->rooms->findById(new ChatRoomId($roomId->toRfc4122()));
             if (!$room) {
                 throw new EntityNotFoundException('Chat room not found.');
             }

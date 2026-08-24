@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\ValueObject;
+
+final readonly class PaymentId
+{
+    public function __construct(private string $value)
+    {
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+            throw new \InvalidArgumentException(sprintf('Invalid PaymentId UUID: %s', $value));
+        }
+    }
+    public static function fromString(string $value): self { return new self($value); }
+    public function toString(): string { return $this->value; }
+    public function toRfc4122(): string { return $this->value; }
+    public function equals(self $other): bool { return $this->value === $other->value; }
+    public function __toString(): string { return $this->value; }
+}

@@ -9,6 +9,7 @@ use App\Application\Dto\Factory\EventDtoFactory;
 use App\Application\Query\Event\GetEventDetailsQuery;
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\Repository\EventRepositoryInterface;
+use App\Domain\ValueObject\EventId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
@@ -22,7 +23,7 @@ final class GetEventDetailsHandler implements QueryHandlerInterface
 
     public function __invoke(GetEventDetailsQuery $query): ?EventDetailsDto
     {
-        $event = $this->events->findById($query->eventId);
+        $event = $this->events->findById(new EventId($query->eventId->toRfc4122()));
         if (!$event) {
             return null;
         }

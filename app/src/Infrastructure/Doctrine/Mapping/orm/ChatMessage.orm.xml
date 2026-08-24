@@ -9,9 +9,8 @@
             <index name="idx_chat_messages_room_created" columns="room_id,created_at"/>
         </indexes>
 
-        <id name="id" type="uuid">
-            <generator strategy="CUSTOM"/>
-            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
         </id>
 
         <many-to-one field="room" target-entity="App\Domain\Entity\ChatRoom" inversed-by="messages">

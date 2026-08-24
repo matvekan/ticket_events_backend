@@ -15,7 +15,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:seed-demo-data',
-    description: 'Заполняет базу демо-данными: реальные площадки Минска, события, пользователи и заказы.',
+    description: 'Seeds the database with demo data: venues, events, users and orders.',
 )]
 final class SeedDemoDataCommand extends Command
 {
@@ -29,11 +29,11 @@ final class SeedDemoDataCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $io->title('Демо-данные');
+        $io->title('Demo data');
 
         $fixtures = $this->fixturesLoader->getFixtures();
         if (count($fixtures) === 0) {
-            $io->warning('Фикстуры не найдены.');
+            $io->warning('No fixtures found.');
             return Command::FAILURE;
         }
 
@@ -41,7 +41,7 @@ final class SeedDemoDataCommand extends Command
         $executor->execute($fixtures, append: true);
 
         $io->success(sprintf(
-            'Сид завершён (%d фикстур). Демо-аккаунты: admin@tickets.by / admin1234 (админ), demo@tickets.by / demo1234, anna@tickets.by / anna1234.',
+            'Seeding finished (%d fixtures). Demo accounts: admin@tickets.by / admin1234 (admin), demo@tickets.by / demo1234.',
             count($fixtures),
         ));
 

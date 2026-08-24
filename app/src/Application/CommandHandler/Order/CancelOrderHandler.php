@@ -6,68 +6,69 @@ namespace App\Application\CommandHandler\Order;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Order\CancelOrderCommand;
-use App\Application\Event\EventBusInterface;
 use App\Application\Transaction\TransactionManagerInterface;
+use App\Domain\Entity\Order;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\OrderRepositoryInterface;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\OrderStatus;
+use App\Domain\ValueObject\UserId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Uid\Uuid;
 
 #[AsMessageHandler]
 final readonly class CancelOrderHandler implements CommandHandlerInterface
 {
     public function __construct(
         private OrderRepositoryInterface $orders,
-        private EventBusInterface $eventBus,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
     ) {
     }
 
     public function __invoke(CancelOrderCommand $command): void
     {
-        $orderId = Uuid::fromString($command->orderId);
-        $userId = $command->userId !== null ? Uuid::fromString($command->userId) : null;
+        $orderId = new OrderId($command->orderId()->toRfc4122());
+        $userId = $command->userId() !== null ? new UserId($command->userId()->toRfc4122()) : null;
 
-        $events = $this->transactionManager->transactional(function () use ($orderId, $userId): array {
-            $order = $this->orders->findById($orderId);
-            if (!$order) {
-                throw new EntityNotFoundException('Order not found.');
-            }
+        $this->transactionManager->transactional(function () use ($orderId, $userId): array {
+            $order = $this->findOwnedOrder($orderId, $userId);
+            $wasPaid = $order->status() === OrderStatus::Paid;
 
-            if ($userId !== null && !$order->user()->id()->equals($userId)) {
-                throw new AccessDeniedException('You do not own this order.');
-            }
-
-            if ($order->status() === OrderStatus::Paid) {
-                $order->refund();
+            if ($wasPaid) {
+                $order->refund($this->clock);
+                $this->releaseTickets($order, refund: true);
             } else {
-                $order->cancel();
-            }
-
-            $ticketList = $order->tickets()->toArray();
-
-            foreach ($ticketList as $ticket) {
-                $eventSeat = $ticket->eventSeat();
-                try {
-                    $eventSeat->release();
-                } catch (\DomainException) {
-                    $eventSeat->unsell();
-                }
-            }
-
-            foreach ($ticketList as $ticket) {
-                $order->removeTicket($ticket);
+                $order->cancel($this->clock);
+                $this->releaseTickets($order, refund: false);
             }
 
             $this->orders->save($order);
 
             return $order->releaseEvents();
         });
+    }
 
-        foreach ($events as $event) {
-            $this->eventBus->dispatch($event);
+    private function findOwnedOrder(OrderId $orderId, ?UserId $userId): Order
+    {
+        $order = $this->orders->findById($orderId);
+        if (!$order) {
+            throw new EntityNotFoundException('Order not found.');
+        }
+
+        if ($userId !== null && !$order->userId()->equals($userId)) {
+            throw new AccessDeniedException('You do not own this order.');
+        }
+
+        return $order;
+    }
+
+    private function releaseTickets(Order $order, bool $refund): void
+    {
+        foreach ($order->tickets() as $ticket) {
+            $refund ? $ticket->refund() : $ticket->cancel();
+            $refund ? $ticket->eventSeat()->unsell() : $ticket->eventSeat()->release();
         }
     }
 }

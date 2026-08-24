@@ -9,6 +9,7 @@ use App\Application\Command\CommandHandlerInterface;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Exception\DomainException;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Infrastructure\Security\DomainUserAdapter;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -31,7 +32,8 @@ final readonly class ResetPasswordHandler implements CommandHandlerInterface
         }
 
         $this->transactionManager->transactional(function () use ($user, $command): void {
-            $user->updatePassword($this->passwordHasher->hashPassword($user, $command->password));
+            $adapter = new DomainUserAdapter($user);
+            $user->updatePassword($this->passwordHasher->hashPassword($adapter, $command->password));
             $user->clearPasswordResetToken();
             $this->users->save($user);
         });

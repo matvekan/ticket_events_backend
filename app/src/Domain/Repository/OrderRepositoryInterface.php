@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace App\Domain\Repository;
 
 use App\Domain\Entity\Order;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\ValueObject\OrderId;
+use App\Domain\ValueObject\UserId;
 
 interface OrderRepositoryInterface
 {
-    public function findById(Uuid $id): ?Order;
+    public function findById(OrderId $id): ?Order;
 
     /** @return Order[] */
-    public function findByUserId(Uuid $userId): array;
+    public function findByUserId(UserId $userId): array;
 
     /** @return Order[] */
     public function findPendingExpired(\DateTimeImmutable $cutoff): array;

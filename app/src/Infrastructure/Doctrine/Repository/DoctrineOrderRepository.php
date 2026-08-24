@@ -6,10 +6,11 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\Order;
 use App\Domain\Repository\OrderRepositoryInterface;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\OrderStatus;
+use App\Domain\ValueObject\UserId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineOrderRepository implements OrderRepositoryInterface
 {
@@ -22,14 +23,14 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         $this->repository = $entityManager->getRepository(Order::class);
     }
 
-    public function findById(Uuid $id): ?Order
+    public function findById(OrderId $id): ?Order
     {
-        return $this->entityManager->find(Order::class, $id);
+        return $this->entityManager->find(Order::class, $id->toString());
     }
 
-    public function findByUserId(Uuid $userId): array
+    public function findByUserId(UserId $userId): array
     {
-        return $this->repository->findBy(['user' => $userId], ['createdAt' => 'DESC']);
+        return $this->repository->findBy(['userId' => $userId->toString()], ['createdAt' => 'DESC']);
     }
 
     public function findPendingExpired(\DateTimeImmutable $cutoff): array

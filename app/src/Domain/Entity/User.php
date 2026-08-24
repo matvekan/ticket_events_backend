@@ -8,38 +8,37 @@ use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\ValueObject\Email;
 use App\Domain\ValueObject\Name;
 use App\Domain\ValueObject\Role;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
-use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\ValueObject\UserId;
 
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+class User
 {
-    private Uuid $id;
+    private string $id;
     private Name $name;
     private Email $email;
     private array $roles = [];
-    private ?string $password;
-    private ?string $resetPasswordTokenHash;
-    private ?\DateTimeImmutable $resetPasswordTokenExpiresAt;
-    private Collection $orders;
+    private ?string $password = null;
+    private ?string $resetPasswordTokenHash = null;
+    private ?\DateTimeImmutable $resetPasswordTokenExpiresAt = null;
 
-    private function __construct(Name $name, Email $email)
+    private function __construct(UserId $id, Name $name, Email $email)
     {
-        $this->id = Uuid::v7();
+        $this->id = $id->toString();
         $this->name = $name;
         $this->email = $email;
         $this->roles = [Role::User->value];
-        $this->orders = new ArrayCollection();
     }
 
-    public static function create(Name $name, Email $email): self
+    public static function create(UserId $id, Name $name, Email $email): self
     {
-        return new self($name, $email);
+        return new self($id, $name, $email);
     }
 
-    public function id(): Uuid
+    public function id(): UserId
+    {
+        return new UserId($this->id);
+    }
+
+    public function rawId(): string
     {
         return $this->id;
     }
@@ -54,12 +53,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function getRoles(): array
+    public function roles(): array
     {
         return $this->roles;
     }
 
-    public function updateRoles(array $roles): void
+    /** @deprecated use roles() */
+    public function getRoles(): array
+    {
+        return $this->roles();
+    }
+
+    public function changeRoles(array $roles): void
     {
         foreach ($roles as $role) {
             if (!is_string($role) || Role::tryFrom($role) === null) {
@@ -70,14 +75,39 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->roles = array_values(array_unique($roles));
     }
 
-    public function getPassword(): ?string
+    public function updateRoles(array $roles): void
+    {
+        $this->changeRoles($roles);
+    }
+
+    public function password(): ?string
     {
         return $this->password;
     }
 
-    public function updatePassword(?string $password): void
+    public function getPassword(): ?string
+    {
+        return $this->password();
+    }
+
+    public function changePassword(?string $password): void
     {
         $this->password = $password;
+    }
+
+    public function updatePassword(?string $password): void
+    {
+        $this->changePassword($password);
+    }
+
+    public function resetTokenHash(): ?string
+    {
+        return $this->resetPasswordTokenHash;
+    }
+
+    public function resetTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->resetPasswordTokenExpiresAt;
     }
 
     public function setPasswordResetToken(string $tokenHash, \DateTimeImmutable $expiresAt): void
@@ -99,12 +129,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             && $this->resetPasswordTokenExpiresAt > $now;
     }
 
-    public function getUserIdentifier(): string
+    public function identifier(): string
     {
         return $this->email->toValue();
     }
 
-    public function eraseCredentials(): void
+    public function getUserIdentifier(): string
     {
+        return $this->identifier();
     }
 }

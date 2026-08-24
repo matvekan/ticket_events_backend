@@ -12,6 +12,11 @@ use Amp\Websocket\WebsocketCloseCode;
 use App\Application\Dto\Factory\ChatMessageDtoFactory;
 use App\Application\Service\Chat\ChatService;
 use App\Domain\Entity\User;
+use App\Infrastructure\WebSocket\Dto\FrameParser;
+use App\Infrastructure\WebSocket\Dto\IncomingFrame;
+use App\Infrastructure\WebSocket\Dto\MessageFrame;
+use App\Infrastructure\WebSocket\Dto\SubscribeFrame;
+use App\Infrastructure\WebSocket\Dto\UnsubscribeFrame;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -23,6 +28,7 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
         private readonly ChatSubscriptions $subscriptions,
         private readonly ChatService $chatService,
         private readonly ChatMessageDtoFactory $messageFactory,
+        private readonly FrameParser $frameParser,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
     ) {
@@ -46,7 +52,7 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
                     continue;
                 }
 
-                $this->dispatch($client, $user, $message->buffer());
+                $this->handleFrame($client, $user, $message->buffer());
                 $this->entityManager->clear();
             }
         } catch (\Throwable $exception) {
@@ -64,67 +70,49 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
         }
     }
 
-    private function dispatch(WebsocketClient $client, User $user, string $payload): void
+    private function handleFrame(WebsocketClient $client, User $user, string $payload): void
     {
-        try {
-            $data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            $this->sendError($client, 'Malformed JSON.');
+        $frame = $this->frameParser->parse($payload);
+
+        if ($frame === null) {
+            $this->sendError($client, 'Malformed or unsupported frame.');
 
             return;
         }
 
-        $type = $data['type'] ?? null;
-
-        match ($type) {
-            'subscribe' => $this->subscribe($client, $user, $data),
-            'unsubscribe' => $this->unsubscribe($client, $data),
-            'message' => $this->sendMessage($client, $user, $data),
-            default => $this->sendError($client, 'Unknown message type.'),
+        match (true) {
+            $frame instanceof MessageFrame => $this->sendMessage($client, $user, $frame),
+            $frame instanceof SubscribeFrame => $this->subscribe($client, $user, $frame),
+            $frame instanceof UnsubscribeFrame => $this->unsubscribe($client, $frame),
+            default => $this->sendError($client, 'Unknown frame type.'),
         };
     }
 
-    /** @param array<string, mixed> $data */
-    private function subscribe(WebsocketClient $client, User $user, array $data): void
+    private function subscribe(WebsocketClient $client, User $user, IncomingFrame $frame): void
     {
-        $roomId = $this->parseRoomId($data);
-        if ($roomId === null || !$this->chatService->canAccess($roomId, $user)) {
+        if (!$this->chatService->canAccess(Uuid::fromString($frame->roomId()), $user)) {
             $this->sendError($client, 'Access denied to chat room.');
 
             return;
         }
 
-        $this->subscriptions->subscribe($client, $roomId->toRfc4122());
-        $this->sendJson($client, ['type' => 'subscribed', 'roomId' => $roomId->toRfc4122()]);
+        $this->subscriptions->subscribe($client, $frame->roomId());
+        $this->sendJson($client, ['type' => 'subscribed', 'roomId' => $frame->roomId()]);
     }
 
-    /** @param array<string, mixed> $data */
-    private function unsubscribe(WebsocketClient $client, array $data): void
+    private function unsubscribe(WebsocketClient $client, IncomingFrame $frame): void
     {
-        $roomId = $this->parseRoomId($data);
-        if ($roomId === null) {
-            $this->sendError($client, 'Invalid roomId.');
-
-            return;
-        }
-
-        $this->subscriptions->unsubscribe($client, $roomId->toRfc4122());
+        $this->subscriptions->unsubscribe($client, $frame->roomId());
     }
 
-    /** @param array<string, mixed> $data */
-    private function sendMessage(WebsocketClient $client, User $user, array $data): void
+    private function sendMessage(WebsocketClient $client, User $user, MessageFrame $frame): void
     {
-        $roomId = $this->parseRoomId($data);
-        $text = $data['text'] ?? null;
-
-        if ($roomId === null || !is_string($text)) {
-            $this->sendError($client, 'Invalid message payload.');
-
-            return;
-        }
-
         try {
-            $message = $this->chatService->sendMessage($roomId, $user->id(), $text);
+            $message = $this->chatService->sendMessage(
+                Uuid::fromString($frame->roomId()),
+                $user->id(),
+                $frame->text(),
+            );
         } catch (\Throwable $exception) {
             $this->sendError($client, 'Message rejected: ' . $exception->getMessage());
 
@@ -135,22 +123,8 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
             'type' => 'message',
             'message' => $this->messageFactory->fromMessage($message),
         ], JSON_UNESCAPED_UNICODE);
-        $this->subscriptions->broadcast($roomId->toRfc4122(), $payload);
-    }
 
-    /** @param array<string, mixed> $data */
-    private function parseRoomId(array $data): ?Uuid
-    {
-        $roomId = $data['roomId'] ?? null;
-        if (!is_string($roomId) || $roomId === '') {
-            return null;
-        }
-
-        try {
-            return Uuid::fromString($roomId);
-        } catch (\InvalidArgumentException) {
-            return null;
-        }
+        $this->subscriptions->broadcast($frame->roomId(), $payload);
     }
 
     /** @param array<string, mixed> $data */

@@ -5,26 +5,22 @@ declare(strict_types=1);
 namespace App\Application\QueryHandler\Event;
 
 use App\Application\Dto\EventDto;
-use App\Application\Dto\Factory\EventDtoFactory;
+use App\Application\Port\EventReadRepositoryInterface;
 use App\Application\Query\Event\ListEventsQuery;
 use App\Application\Query\QueryHandlerInterface;
-use App\Domain\Repository\EventRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
 final class ListEventsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly EventRepositoryInterface $events,
-        private readonly EventDtoFactory $eventDtoFactory,
+        private readonly EventReadRepositoryInterface $events,
     ) {
     }
 
     /** @return EventDto[] */
     public function __invoke(ListEventsQuery $query): array
     {
-        $events = $this->events->findPublished($query->limit, ($query->page - 1) * $query->limit);
-
-        return $this->eventDtoFactory->fromEventList($events);
+        return $this->events->findPublished($query->limit, ($query->page - 1) * $query->limit);
     }
 }

@@ -22,7 +22,7 @@ final class OrderDtoFactory
             total: $order->totalPrice()->amount(),
             totalCurrency: $order->totalPrice()->currency(),
             createdAt: $order->createdAt()->format('c'),
-            tickets: $this->ticketDtoFactory->fromTicketList($order->tickets()->toArray()),
+            tickets: $this->ticketDtoFactory->fromTicketList($order->tickets()),
         );
     }
 

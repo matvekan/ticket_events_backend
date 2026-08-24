@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace App\Domain\Repository;
 
 use App\Domain\Entity\EventSeat;
-use Symfony\Component\Uid\Uuid;
+use App\Domain\ValueObject\EventId;
+use App\Domain\ValueObject\EventSeatId;
 
 interface EventSeatRepositoryInterface
 {
-    public function findById(Uuid $id): ?EventSeat;
+    public function findById(EventSeatId $id): ?EventSeat;
 
-    /** @param Uuid[] $ids @return EventSeat[] */
+    /** @param EventSeatId[] $ids @return EventSeat[] */
     public function lockAndFindByIds(array $ids): array;
 
     /** @return EventSeat[] */
-    public function findAvailableByEventId(Uuid $eventId): array;
+    public function findAvailableByEventId(EventId $eventId): array;
 }

@@ -7,9 +7,9 @@ namespace App\Infrastructure\Doctrine\Repository;
 use App\Domain\Entity\ChatMessage;
 use App\Domain\Entity\ChatRoom;
 use App\Domain\Repository\ChatMessageRepositoryInterface;
+use App\Domain\ValueObject\ChatRoomId;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineChatMessageRepository implements ChatMessageRepositoryInterface
 {
@@ -22,9 +22,9 @@ final class DoctrineChatMessageRepository implements ChatMessageRepositoryInterf
         $this->repository = $entityManager->getRepository(ChatMessage::class);
     }
 
-    public function findByRoomId(Uuid $roomId): array
+    public function findByRoomId(ChatRoomId $roomId): array
     {
-        return $this->repository->findBy(['room' => $roomId], ['createdAt' => 'ASC']);
+        return $this->repository->findBy(['room' => $roomId->toString()], ['createdAt' => 'ASC']);
     }
 
     public function findLatestForRooms(array $rooms): array
@@ -47,7 +47,7 @@ final class DoctrineChatMessageRepository implements ChatMessageRepositoryInterf
         $latest = [];
         foreach ($messages as $message) {
             if ($message instanceof ChatMessage) {
-                $latest[$message->room()->id()->toRfc4122()] = $message;
+                $latest[$message->room()->id()->toString()] = $message;
             }
         }
 

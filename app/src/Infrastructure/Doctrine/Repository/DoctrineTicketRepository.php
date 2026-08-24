@@ -6,10 +6,10 @@ namespace App\Infrastructure\Doctrine\Repository;
 
 use App\Domain\Entity\Ticket;
 use App\Domain\Repository\TicketRepositoryInterface;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\TicketCode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\Uid\Uuid;
 
 final class DoctrineTicketRepository implements TicketRepositoryInterface
 {
@@ -27,8 +27,8 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
         return $this->repository->findOneBy(['code' => new TicketCode($code)]);
     }
 
-    public function findByOrderId(Uuid $orderId): array
+    public function findByOrderId(OrderId $orderId): array
     {
-        return $this->repository->findBy(['order' => $orderId]);
+        return $this->repository->findBy(['order' => $orderId->toString()]);
     }
 }

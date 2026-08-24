@@ -5,9 +5,8 @@
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Domain\Entity\Seat" table="seats">
-        <id name="id" type="uuid">
-            <generator strategy="CUSTOM"/>
-            <custom-id-generator class="Symfony\Bridge\Doctrine\IdGenerator\UuidGenerator"/>
+        <id name="id" type="string" length="36">
+            <generator strategy="NONE"/>
         </id>
 
         <many-to-one field="venue" target-entity="App\Domain\Entity\Venue" inversed-by="seats">

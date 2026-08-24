@@ -4,29 +4,31 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\SeatId;
 use App\Domain\ValueObject\SeatNumber;
 use App\Domain\ValueObject\SeatRow;
 use App\Domain\ValueObject\SeatSector;
 use App\Domain\ValueObject\SeatType;
-use Symfony\Component\Uid\Uuid;
 
 class Seat
 {
-    private Uuid $id;
+    private string $id;
     private Venue $venue;
     private SeatRow $row;
     private SeatNumber $number;
-    private ?SeatSector $sector;
+    private ?SeatSector $sector = null;
     private SeatType $type;
 
     private function __construct(
+        SeatId $id,
         Venue $venue,
         SeatRow $row,
         SeatNumber $number,
         SeatType $type,
         ?SeatSector $sector = null,
     ) {
-        $this->id = Uuid::v7();
+        $this->id = $id->toString();
         $this->venue = $venue;
         $this->row = $row;
         $this->number = $number;
@@ -40,14 +42,19 @@ class Seat
         SeatNumber $number,
         SeatType $type,
         ?SeatSector $sector = null,
+        ?IdGeneratorInterface $ids = null,
+        ?SeatId $id = null,
     ): self {
-        return new self($venue, $row, $number, $type, $sector);
+        $seatId = $id ?? new SeatId($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
+        return new self($seatId, $venue, $row, $number, $type, $sector);
     }
 
-    public function id(): Uuid
+    public function id(): SeatId
     {
-        return $this->id;
+        return new SeatId($this->id);
     }
+
+    public function rawId(): string { return $this->id; }
 
     public function venue(): Venue
     {
