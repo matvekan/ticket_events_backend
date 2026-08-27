@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\CommandHandler\Order;
 
+use App\Application\Cache\SeatAvailabilityCacheInterface;
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Order\ReserveSeatsCommand;
+use App\Application\Exception\PersistenceConstraintViolationException;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Entity\Order;
 use App\Domain\Entity\Ticket;
@@ -20,20 +22,17 @@ use App\Domain\ValueObject\EventSeatId;
 use App\Domain\ValueObject\EventStatus;
 use App\Domain\ValueObject\TicketCode;
 use App\Domain\ValueObject\UserId;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Uid\Uuid;
 
 #[AsMessageHandler]
 final readonly class ReserveSeatsHandler implements CommandHandlerInterface
 {
-    private const MAX_CODE_GENERATION_ATTEMPTS = 3;
-
     public function __construct(
         private UserRepositoryInterface $users,
         private EventSeatRepositoryInterface $eventSeats,
         private OrderRepositoryInterface $orders,
         private TransactionManagerInterface $transactionManager,
+        private SeatAvailabilityCacheInterface $seatAvailabilityCache,
         private ClockInterface $clock,
         private IdGeneratorInterface $ids,
     ) {
@@ -41,83 +40,96 @@ final readonly class ReserveSeatsHandler implements CommandHandlerInterface
 
     public function __invoke(ReserveSeatsCommand $command): void
     {
-        $userId = new UserId($command->userId()->toRfc4122());
+        $userId = new UserId($command->userId);
         $eventSeatIds = array_map(
-            static fn (Uuid $id): EventSeatId => new EventSeatId($id->toRfc4122()),
-            $command->eventSeatIds(),
+            static fn (string $id): EventSeatId => new EventSeatId($id),
+            $command->eventSeatIds,
         );
 
-        for ($attempt = 1; $attempt <= self::MAX_CODE_GENERATION_ATTEMPTS; $attempt++) {
-            try {
-                $this->reserveOnce($userId, $eventSeatIds);
-
-                return;
-            } catch (UniqueConstraintViolationException $exception) {
-                if ($attempt === self::MAX_CODE_GENERATION_ATTEMPTS) {
-                    throw $exception;
-                }
-            }
+        try {
+            $this->reserveOnce($userId, $eventSeatIds);
+        } catch (PersistenceConstraintViolationException) {
+            // Concurrent reservation won the race on this seat.
+            throw new BusinessRuleViolationException('Some seats are no longer available.');
         }
     }
 
     /** @param EventSeatId[] $eventSeatIds */
     private function reserveOnce(UserId $userId, array $eventSeatIds): void
     {
-        $this->transactionManager->transactional(function () use ($userId, $eventSeatIds): array {
-            $user = $this->users->findById($userId);
-            if (!$user) {
-                throw new EntityNotFoundException('User not found.');
-            }
+        $affectedEventIds = [];
 
-            if ($eventSeatIds === []) {
-                throw new BusinessRuleViolationException('No seats selected.');
-            }
-
-            if (count(array_unique($eventSeatIds)) !== count($eventSeatIds)) {
-                throw new BusinessRuleViolationException('Duplicate seat ids are not allowed.');
-            }
-
-            $seats = $this->eventSeats->lockAndFindByIds($eventSeatIds);
-            if (count($seats) !== count($eventSeatIds)) {
-                throw new EntityNotFoundException('Some of the selected seats do not exist.');
-            }
-
-            $firstEvent = $seats[0]->event();
-            $firstEventId = $firstEvent->id()->toString();
-            foreach ($seats as $eventSeat) {
-                if ($eventSeat->event()->id()->toString() !== $firstEventId) {
-                    throw new BusinessRuleViolationException('All seats must belong to the same event.');
+        $this->transactionManager->transactional(
+            function () use ($userId, $eventSeatIds, &$affectedEventIds): array {
+                $user = $this->users->findById($userId);
+                if (!$user) {
+                    throw new EntityNotFoundException('User not found.');
                 }
-            }
 
-            if ($firstEvent->status() !== EventStatus::Published) {
-                throw new BusinessRuleViolationException('Event is not published.');
-            }
-
-            if ($firstEvent->date() <= $this->clock->now()) {
-                throw new BusinessRuleViolationException('Event has already occurred or is in the past.');
-            }
-
-            foreach ($seats as $eventSeat) {
-                if (!$eventSeat->isAvailable()) {
-                    throw new BusinessRuleViolationException('Some seats are not available.');
+                if ($eventSeatIds === []) {
+                    throw new BusinessRuleViolationException('No seats selected.');
                 }
-            }
 
-            $order = Order::create($user->id(), $this->clock, $this->ids);
+                if (count(array_unique($eventSeatIds)) !== count($eventSeatIds)) {
+                    throw new BusinessRuleViolationException('Duplicate seat ids are not allowed.');
+                }
 
-            foreach ($seats as $eventSeat) {
-                $eventSeat->reserve();
-                $ticket = Ticket::create($order, $eventSeat, $this->generateTicketCode());
-                $order->addTicket($ticket);
-            }
+                $seats = $this->eventSeats->lockAndFindByIds($eventSeatIds);
+                if (count($seats) !== count($eventSeatIds)) {
+                    throw new EntityNotFoundException('Some of the selected seats do not exist.');
+                }
 
-            $order->markSeatsAsReserved();
+                $firstEvent = $seats[0]->event();
+                $firstEventId = $firstEvent->id()->toString();
+                foreach ($seats as $eventSeat) {
+                    if ($eventSeat->event()->id()->toString() !== $firstEventId) {
+                        throw new BusinessRuleViolationException('All seats must belong to the same event.');
+                    }
+                }
 
-            $this->orders->save($order);
+                if ($firstEvent->status() !== EventStatus::Published) {
+                    throw new BusinessRuleViolationException('Event is not published.');
+                }
 
-            return $order->releaseEvents();
-        });
+                if ($firstEvent->date() <= $this->clock->now()) {
+                    throw new BusinessRuleViolationException('Event has already occurred or is in the past.');
+                }
+
+                foreach ($seats as $eventSeat) {
+                    if (!$eventSeat->isAvailable()) {
+                        throw new BusinessRuleViolationException('Some seats are not available.');
+                    }
+                }
+
+                $order = Order::create($user->id(), $this->clock, $this->ids);
+
+                foreach ($seats as $eventSeat) {
+                    $eventSeat->reserve();
+                    $ticket = Ticket::create(
+                        $order,
+                        $eventSeat->id(),
+                        $eventSeat->price(), // snapshot at purchase time
+                        $this->generateTicketCode(),
+                        $this->ids,
+                    );
+                    $order->addTicket($ticket);
+                }
+
+                $order->markSeatsAsReserved();
+
+                $this->orders->save($order);
+
+                $affectedEventIds[] = $firstEvent->id()->toString();
+
+                return $order->releaseEvents();
+            },
+        );
+
+        // Invalidate synchronously after commit so the seat map is fresh
+        // immediately; TTL remains as a safety net.
+        foreach (array_unique($affectedEventIds) as $eventId) {
+            $this->seatAvailabilityCache->invalidate($eventId);
+        }
     }
 
     private function generateTicketCode(): TicketCode

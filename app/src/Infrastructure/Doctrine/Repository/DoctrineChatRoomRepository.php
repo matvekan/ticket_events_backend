@@ -29,7 +29,7 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
 
     public function findByUserId(UserId $userId): ?ChatRoom
     {
-        return $this->repository->findOneBy(['user' => $userId->toString()]);
+        return $this->repository->findOneBy(['userId' => $userId->toString()]);
     }
 
     public function findAll(): array

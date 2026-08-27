@@ -9,6 +9,7 @@ use App\Application\Command\Payment\ConfirmPaymentCommand;
 use App\Application\Command\Payment\FailPaymentCommand;
 use App\Domain\Repository\PaymentRepositoryInterface;
 use App\Domain\ValueObject\PaymentId;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,6 +21,7 @@ final class MockBankController
     public function __construct(
         private readonly PaymentRepositoryInterface $payments,
         private readonly CommandBusInterface $commandBus,
+        private readonly Security $security,
         private readonly string $frontendUrl,
     ) {
     }
@@ -32,11 +34,9 @@ final class MockBankController
             return new JsonResponse(['message' => 'Payment not found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $order = $payment->order();
-
         return new JsonResponse([
             'paymentId' => $payment->id()->toRfc4122(),
-            'orderId' => $order->id()->toRfc4122(),
+            'orderId' => $payment->orderId()->toRfc4122(),
             'amount' => $payment->amount(),
             'amountFormatted' => number_format($payment->amount() / 100, 2, '.', ' ') . ' BYN',
             'status' => $payment->status()->value,
@@ -56,19 +56,30 @@ final class MockBankController
             return $this->redirectBack('error');
         }
 
-        sleep(1);
+        $userId = $this->security->getUser()?->getUserIdentifier() ? $this->security->getUser()->id()->toRfc4122() : null;
 
         $this->commandBus->dispatch(new ConfirmPaymentCommand(
-            orderId: $payment->order()->id()->toRfc4122(),
+            orderId: $payment->orderId()->toRfc4122(),
+            userId: $userId,
         ));
 
-        return $this->redirectBack('success', $payment->order()->id()->toRfc4122());
+        return $this->redirectBack('success', $payment->orderId()->toRfc4122());
     }
 
     #[Route('/{paymentId}/decline', name: 'decline', methods: ['POST'])]
     public function decline(string $paymentId): Response
     {
-        $this->commandBus->dispatch(new FailPaymentCommand($paymentId));
+        $payment = $this->payments->findById(new PaymentId($paymentId));
+        if ($payment === null) {
+            return $this->redirectBack('error');
+        }
+
+        $userId = $this->security->getUser()?->getUserIdentifier() ? $this->security->getUser()->id()->toRfc4122() : null;
+
+        $this->commandBus->dispatch(new FailPaymentCommand(
+            orderId: $payment->orderId()->toRfc4122(),
+            userId: $userId,
+        ));
 
         return $this->redirectBack('failed');
     }

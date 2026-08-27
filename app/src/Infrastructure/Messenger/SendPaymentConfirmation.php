@@ -6,6 +6,7 @@ namespace App\Infrastructure\Messenger;
 
 use App\Domain\Event\OrderPaidEvent;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\ValueObject\UserId;
 use App\Infrastructure\Mailer\OrderMailer;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -20,14 +21,14 @@ final class SendPaymentConfirmation
 
     public function __invoke(OrderPaidEvent $event): void
     {
-        $user = $this->users->findById($event->getUserId());
+        $user = $this->users->findById(new UserId($event->userId()));
         if (!$user) {
             return;
         }
 
         $this->mailer->sendPaymentConfirmation(
             (string) $user->email(),
-            (string) $event->getOrderId(),
+            (string) $event->orderId(),
         );
     }
 }

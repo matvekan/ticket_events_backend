@@ -6,6 +6,8 @@ namespace App\Application\CommandHandler\Auth;
 
 use App\Application\Command\Auth\RegisterUserCommand;
 use App\Application\Command\CommandHandlerInterface;
+use App\Application\Exception\PersistenceConstraintViolationException;
+use App\Application\Port\PasswordHasherInterface;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Entity\User;
 use App\Domain\Exception\BusinessRuleViolationException;
@@ -14,16 +16,14 @@ use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\Email;
 use App\Domain\ValueObject\Name;
 use App\Domain\ValueObject\UserId;
-use App\Infrastructure\Security\DomainUserAdapter;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[AsMessageHandler]
 final readonly class RegisterUserHandler implements CommandHandlerInterface
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private UserPasswordHasherInterface $passwordHasher,
+        private PasswordHasherInterface $passwordHasher,
         private IdGeneratorInterface $idGenerator,
         private TransactionManagerInterface $transactionManager,
     ) {
@@ -33,16 +33,22 @@ final readonly class RegisterUserHandler implements CommandHandlerInterface
     {
         $email = new Email($command->email);
 
-        if ($this->users->findByEmail($email)) {
+        try {
+            $this->transactionManager->transactional(function () use ($email, $command): void {
+                // Fast-fail inside the transaction; the unique constraint on
+                // users(email) remains the authoritative guard against races.
+                if ($this->users->findByEmail($email) !== null) {
+                    throw new BusinessRuleViolationException('Email already registered.');
+                }
+
+                $user = User::create(new UserId($this->idGenerator->generate()), new Name($command->name), $email);
+                $user->changePassword($this->passwordHasher->hash($user, $command->password));
+
+                $this->users->save($user);
+            });
+        } catch (PersistenceConstraintViolationException) {
+            // Concurrent registration with the same email lost the race.
             throw new BusinessRuleViolationException('Email already registered.');
         }
-
-        $this->transactionManager->transactional(function () use ($email, $command): void {
-            $user = User::create(new UserId($this->idGenerator->generate()), new Name($command->name), $email);
-            $adapter = new DomainUserAdapter($user);
-            $user->updatePassword($this->passwordHasher->hashPassword($adapter, $command->password));
-
-            $this->users->save($user);
-        });
     }
 }

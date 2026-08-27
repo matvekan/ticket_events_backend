@@ -17,7 +17,10 @@ use App\Domain\Repository\VenueRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\EventDescription;
+use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\EventTitle;
+use App\Domain\ValueObject\SeatId;
+use App\Domain\ValueObject\VenueId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -36,7 +39,7 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
     public function __invoke(CreateEventCommand $command): void
     {
         $this->transactionManager->transactional(function () use ($command): array {
-            $venue = $this->venues->findById(new \App\Domain\ValueObject\VenueId($command->venueId()->toRfc4122()));
+            $venue = $this->venues->findById(new VenueId($command->venueId));
             if (!$venue) {
                 throw new EntityNotFoundException('Venue not found.');
             }
@@ -55,16 +58,16 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
             );
 
             foreach ($command->seats as $seatData) {
-                $seat = $this->seats->findById(new \App\Domain\ValueObject\SeatId($seatData->seatId()->toRfc4122()));
+                $seat = $this->seats->findById(new SeatId($seatData->seatId));
                 if (!$seat) {
                     throw new EntityNotFoundException('Seat not found.');
                 }
 
-                if (!$seat->venue()->id()->equals($venue->id())) {
+                if (!$seat->venueId()->equals($venue->id())) {
                     throw new BusinessRuleViolationException('Seat does not belong to the given venue.');
                 }
 
-                $eventSeat = EventSeat::create($event, $seat, $seatData->priceAmount);
+                $eventSeat = EventSeat::create($event, $seat, $seatData->priceAmount, $this->ids);
                 $event->addEventSeat($eventSeat);
             }
 

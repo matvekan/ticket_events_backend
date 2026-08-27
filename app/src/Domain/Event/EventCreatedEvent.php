@@ -21,9 +21,4 @@ final class EventCreatedEvent
     {
         return $this->title;
     }
-
-    /** @deprecated use eventId() */
-    public function getEventId(): string { return $this->eventId(); }
-    /** @deprecated use title() */
-    public function getTitle(): string { return $this->title(); }
 }

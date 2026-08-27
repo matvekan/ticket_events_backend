@@ -9,7 +9,6 @@ use App\Application\Query\QueryBusInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/events/{id}', name: 'event.get', methods: ['GET'], requirements: ['id' => '[0-9a-f-]+'])]
 final class GetEventController
@@ -20,7 +19,7 @@ final class GetEventController
 
     public function __invoke(string $id): JsonResponse
     {
-        $event = $this->queryBus->dispatch(new GetEventDetailsQuery(Uuid::fromRfc4122($id)));
+        $event = $this->queryBus->dispatch(new GetEventDetailsQuery($id));
         if ($event === null) {
             return new JsonResponse(['error' => 'Event not found.'], Response::HTTP_NOT_FOUND);
         }

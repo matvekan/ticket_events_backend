@@ -26,7 +26,7 @@ final readonly class CancelEventHandler implements CommandHandlerInterface
     public function __invoke(CancelEventCommand $command): void
     {
         $this->transactionManager->transactional(function () use ($command): array {
-            $event = $this->events->findById(new EventId($command->eventId()->toRfc4122()));
+            $event = $this->events->findById(new EventId($command->eventId));
             if (!$event) {
                 throw new EntityNotFoundException('Event not found.');
             }

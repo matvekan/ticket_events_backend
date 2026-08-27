@@ -13,12 +13,4 @@ interface ChatMessageRepositoryInterface
     public function findByRoomId(ChatRoomId $roomId): array;
 
     public function save(ChatMessage $message): void;
-
-    /**
-     * Returns the latest message per room, keyed by room id (RFC 4122).
-     *
-     * @param \App\Domain\Entity\ChatRoom[] $rooms
-     * @return array<string, ChatMessage>
-     */
-    public function findLatestForRooms(array $rooms): array;
 }

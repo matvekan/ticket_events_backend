@@ -58,12 +58,6 @@ class User
         return $this->roles;
     }
 
-    /** @deprecated use roles() */
-    public function getRoles(): array
-    {
-        return $this->roles();
-    }
-
     public function changeRoles(array $roles): void
     {
         foreach ($roles as $role) {
@@ -75,29 +69,14 @@ class User
         $this->roles = array_values(array_unique($roles));
     }
 
-    public function updateRoles(array $roles): void
-    {
-        $this->changeRoles($roles);
-    }
-
     public function password(): ?string
     {
         return $this->password;
     }
 
-    public function getPassword(): ?string
-    {
-        return $this->password();
-    }
-
     public function changePassword(?string $password): void
     {
         $this->password = $password;
-    }
-
-    public function updatePassword(?string $password): void
-    {
-        $this->changePassword($password);
     }
 
     public function resetTokenHash(): ?string

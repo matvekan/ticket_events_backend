@@ -14,11 +14,5 @@
         <field name="city" type="venue_city" length="100"/>
         <field name="latitude" type="float" nullable="true"/>
         <field name="longitude" type="float" nullable="true"/>
-
-        <one-to-many field="seats" target-entity="App\Domain\Entity\Seat" mapped-by="venue">
-            <cascade>
-                <cascade-persist/>
-            </cascade>
-        </one-to-many>
     </entity>
 </doctrine-mapping>

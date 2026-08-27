@@ -18,11 +18,4 @@ final class SeatsReservedEvent
     public function userId(): string { return $this->userId; }
     /** @return string[] */
     public function eventSeatIds(): array { return $this->eventSeatIds; }
-
-    /** @deprecated */
-    public function getOrderId(): string { return $this->orderId(); }
-    /** @deprecated */
-    public function getUserId(): string { return $this->userId(); }
-    /** @deprecated */
-    public function getEventSeatIds(): array { return $this->eventSeatIds(); }
 }

@@ -11,8 +11,6 @@ framework:
                     - validation
             event.bus:
                 default_middleware: allow_no_handlers
-                middleware:
-                    - App\Infrastructure\Messenger\OutboxMiddleware
 
         transports:
             sync: 'sync://'
@@ -25,10 +23,7 @@ framework:
                 options:
                     auto_setup: true
         routing:
+            # Domain events are written straight to the outbox table by the
+            # transaction manager and relayed to the `events` transport —
+            # they are NOT dispatched through buses, so no routing here.
             'App\Application\Message\SendPasswordResetEmail': events
-            'App\Domain\Event\SeatsReservedEvent': events
-            'App\Domain\Event\OrderPaidEvent': events
-            'App\Domain\Event\OrderCancelledEvent': events
-            'App\Domain\Event\OrderRefundedEvent': events
-            'App\Domain\Event\EventCreatedEvent': events
-            'App\Domain\Event\EventStatusChangedEvent': events

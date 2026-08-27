@@ -27,6 +27,29 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         return $this->entityManager->find(User::class, $id->toString());
     }
 
+    public function findByIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $stringIds = array_map(static fn (UserId $id): string => $id->toString(), $ids);
+
+        $users = $this->repository
+            ->createQueryBuilder('u')
+            ->where('u.id IN (:ids)')
+            ->setParameter('ids', array_values(array_unique($stringIds)))
+            ->getQuery()
+            ->getResult();
+
+        $byId = [];
+        foreach ($users as $user) {
+            $byId[$user->rawId()] = $user;
+        }
+
+        return $byId;
+    }
+
     public function findByEmail(Email $email): ?User
     {
         return $this->repository->findOneBy(['email' => $email]);

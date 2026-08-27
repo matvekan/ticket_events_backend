@@ -20,7 +20,7 @@ class EventSeat
 
     private function __construct(EventSeatId $id, Event $event, Seat $seat, Price $price)
     {
-        if (!$seat->venue()->id()->equals($event->venue()->id())) {
+        if (!$seat->venueId()->equals($event->venue()->id())) {
             throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
         }
 
@@ -35,12 +35,15 @@ class EventSeat
         Event $event,
         Seat $seat,
         int $priceAmount,
+        IdGeneratorInterface $ids,
         string $priceCurrency = 'BYN',
-        ?IdGeneratorInterface $ids = null,
-        ?EventSeatId $id = null,
     ): self {
-        $eventSeatId = $id ?? new EventSeatId($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
-        return new self($eventSeatId, $event, $seat, Price::fromAmount($priceAmount, $priceCurrency));
+        return new self(
+            new EventSeatId($ids->generate()),
+            $event,
+            $seat,
+            Price::fromAmount($priceAmount, $priceCurrency),
+        );
     }
 
     public function id(): EventSeatId
@@ -57,7 +60,7 @@ class EventSeat
 
     public function assignToEvent(Event $event): void
     {
-        if (!$this->seat->venue()->id()->equals($event->venue()->id())) {
+        if (!$this->seat->venueId()->equals($event->venue()->id())) {
             throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
         }
 

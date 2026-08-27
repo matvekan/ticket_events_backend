@@ -4,6 +4,11 @@ parameters:
     chat_ws_bind: '0.0.0.0'
     chat_ws_port: 8080
 
+    # Business/polling knobs (override per-environment as needed).
+    pending_order_ttl_minutes: 15
+    seat_cache_ttl_seconds: 30
+    outbox_relay_interval_seconds: 10
+
 services:
     _defaults:
         autowire: true
@@ -16,6 +21,9 @@ services:
             string $mailerFrom: '%mailer_from%'
             string $chatWsBind: '%env(default:chat_ws_bind:string:CHAT_WS_BIND)%'
             int $chatWsPort: '%env(default:chat_ws_port:int:CHAT_WS_PORT)%'
+            int $pendingOrderTtlMinutes: '%pending_order_ttl_minutes%'
+            int $ttlSeconds: '%seat_cache_ttl_seconds%'
+            int $outboxRelayIntervalSeconds: '%outbox_relay_interval_seconds%'
 
     App\:
         resource: '../src/'
@@ -44,15 +52,27 @@ services:
     App\Application\Query\QueryBusInterface:
         class: App\Infrastructure\Messenger\MessengerQueryBus
 
-    App\Application\Event\EventBusInterface:
-        class: App\Infrastructure\EventBus\MessengerEventBus
-
     App\Application\MessageHandler\PublishOutboxMessagesHandler:
         arguments:
             $eventsTransport: '@messenger.transport.events'
 
     App\Application\Transaction\TransactionManagerInterface:
         class: App\Infrastructure\Doctrine\DoctrineTransactionManager
+
+    App\Application\Port\PasswordHasherInterface:
+        class: App\Infrastructure\Security\SymfonyPasswordHasher
+
+    App\Application\Port\OrderReadRepositoryInterface:
+        class: App\Infrastructure\ReadModel\DoctrineOrderReadRepository
+
+    App\Application\Port\PaymentReadRepositoryInterface:
+        class: App\Infrastructure\ReadModel\DoctrinePaymentReadRepository
+
+    App\Application\Port\TicketVerificationReadRepositoryInterface:
+        class: App\Infrastructure\ReadModel\DoctrineTicketVerificationRepository
+
+    App\Application\Port\SeatAvailabilityReadRepositoryInterface:
+        class: App\Infrastructure\ReadModel\DoctrineSeatAvailabilityRepository
 
     App\Domain\Shared\ClockInterface:
         class: App\Infrastructure\Shared\SystemClock
@@ -77,14 +97,14 @@ services:
         arguments:
             $cache: '@cache.seat_availability'
 
-    # Infrastructure/Cache исключён из авто-регистрации (иначе RedisSeatAvailabilityCache
-    # зацикливается на себе при автовайринге), поэтому слушатели инвалидации кэша
-    # регистрируются явно. Без них события брони/отмены/возврата молча игнорируются.
-    App\Infrastructure\Cache\SeatCacheInvalidator: ~
-    App\Infrastructure\Cache\InvalidateSeatCacheOnSeatsReserved: ~
-    App\Infrastructure\Cache\InvalidateSeatCacheOnOrderCancelled: ~
-    App\Infrastructure\Cache\InvalidateSeatCacheOnOrderRefunded: ~
-    App\Infrastructure\Cache\InvalidateSeatCacheOnOrderPaid: ~
+    App\Application\Port\ChatRoomReadRepositoryInterface:
+        class: App\Infrastructure\ReadModel\DoctrineChatReadRepository
+
+    App\Domain\Service\ChatAccessPolicy: ~
+
+    App\Infrastructure\Controller\Api\Admin\VerifyTicketController:
+        arguments:
+            $cache: '@cache.app'
 
     App\Domain\Repository\UserRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineUserRepository

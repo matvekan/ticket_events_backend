@@ -6,8 +6,8 @@ namespace App\Infrastructure\Controller\Api\Chat;
 
 use App\Application\Command\Chat\OpenChatRoomCommand;
 use App\Application\Command\CommandBusInterface;
-use App\Application\Dto\Factory\ChatRoomDtoFactory;
-use App\Domain\Entity\ChatRoom;
+use App\Application\Query\Chat\GetChatRoomQuery;
+use App\Application\Query\QueryBusInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,20 +18,22 @@ final class OpenChatRoomController
 {
     public function __construct(
         private readonly CommandBusInterface $commandBus,
-        private readonly ChatRoomDtoFactory $roomFactory,
+        private readonly QueryBusInterface $queryBus,
         private readonly Security $security,
     ) {
     }
 
     public function __invoke(): JsonResponse
     {
+        /** @var \App\Infrastructure\Security\DomainUserAdapter $user */
         $user = $this->security->getUser();
-        $userId = method_exists($user, 'id') ? $user->id()->toString() : $user->getUserIdentifier();
-        /** @var ChatRoom $room */
-        $room = $this->commandBus->dispatch(new OpenChatRoomCommand($userId));
+        $userId = $user->id()->toRfc4122();
+
+        // Command mutates, query reads back — commands stay void.
+        $this->commandBus->dispatch(new OpenChatRoomCommand($userId));
 
         return new JsonResponse(
-            $this->roomFactory->fromRoom($room),
+            $this->queryBus->dispatch(new GetChatRoomQuery($userId)),
             Response::HTTP_CREATED,
         );
     }

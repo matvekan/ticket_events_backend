@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http;
 
+use App\Application\Exception\AccessDeniedException as ApplicationAccessDeniedException;
+use App\Application\Exception\EntityNotFoundException as ApplicationEntityNotFoundException;
+use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\DomainException;
+use App\Domain\Exception\EntityNotFoundException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -15,11 +19,15 @@ use Symfony\Component\Messenger\Exception\ValidationFailedException as Messenger
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Serializer\Exception\NotEncodableValueException;
 use Symfony\Component\Uid\Exception\InvalidArgumentException as InvalidIdentifierException;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 /**
- * Converts exceptions thrown by the Application/Domain layers
- * into consistent JSON error responses for /api routes.
+ * Translates exceptions thrown by the Application/Domain layers into
+ * consistent JSON error responses for /api routes.
+ *
+ * HTTP status mapping lives here (Infrastructure) — domain and application
+ * exceptions carry no transport semantics.
  */
 final class ApiExceptionListener implements EventSubscriberInterface
 {
@@ -30,7 +38,8 @@ final class ApiExceptionListener implements EventSubscriberInterface
 
     public function onKernelException(ExceptionEvent $event): void
     {
-        if (!str_starts_with($event->getRequest()->getPathInfo(), '/api')) {
+        $path = $event->getRequest()->getPathInfo();
+        if (!str_starts_with($path, '/api') && !str_starts_with($path, '/mock-bank')) {
             return;
         }
 
@@ -54,8 +63,15 @@ final class ApiExceptionListener implements EventSubscriberInterface
     private function resolveResponse(\Throwable $throwable): ?JsonResponse
     {
         return match (true) {
+            // Security component denials (firewall/access_control).
             $throwable instanceof AccessDeniedException => new JsonResponse(
                 ['error' => 'Access denied.'],
+                JsonResponse::HTTP_FORBIDDEN,
+            ),
+
+            // Application-level authorization denials.
+            $throwable instanceof ApplicationAccessDeniedException => new JsonResponse(
+                ['error' => $throwable->getMessage()],
                 JsonResponse::HTTP_FORBIDDEN,
             ),
 
@@ -76,12 +92,28 @@ final class ApiExceptionListener implements EventSubscriberInterface
                 $throwable->getStatusCode(),
             ),
 
-            $throwable instanceof DomainException => new JsonResponse(
+            // Domain exceptions carry no status codes — the transport decides.
+            $throwable instanceof EntityNotFoundException => new JsonResponse(
                 ['error' => $throwable->getMessage()],
-                $throwable->statusCode(),
+                JsonResponse::HTTP_NOT_FOUND,
             ),
 
-            $throwable instanceof \DomainException => new JsonResponse(
+            $throwable instanceof BusinessRuleViolationException => new JsonResponse(
+                ['error' => $throwable->getMessage()],
+                JsonResponse::HTTP_CONFLICT,
+            ),
+
+            $throwable instanceof ApplicationEntityNotFoundException => new JsonResponse(
+                ['error' => $throwable->getMessage()],
+                JsonResponse::HTTP_NOT_FOUND,
+            ),
+
+            $throwable instanceof OptimisticLockException => new JsonResponse(
+                ['error' => 'Resource was modified concurrently. Please retry.'],
+                JsonResponse::HTTP_CONFLICT,
+            ),
+
+            $throwable instanceof DomainException => new JsonResponse(
                 ['error' => $throwable->getMessage()],
                 JsonResponse::HTTP_BAD_REQUEST,
             ),

@@ -6,13 +6,10 @@ namespace App\Application\Command\Event;
 
 use App\Application\Command\CommandInterface;
 use App\Application\Dto\EventSeatData;
-use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final class CreateEventCommand implements CommandInterface
 {
-    public readonly Uuid $parsedVenueId;
-
     /** @param EventSeatData[] $seats */
     public function __construct(
         #[Assert\NotBlank]
@@ -35,11 +32,5 @@ final class CreateEventCommand implements CommandInterface
         #[Assert\All([new Assert\Type(EventSeatData::class)])]
         public readonly array $seats,
     ) {
-        $this->parsedVenueId = Uuid::fromString($venueId);
-    }
-
-    public function venueId(): Uuid
-    {
-        return $this->parsedVenueId;
     }
 }

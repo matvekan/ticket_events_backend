@@ -41,10 +41,4 @@ final class SeatDtoFactory
             status: $eventSeat->status()->value,
         );
     }
-
-    /** @param EventSeat[] $eventSeats @return SeatDto[] */
-    public function fromAvailableSeats(array $eventSeats): array
-    {
-        return array_map(fn (EventSeat $eventSeat): SeatDto => $this->fromEventSeat($eventSeat), $eventSeats);
-    }
 }

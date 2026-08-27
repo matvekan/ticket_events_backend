@@ -16,11 +16,4 @@ final class EventStatusChangedEvent
     public function eventId(): string { return $this->eventId; }
     public function title(): string { return $this->title; }
     public function newStatus(): string { return $this->newStatus; }
-
-    /** @deprecated */
-    public function getEventId(): string { return $this->eventId(); }
-    /** @deprecated */
-    public function getTitle(): string { return $this->title(); }
-    /** @deprecated */
-    public function getNewStatus(): string { return $this->newStatus(); }
 }

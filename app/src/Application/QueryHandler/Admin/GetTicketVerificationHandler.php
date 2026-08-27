@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Application\QueryHandler\Admin;
 
 use App\Application\Dto\TicketVerificationDto;
+use App\Application\Port\TicketVerificationReadRepositoryInterface;
 use App\Application\Query\Admin\GetTicketVerificationQuery;
 use App\Application\Query\QueryHandlerInterface;
-use App\Domain\Repository\TicketRepositoryInterface;
 use App\Domain\ValueObject\EventStatus;
 use App\Domain\ValueObject\OrderStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -16,39 +16,33 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetTicketVerificationHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly TicketRepositoryInterface $tickets,
+        private readonly TicketVerificationReadRepositoryInterface $tickets,
     ) {
     }
 
     public function __invoke(GetTicketVerificationQuery $query): TicketVerificationDto
     {
-        $code = $query->code;
+        $data = $this->tickets->findByCode($query->code);
 
-        $ticket = $this->tickets->findByCode($code);
-        if ($ticket === null) {
+        if ($data === null) {
             return new TicketVerificationDto(false, 'Билет с таким кодом не найден.');
         }
 
-        $order = $ticket->order();
-        $event = $ticket->eventSeat()->event();
-
-        if ($order->status() !== OrderStatus::Paid) {
+        if ($data->orderStatus !== OrderStatus::Paid->value) {
             return new TicketVerificationDto(false, 'Заказ по этому билету не оплачен.');
         }
 
-        if ($event->status() === EventStatus::Cancelled) {
+        if ($data->eventStatus === EventStatus::Cancelled->value) {
             return new TicketVerificationDto(false, 'Событие отменено.');
         }
 
-        $seat = $ticket->eventSeat()->seat();
-
         return new TicketVerificationDto(true, null, [
-            'code' => (string) $ticket->code(),
-            'eventTitle' => (string) $event->title(),
-            'eventDate' => $event->date()->format('Y-m-d H:i:s'),
-            'venueName' => (string) $event->venue()->name(),
-            'seat' => sprintf('%s%s', $seat->row(), $seat->number()->toValue()),
-            'orderStatus' => $order->status()->value,
+            'code' => $data->code,
+            'eventTitle' => $data->eventTitle,
+            'eventDate' => $data->eventDate,
+            'venueName' => $data->venueName,
+            'seat' => sprintf('%s%s', $data->seatRow, $data->seatNumber),
+            'orderStatus' => $data->orderStatus,
         ]);
     }
 }

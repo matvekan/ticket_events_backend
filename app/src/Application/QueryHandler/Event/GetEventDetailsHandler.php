@@ -23,7 +23,7 @@ final class GetEventDetailsHandler implements QueryHandlerInterface
 
     public function __invoke(GetEventDetailsQuery $query): ?EventDetailsDto
     {
-        $event = $this->events->findById(new EventId($query->eventId->toRfc4122()));
+        $event = $this->events->findById(new EventId($query->eventId));
         if (!$event) {
             return null;
         }

@@ -7,7 +7,6 @@ namespace App\Infrastructure\Doctrine\Repository;
 use App\Domain\Entity\Ticket;
 use App\Domain\Repository\TicketRepositoryInterface;
 use App\Domain\ValueObject\OrderId;
-use App\Domain\ValueObject\TicketCode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
@@ -20,11 +19,6 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
         private readonly EntityManagerInterface $entityManager,
     ) {
         $this->repository = $entityManager->getRepository(Ticket::class);
-    }
-
-    public function findByCode(string $code): ?Ticket
-    {
-        return $this->repository->findOneBy(['code' => new TicketCode($code)]);
     }
 
     public function findByOrderId(OrderId $orderId): array

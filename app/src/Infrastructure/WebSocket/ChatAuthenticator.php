@@ -20,8 +20,7 @@ final class ChatAuthenticator
 
     public function authenticate(Request $request): ?User
     {
-        parse_str($request->getUri()->getQuery(), $query);
-        $token = $query['token'] ?? null;
+        $token = $this->extractToken($request);
 
         if (!is_string($token) || $token === '') {
             return null;
@@ -38,5 +37,23 @@ final class ChatAuthenticator
         }
 
         return $this->users->findByEmail(new Email($payload['username']));
+    }
+
+    /**
+     * Preferred: `Sec-WebSocket-Protocol: <token>` (kept out of URLs and
+     * access logs). Fallback: `?token=` query parameter for browsers that
+     * cannot set custom headers.
+     */
+    private function extractToken(Request $request): ?string
+    {
+        $protocolHeader = $request->getHeader('sec-websocket-protocol');
+        if (is_string($protocolHeader) && $protocolHeader !== '' && !str_contains($protocolHeader, ',')) {
+            return trim($protocolHeader);
+        }
+
+        parse_str($request->getUri()->getQuery(), $query);
+        $token = $query['token'] ?? null;
+
+        return is_string($token) ? $token : null;
     }
 }

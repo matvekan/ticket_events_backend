@@ -24,12 +24,15 @@ final class PayOrderController
 
     public function __invoke(string $id): JsonResponse
     {
+        $userId = $this->security->getUser()?->id()?->toRfc4122();
+
         $this->commandBus->dispatch(new StartPaymentCommand(
             orderId: $id,
-            userId: $this->security->getUser()?->id()?->toRfc4122(),
+            userId: $userId,
         ));
 
-        $payment = $this->queryBus->dispatch(new GetPaymentForOrderQuery($id));
+        // Ownership is enforced inside the projection.
+        $payment = $this->queryBus->dispatch(new GetPaymentForOrderQuery($id, $userId));
 
         return new JsonResponse([
             'paymentId' => $payment->id,

@@ -6,18 +6,21 @@ namespace App\Application\CommandHandler\Payment;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Payment\StartPaymentCommand;
+use App\Application\Exception\AccessDeniedException;
+use App\Application\Exception\PersistenceConstraintViolationException;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Entity\Payment;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
-use App\Domain\ValueObject\OrderId;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\OrderStatus;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\PaymentStatus;
 use App\Domain\ValueObject\UserId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 #[AsMessageHandler]
 final readonly class StartPaymentHandler implements CommandHandlerInterface
@@ -26,17 +29,27 @@ final readonly class StartPaymentHandler implements CommandHandlerInterface
         private OrderRepositoryInterface $orders,
         private PaymentRepositoryInterface $payments,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
+        private IdGeneratorInterface $ids,
     ) {
     }
 
     public function __invoke(StartPaymentCommand $command): void
     {
-        $orderId = $command->orderId();
-        $userId = $command->userId();
-        $orderIdVo = new OrderId($orderId->toRfc4122());
-        $userIdVo = $userId !== null ? new UserId($userId->toRfc4122()) : null;
+        $orderIdVo = new OrderId($command->orderId);
+        $userIdVo = $command->userId !== null ? new UserId($command->userId) : null;
 
-        $this->transactionManager->transactional(function () use ($orderId, $orderIdVo, $userIdVo): void {
+        try {
+            $this->startOnce($orderIdVo, $userIdVo);
+        } catch (PersistenceConstraintViolationException) {
+            // A concurrent request created the payment row first; it wins.
+            throw new BusinessRuleViolationException('A payment for this order is already being processed.');
+        }
+    }
+
+    private function startOnce(OrderId $orderIdVo, ?UserId $userIdVo): void
+    {
+        $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
             $order = $this->orders->findById($orderIdVo);
             if (!$order) {
                 throw new EntityNotFoundException('Order not found.');
@@ -62,7 +75,12 @@ final readonly class StartPaymentHandler implements CommandHandlerInterface
                 return;
             }
 
-            $payment = Payment::create($order, $order->totalPrice()->amount());
+            $payment = Payment::place(
+                $order->id(),
+                $order->totalPrice()->amount(),
+                $this->clock,
+                $this->ids,
+            );
             $this->payments->save($payment);
         });
     }

@@ -65,7 +65,9 @@ final class UserFixtures extends Fixture
 
         $user = $this->users->findByEmail(new Email($email));
         if ($user !== null && $roles !== []) {
-            $user->updateRoles([...$roles, 'ROLE_USER']);
+            $user->changeRoles([...$roles, 'ROLE_USER']);
+            // Fixture flush happens in the executor; persist explicitly for change.
+            $manager = null; // kept for interface compat, executor will flush
             $this->users->save($user);
         }
 

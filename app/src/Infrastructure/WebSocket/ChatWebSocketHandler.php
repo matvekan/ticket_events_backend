@@ -9,17 +9,12 @@ use Amp\Http\Server\Response;
 use Amp\Websocket\Server\WebsocketClientHandler;
 use Amp\Websocket\WebsocketClient;
 use Amp\Websocket\WebsocketCloseCode;
-use App\Application\Dto\Factory\ChatMessageDtoFactory;
 use App\Application\Service\Chat\ChatService;
 use App\Domain\Entity\User;
 use App\Infrastructure\WebSocket\Dto\FrameParser;
-use App\Infrastructure\WebSocket\Dto\IncomingFrame;
 use App\Infrastructure\WebSocket\Dto\MessageFrame;
-use App\Infrastructure\WebSocket\Dto\SubscribeFrame;
-use App\Infrastructure\WebSocket\Dto\UnsubscribeFrame;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 final class ChatWebSocketHandler implements WebsocketClientHandler
 {
@@ -27,7 +22,6 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
         private readonly ChatAuthenticator $authenticator,
         private readonly ChatSubscriptions $subscriptions,
         private readonly ChatService $chatService,
-        private readonly ChatMessageDtoFactory $messageFactory,
         private readonly FrameParser $frameParser,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
@@ -82,15 +76,15 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
 
         match (true) {
             $frame instanceof MessageFrame => $this->sendMessage($client, $user, $frame),
-            $frame instanceof SubscribeFrame => $this->subscribe($client, $user, $frame),
-            $frame instanceof UnsubscribeFrame => $this->unsubscribe($client, $frame),
+            $frame instanceof \App\Infrastructure\WebSocket\Dto\SubscribeFrame => $this->subscribe($client, $user, $frame),
+            $frame instanceof \App\Infrastructure\WebSocket\Dto\UnsubscribeFrame => $this->unsubscribe($client, $frame),
             default => $this->sendError($client, 'Unknown frame type.'),
         };
     }
 
-    private function subscribe(WebsocketClient $client, User $user, IncomingFrame $frame): void
+    private function subscribe(WebsocketClient $client, User $user, object $frame): void
     {
-        if (!$this->chatService->canAccess(Uuid::fromString($frame->roomId()), $user)) {
+        if (!$this->chatService->canAccess($frame->roomId(), $user)) {
             $this->sendError($client, 'Access denied to chat room.');
 
             return;
@@ -100,7 +94,7 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
         $this->sendJson($client, ['type' => 'subscribed', 'roomId' => $frame->roomId()]);
     }
 
-    private function unsubscribe(WebsocketClient $client, IncomingFrame $frame): void
+    private function unsubscribe(WebsocketClient $client, object $frame): void
     {
         $this->subscriptions->unsubscribe($client, $frame->roomId());
     }
@@ -109,19 +103,21 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
     {
         try {
             $message = $this->chatService->sendMessage(
-                Uuid::fromString($frame->roomId()),
-                $user->id(),
+                $frame->roomId(),
+                $user->id()->toRfc4122(),
                 $frame->text(),
             );
         } catch (\Throwable $exception) {
-            $this->sendError($client, 'Message rejected: ' . $exception->getMessage());
+            // Never leak internals to the client; log the real cause.
+            $this->logger->warning(sprintf('Chat message rejected for %s: %s', (string) $user->id(), $exception->getMessage()));
+            $this->sendError($client, 'Message rejected.');
 
             return;
         }
 
         $payload = json_encode([
             'type' => 'message',
-            'message' => $this->messageFactory->fromMessage($message),
+            'message' => $message,
         ], JSON_UNESCAPED_UNICODE);
 
         $this->subscriptions->broadcast($frame->roomId(), $payload);

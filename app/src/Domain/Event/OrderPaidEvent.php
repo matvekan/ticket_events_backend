@@ -20,13 +20,4 @@ final class OrderPaidEvent
     public function totalAmount(): int { return $this->totalAmount; }
     /** @return string[] */
     public function ticketIds(): array { return $this->ticketIds; }
-
-    /** @deprecated */
-    public function getOrderId(): string { return $this->orderId(); }
-    /** @deprecated */
-    public function getUserId(): string { return $this->userId(); }
-    /** @deprecated */
-    public function getTotalAmount(): int { return $this->totalAmount(); }
-    /** @deprecated */
-    public function getTicketIds(): array { return $this->ticketIds(); }
 }

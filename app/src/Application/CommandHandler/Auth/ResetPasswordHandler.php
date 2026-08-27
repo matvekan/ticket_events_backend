@@ -6,20 +6,21 @@ namespace App\Application\CommandHandler\Auth;
 
 use App\Application\Command\Auth\ResetPasswordCommand;
 use App\Application\Command\CommandHandlerInterface;
+use App\Application\Port\PasswordHasherInterface;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Exception\DomainException;
 use App\Domain\Repository\UserRepositoryInterface;
-use App\Infrastructure\Security\DomainUserAdapter;
+use App\Domain\Shared\ClockInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 #[AsMessageHandler]
 final readonly class ResetPasswordHandler implements CommandHandlerInterface
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private UserPasswordHasherInterface $passwordHasher,
+        private PasswordHasherInterface $passwordHasher,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -27,13 +28,12 @@ final readonly class ResetPasswordHandler implements CommandHandlerInterface
     {
         $user = $this->users->findByPasswordResetTokenHash(hash('sha256', $command->token));
 
-        if ($user === null || !$user->isPasswordResetTokenValid(new \DateTimeImmutable())) {
+        if ($user === null || !$user->isPasswordResetTokenValid($this->clock->now())) {
             throw new DomainException('Invalid or expired reset token.');
         }
 
         $this->transactionManager->transactional(function () use ($user, $command): void {
-            $adapter = new DomainUserAdapter($user);
-            $user->updatePassword($this->passwordHasher->hashPassword($adapter, $command->password));
+            $user->changePassword($this->passwordHasher->hash($user, $command->password));
             $user->clearPasswordResetToken();
             $this->users->save($user);
         });

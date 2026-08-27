@@ -26,6 +26,7 @@ class Order
     private OrderStatus $status;
     private \DateTimeImmutable $createdAt;
     private ?\DateTimeImmutable $updatedAt = null;
+    private int $version = 1;
 
     /** @var Ticket[]|\Traversable<int, Ticket>|null */
     private $tickets = [];
@@ -46,7 +47,7 @@ class Order
 
     public function markSeatsAsReserved(): void
     {
-        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeat()->id()->toString(), $this->ticketList());
+        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
         $this->recordThat(new SeatsReservedEvent($this->id, $this->userId, $eventSeatIds));
     }
 
@@ -155,7 +156,7 @@ class Order
         $this->status = OrderStatus::Cancelled;
         $this->updatedAt = $clock->now();
 
-        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeat()->id()->toString(), $this->ticketList());
+        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
         $this->recordThat(new OrderCancelledEvent($this->id, $this->userId, $eventSeatIds));
     }
 
@@ -172,7 +173,7 @@ class Order
         $this->status = OrderStatus::Refunded;
         $this->updatedAt = $clock->now();
 
-        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeat()->id()->toString(), $this->ticketList());
+        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
         $this->recordThat(new OrderRefundedEvent(
             $this->id,
             $this->userId,

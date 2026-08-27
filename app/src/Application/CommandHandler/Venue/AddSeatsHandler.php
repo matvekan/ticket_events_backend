@@ -14,6 +14,7 @@ use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\SeatRepositoryInterface;
 use App\Domain\Repository\VenueRepositoryInterface;
+use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\SeatNumber;
 use App\Domain\ValueObject\SeatRow;
 use App\Domain\ValueObject\SeatSector;
@@ -28,6 +29,7 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
         private VenueRepositoryInterface $venues,
         private SeatRepositoryInterface $seats,
         private TransactionManagerInterface $transactionManager,
+        private IdGeneratorInterface $ids,
     ) {
     }
 
@@ -48,7 +50,7 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
 
     private function findVenue(AddSeatsToVenueCommand $command): Venue
     {
-        $venue = $this->venues->findById(new VenueId($command->venueId()->toRfc4122()));
+        $venue = $this->venues->findById(new VenueId($command->venueId));
         if (!$venue) {
             throw new EntityNotFoundException('Venue not found.');
         }
@@ -76,10 +78,11 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
         $occupied[$key] = true;
 
         return Seat::create(
-            $venue,
+            $venue->id(),
             new SeatRow($data->row),
             new SeatNumber($data->number),
             SeatType::from($data->type),
+            $this->ids,
             $data->sector !== null ? new SeatSector($data->sector) : null,
         );
     }

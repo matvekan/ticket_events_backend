@@ -13,12 +13,10 @@
             <generator strategy="NONE"/>
         </id>
 
-        <many-to-one field="room" target-entity="App\Domain\Entity\ChatRoom" inversed-by="messages">
-            <join-column name="room_id" nullable="false"/>
-        </many-to-one>
-        <many-to-one field="sender" target-entity="App\Domain\Entity\User">
-            <join-column name="sender_id" nullable="false"/>
-        </many-to-one>
+        <!-- Cross-aggregate references by ID only. -->
+        <field name="roomId" column="room_id" type="string" length="36"/>
+        <field name="senderId" column="sender_id" type="string" length="36"/>
+
         <field name="text" type="string" length="2000"/>
         <field name="createdAt" type="datetime_immutable"/>
     </entity>

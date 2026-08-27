@@ -29,7 +29,7 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
 
     public function findByVenueId(VenueId $venueId): array
     {
-        return $this->repository->findBy(['venue' => $venueId->toString()]);
+        return $this->repository->findBy(['venueId' => $venueId->toString()]);
     }
 
     public function saveAll(array $seats): void

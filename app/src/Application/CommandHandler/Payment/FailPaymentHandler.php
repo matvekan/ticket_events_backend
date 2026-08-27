@@ -9,8 +9,10 @@ use App\Application\Command\Payment\FailPaymentCommand;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
+use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
-use App\Domain\ValueObject\PaymentId;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\PaymentStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -18,24 +20,37 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class FailPaymentHandler implements CommandHandlerInterface
 {
     public function __construct(
+        private OrderRepositoryInterface $orders,
         private PaymentRepositoryInterface $payments,
         private TransactionManagerInterface $transactionManager,
+        private ClockInterface $clock,
     ) {
     }
 
     public function __invoke(FailPaymentCommand $command): void
     {
-        $this->transactionManager->transactional(function () use ($command): void {
-            $payment = $this->payments->findById(new PaymentId($command->paymentId()->toRfc4122()));
-            if (!$payment) {
-                throw new EntityNotFoundException('Payment not found.');
+        $orderIdVo = new OrderId($command->orderId);
+        $userIdVo = $command->userId !== null ? new \App\Domain\ValueObject\UserId($command->userId) : null;
+
+        $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
+            $order = $this->orders->findById($orderIdVo);
+            if (!$order) {
+                throw new EntityNotFoundException('Order not found.');
+            }
+            if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
+                throw new \App\Application\Exception\AccessDeniedException('You do not own this order.');
+            }
+
+            $payment = $this->payments->findByOrderId($orderIdVo);
+            if ($payment === null) {
+                throw new EntityNotFoundException('Payment not found for this order.');
             }
 
             if ($payment->status() !== PaymentStatus::Pending) {
                 throw new BusinessRuleViolationException('Only pending payments can be declined.');
             }
 
-            $payment->markFailed();
+            $payment->markFailed($this->clock);
             $this->payments->save($payment);
         });
     }

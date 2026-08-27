@@ -4,137 +4,98 @@ declare(strict_types=1);
 
 namespace App\Application\Service\Chat;
 
+use App\Application\Dto\ChatMessageDto;
+use App\Application\Exception\AccessDeniedException;
 use App\Application\Transaction\TransactionManagerInterface;
-use App\Domain\Entity\ChatMessage;
-use App\Domain\Entity\ChatRoom;
 use App\Domain\Entity\User;
-use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\ChatMessageRepositoryInterface;
 use App\Domain\Repository\ChatRoomRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Service\ChatAccessPolicy;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\ChatRoomId;
 use App\Domain\ValueObject\UserId;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Uid\Uuid;
 
 final readonly class ChatService
 {
-    public const SUPPORT_ROLE = 'ROLE_ADMIN';
-
     public function __construct(
         private ChatRoomRepositoryInterface $rooms,
         private ChatMessageRepositoryInterface $messages,
         private UserRepositoryInterface $users,
         private TransactionManagerInterface $transactionManager,
+        private ChatAccessPolicy $accessPolicy,
+        private ClockInterface $clock,
+        private IdGeneratorInterface $ids,
     ) {
     }
 
-    public function openRoom(Uuid $userId): ChatRoom
+    /**
+     * Idempotently ensures a support room exists for the user.
+     */
+    public function openRoom(string $userId): void
     {
-        return $this->transactionManager->transactional(function () use ($userId): ChatRoom {
-            $user = $this->users->findById(new UserId($userId->toRfc4122()));
+        $this->transactionManager->transactional(function () use ($userId): void {
+            $user = $this->users->findById(new UserId($userId));
             if (!$user) {
                 throw new EntityNotFoundException('User not found.');
             }
 
-            $room = $this->rooms->findByUserId($userId);
-            if ($room === null) {
-                $room = ChatRoom::create($user);
+            if ($this->rooms->findByUserId($user->id()) === null) {
+                $room = \App\Domain\Entity\ChatRoom::create($user->id(), $this->clock, $this->ids);
                 $this->rooms->save($room);
             }
-
-            return $room;
         });
     }
 
-    public function sendMessage(Uuid $roomId, UserId $senderId, string $text): ChatMessage
+    public function sendMessage(string $roomId, string $senderId, string $text): ChatMessageDto
     {
-        $message = $this->transactionManager->transactional(function () use ($roomId, $senderId, $text): ChatMessage {
-            $room = $this->rooms->findById(new ChatRoomId($roomId->toRfc4122()));
-            if (!$room) {
-                throw new EntityNotFoundException('Chat room not found.');
-            }
+        return $this->transactionManager->transactional(
+            function () use ($roomId, $senderId, $text): ChatMessageDto {
+                $room = $this->rooms->findById(new ChatRoomId($roomId));
+                if (!$room) {
+                    throw new EntityNotFoundException('Chat room not found.');
+                }
 
-            $sender = $this->users->findById($senderId);
-            if (!$sender) {
-                throw new EntityNotFoundException('User not found.');
-            }
+                $sender = $this->users->findById(new UserId($senderId));
+                if (!$sender) {
+                    throw new EntityNotFoundException('User not found.');
+                }
 
-            $this->assertParticipant($room, $sender);
+                if (!$this->accessPolicy->canParticipate($room, $sender)) {
+                    throw new AccessDeniedException('You do not have access to this chat room.');
+                }
 
-            $message = ChatMessage::create($room, $sender, $text);
-            $this->messages->save($message);
+                $message = \App\Domain\Entity\ChatMessage::create(
+                    $room->id(),
+                    $sender->id(),
+                    $text,
+                    $this->clock,
+                    $this->ids,
+                );
+                $this->messages->save($message);
 
-            return $message;
-        });
-
-        return $message;
-    }
-
-    /** @return ChatMessage[] */
-    public function listMessages(Uuid $roomId, User $viewer): array
-    {
-        $room = $this->rooms->findById($roomId);
-        if (!$room) {
-            throw new EntityNotFoundException('Chat room not found.');
-        }
-
-        $this->assertParticipant($room, $viewer);
-
-        return $this->messages->findByRoomId($roomId);
-    }
-
-    public function canAccess(Uuid $roomId, User $viewer): bool
-    {
-        $room = $this->rooms->findById($roomId);
-        if (!$room) {
-            return false;
-        }
-
-        try {
-            $this->assertParticipant($room, $viewer);
-
-            return true;
-        } catch (AccessDeniedException) {
-            return false;
-        }
-    }
-
-    /**
-     * @return array<int, array{room: ChatRoom, lastMessage: ?ChatMessage}>
-     */
-    public function listRoomsForSupport(): array
-    {
-        $rooms = $this->rooms->findAll();
-        $latestByRoomId = $this->messages->findLatestForRooms($rooms);
-
-        $lastCreatedAt = static fn (ChatRoom $room): \DateTimeImmutable => (
-            $latestByRoomId[$room->id()->toRfc4122()] ?? null
-        )?->createdAt() ?? $room->createdAt();
-
-        usort($rooms, static fn (ChatRoom $a, ChatRoom $b): int => $lastCreatedAt($b) <=> $lastCreatedAt($a));
-
-        return array_map(
-            static fn (ChatRoom $room): array => [
-                'room' => $room,
-                'lastMessage' => $latestByRoomId[$room->id()->toRfc4122()] ?? null,
-            ],
-            $rooms,
+                return new ChatMessageDto(
+                    id: $message->id()->toRfc4122(),
+                    roomId: $message->roomId()->toRfc4122(),
+                    senderId: $message->senderId()->toRfc4122(),
+                    senderName: (string) $sender->name(),
+                    isSupport: $this->accessPolicy->isSupport($sender),
+                    text: $message->text(),
+                    createdAt: $message->createdAt()->format('c'),
+                );
+            },
         );
     }
 
-    public function isSupport(User $user): bool
+    public function canAccess(string $roomId, User $viewer): bool
     {
-        return in_array(self::SUPPORT_ROLE, $user->getRoles(), true);
-    }
-
-    private function assertParticipant(ChatRoom $room, User $user): void
-    {
-        $isOwner = $room->user()->id()->equals($user->id());
-
-        if (!$isOwner && !$this->isSupport($user)) {
-            throw new AccessDeniedException('You do not have access to this chat room.');
+        $room = $this->rooms->findById(new ChatRoomId($roomId));
+        if (!$room) {
+            return false;
         }
+
+        return $this->accessPolicy->canParticipate($room, $viewer);
     }
 }

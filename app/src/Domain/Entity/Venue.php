@@ -18,8 +18,6 @@ class Venue
     private VenueCity $city;
     private ?float $latitude = null;
     private ?float $longitude = null;
-    /** @var Seat[] */
-    private $seats = [];
 
     private function __construct(
         VenueId $id,
@@ -41,13 +39,11 @@ class Venue
         VenueName $name,
         VenueAddress $address,
         VenueCity $city,
+        IdGeneratorInterface $ids,
         ?float $latitude = null,
         ?float $longitude = null,
-        ?IdGeneratorInterface $ids = null,
-        ?VenueId $id = null,
     ): self {
-        $venueId = $id ?? new VenueId($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
-        return new self($venueId, $name, $address, $city, $latitude, $longitude);
+        return new self(new VenueId($ids->generate()), $name, $address, $city, $latitude, $longitude);
     }
 
     public function id(): VenueId

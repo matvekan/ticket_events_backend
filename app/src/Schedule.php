@@ -15,6 +15,7 @@ class Schedule implements ScheduleProviderInterface
 {
     public function __construct(
         private CacheInterface $cache,
+        private int $outboxRelayIntervalSeconds,
     ) {
     }
 
@@ -24,7 +25,10 @@ class Schedule implements ScheduleProviderInterface
             ->stateful($this->cache) // ensure missed tasks are executed
             ->processOnlyLastMissedRun(true) // ensure only last missed task is run
             ->add(RecurringMessage::every('1 minute', new ExpirePendingOrders()))
-            ->add(RecurringMessage::every('10 seconds', new PublishOutboxMessages()))
+            ->add(RecurringMessage::every(
+                sprintf('%d seconds', $this->outboxRelayIntervalSeconds),
+                new PublishOutboxMessages(),
+            ))
         ;
     }
 }

@@ -24,7 +24,7 @@ final class GetVenueSeatingHandler implements QueryHandlerInterface
     /** @return SeatDto[] */
     public function __invoke(GetVenueSeatingQuery $query): array
     {
-        $seats = $this->seats->findByVenueId(new VenueId($query->venueId->toRfc4122()));
+        $seats = $this->seats->findByVenueId(new VenueId($query->venueId));
 
         return $this->seatDtoFactory->fromSeatList($seats);
     }

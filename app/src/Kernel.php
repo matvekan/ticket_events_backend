@@ -39,13 +39,14 @@ class Kernel extends BaseKernel
         'ticket_code' => TicketCode::class,
     ];
 
-    /**
-     * @throws TypesException
-     */
-    public function __construct(string $environment, bool $debug)
+    public function boot(): void
     {
-        parent::__construct($environment, $debug);
-        new Types(self::DOCTRINE_VALUE_OBJECTS)->register(Type::getTypeRegistry());
+        parent::boot();
+        try {
+            new Types(self::DOCTRINE_VALUE_OBJECTS)->register(Type::getTypeRegistry());
+        } catch (TypesException $e) {
+            throw new \RuntimeException('Failed to register Doctrine value object types: '.$e->getMessage(), 0, $e);
+        }
     }
 
     /**

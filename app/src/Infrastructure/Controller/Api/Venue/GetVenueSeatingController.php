@@ -8,7 +8,6 @@ use App\Application\Query\QueryBusInterface;
 use App\Application\Query\Venue\GetVenueSeatingQuery;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Uid\Uuid;
 
 #[Route('/api/venues/{id}/seats', name: 'venue.seating', methods: ['GET'])]
 final class GetVenueSeatingController
@@ -19,6 +18,6 @@ final class GetVenueSeatingController
 
     public function __invoke(string $id): JsonResponse
     {
-        return new JsonResponse($this->queryBus->dispatch(new GetVenueSeatingQuery(Uuid::fromRfc4122($id))));
+        return new JsonResponse($this->queryBus->dispatch(new GetVenueSeatingQuery($id)));
     }
 }

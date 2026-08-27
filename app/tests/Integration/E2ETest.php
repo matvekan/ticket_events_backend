@@ -92,7 +92,7 @@ class E2ETest extends WebTestCase
         $user = self::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class)
             ->findByEmail(new \App\Domain\ValueObject\Email($userEmail));
         $chatService = self::getContainer()->get(\App\Application\Service\Chat\ChatService::class);
-        $chatService->sendMessage(new \Symfony\Component\Uid\Uuid($room['id']), $user->id(), 'Privet, podderzhka!');
+        $chatService->sendMessage($room['id'], $user->id()->toRfc4122(), 'Privet, podderzhka!');
 
         // History shows the user message
         $this->client->request('GET', sprintf('/api/chat/rooms/%s/messages', $room['id']));
@@ -104,7 +104,7 @@ class E2ETest extends WebTestCase
         // Support replies
         $admin = self::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class)
             ->findByEmail(new \App\Domain\ValueObject\Email($adminEmail));
-        $chatService->sendMessage(new \Symfony\Component\Uid\Uuid($room['id']), $admin->id(), 'Chem mogu pomoch?');
+        $chatService->sendMessage($room['id'], $admin->id()->toRfc4122(), 'Chem mogu pomoch?');
 
         // Support room list contains the room with last message preview
         $this->login($adminEmail);
@@ -201,7 +201,7 @@ class E2ETest extends WebTestCase
             throw new \RuntimeException(sprintf('User with email "%s" not found', $email));
         }
 
-        $user->updateRoles(['ROLE_ADMIN']);
+        $user->changeRoles(['ROLE_ADMIN']);
         self::getContainer()->get(EntityManagerInterface::class)->flush();
     }
 

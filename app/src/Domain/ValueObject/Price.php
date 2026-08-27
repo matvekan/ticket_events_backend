@@ -15,8 +15,8 @@ final class Price
             throw new \InvalidArgumentException('Price amount must be non-negative.');
         }
 
-        if (mb_strlen($currency) !== 3) {
-            throw new \InvalidArgumentException('Currency must be a 3-letter ISO code.');
+        if (!preg_match('/^[A-Z]{3}$/', strtoupper($currency))) {
+            throw new \InvalidArgumentException('Currency must be a 3-letter ISO 4217 code (A-Z).');
         }
 
         $this->amount = $amount;

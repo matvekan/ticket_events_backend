@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
+
 final class OutboxMessage
 {
     private string $id;
@@ -13,12 +16,12 @@ final class OutboxMessage
     private ?\DateTimeImmutable $sentAt = null;
     private int $attempts = 0;
 
-    public function __construct(string $messageClass, string $body, ?\App\Domain\Shared\ClockInterface $clock = null, ?\App\Domain\Shared\IdGeneratorInterface $ids = null, ?string $id = null)
+    public function __construct(string $messageClass, string $body, ClockInterface $clock, IdGeneratorInterface $ids)
     {
-        $this->id = $id ?? ($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
+        $this->id = $ids->generate();
         $this->messageClass = $messageClass;
         $this->body = $body;
-        $this->createdAt = $clock ? $clock->now() : new \DateTimeImmutable();
+        $this->createdAt = $clock->now();
     }
 
     public function id(): string
@@ -41,8 +44,8 @@ final class OutboxMessage
         ++$this->attempts;
     }
 
-    public function markSent(): void
+    public function markSent(\DateTimeImmutable $sentAt): void
     {
-        $this->sentAt = new \DateTimeImmutable();
+        $this->sentAt = $sentAt;
     }
 }

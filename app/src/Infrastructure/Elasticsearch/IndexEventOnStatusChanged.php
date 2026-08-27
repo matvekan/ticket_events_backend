@@ -17,6 +17,6 @@ final class IndexEventOnStatusChanged
 
     public function __invoke(EventStatusChangedEvent $event): void
     {
-        $this->indexer->indexEvent($event->getEventId());
+        $this->indexer->indexEvent($event->eventId());
     }
 }

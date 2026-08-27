@@ -20,13 +20,4 @@ final class OrderRefundedEvent
     public function totalAmount(): int { return $this->totalAmount; }
     /** @return string[] */
     public function eventSeatIds(): array { return $this->eventSeatIds; }
-
-    /** @deprecated */
-    public function getOrderId(): string { return $this->orderId(); }
-    /** @deprecated */
-    public function getUserId(): string { return $this->userId(); }
-    /** @deprecated */
-    public function getTotalAmount(): int { return $this->totalAmount(); }
-    /** @deprecated */
-    public function getEventSeatIds(): array { return $this->eventSeatIds(); }
 }

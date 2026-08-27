@@ -29,7 +29,7 @@ final class DoctrinePaymentRepository implements PaymentRepositoryInterface
 
     public function findByOrderId(OrderId $orderId): ?Payment
     {
-        return $this->repository->findOneBy(['order' => $orderId->toString()]);
+        return $this->repository->findOneBy(['orderId' => $orderId->toString()]);
     }
 
     public function save(Payment $payment): void

@@ -17,6 +17,6 @@ final class IndexEventOnCreated
 
     public function __invoke(EventCreatedEvent $event): void
     {
-        $this->indexer->indexEvent($event->getEventId());
+        $this->indexer->indexEvent($event->eventId());
     }
 }

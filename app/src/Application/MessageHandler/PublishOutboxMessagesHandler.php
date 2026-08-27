@@ -6,6 +6,7 @@ namespace App\Application\MessageHandler;
 
 use App\Application\Message\PublishOutboxMessages;
 use App\Domain\Repository\OutboxMessageRepositoryInterface;
+use App\Domain\Shared\ClockInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\Envelope;
@@ -20,6 +21,7 @@ final class PublishOutboxMessagesHandler
     public function __construct(
         private readonly OutboxMessageRepositoryInterface $outboxMessages,
         private readonly TransportInterface $eventsTransport,
+        private readonly ClockInterface $clock,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -35,7 +37,7 @@ final class PublishOutboxMessagesHandler
                     [new BusNameStamp('event.bus')],
                 ));
 
-                $row->markSent();
+                $row->markSent($this->clock->now());
             } catch (\Throwable $exception) {
                 $row->markFailed();
                 $this->logger->error('Failed to publish outbox message {id}: {error}', [

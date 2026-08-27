@@ -8,6 +8,7 @@
         <id name="id" type="string" length="36">
             <generator strategy="NONE"/>
         </id>
+        <field name="version" type="integer" column="version" version="true"/>
 
         <field name="userId" column="user_id" type="string" length="36"/>
         <embedded name="totalPrice" class="App\Domain\ValueObject\Price" column-prefix="total_"/>

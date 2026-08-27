@@ -10,11 +10,12 @@ use App\Domain\ValueObject\SeatNumber;
 use App\Domain\ValueObject\SeatRow;
 use App\Domain\ValueObject\SeatSector;
 use App\Domain\ValueObject\SeatType;
+use App\Domain\ValueObject\VenueId;
 
 class Seat
 {
     private string $id;
-    private Venue $venue;
+    private string $venueId;
     private SeatRow $row;
     private SeatNumber $number;
     private ?SeatSector $sector = null;
@@ -22,14 +23,14 @@ class Seat
 
     private function __construct(
         SeatId $id,
-        Venue $venue,
+        VenueId $venueId,
         SeatRow $row,
         SeatNumber $number,
         SeatType $type,
         ?SeatSector $sector = null,
     ) {
         $this->id = $id->toString();
-        $this->venue = $venue;
+        $this->venueId = $venueId->toString();
         $this->row = $row;
         $this->number = $number;
         $this->type = $type;
@@ -37,16 +38,14 @@ class Seat
     }
 
     public static function create(
-        Venue $venue,
+        VenueId $venueId,
         SeatRow $row,
         SeatNumber $number,
         SeatType $type,
+        IdGeneratorInterface $ids,
         ?SeatSector $sector = null,
-        ?IdGeneratorInterface $ids = null,
-        ?SeatId $id = null,
     ): self {
-        $seatId = $id ?? new SeatId($ids ? $ids->generate() : \Symfony\Component\Uid\Uuid::v7()->toRfc4122());
-        return new self($seatId, $venue, $row, $number, $type, $sector);
+        return new self(new SeatId($ids->generate()), $venueId, $row, $number, $type, $sector);
     }
 
     public function id(): SeatId
@@ -56,9 +55,12 @@ class Seat
 
     public function rawId(): string { return $this->id; }
 
-    public function venue(): Venue
+    /**
+     * Reference to the Venue aggregate by ID (cross-aggregate boundary).
+     */
+    public function venueId(): VenueId
     {
-        return $this->venue;
+        return new VenueId($this->venueId);
     }
 
     public function row(): SeatRow

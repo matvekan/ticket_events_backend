@@ -26,6 +26,12 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
+        mock_bank:
+            pattern: ^/mock-bank
+            stateless: true
+            provider: doctrine
+            jwt: ~
+
         api:
             pattern: ^/api
             stateless: true
@@ -33,6 +39,8 @@ security:
             jwt: ~
 
     access_control:
+        - { path: ^/mock-bank/[^/]+$, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/mock-bank, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/forgot-password, roles: PUBLIC_ACCESS }
