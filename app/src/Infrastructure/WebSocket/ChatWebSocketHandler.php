@@ -108,7 +108,6 @@ final class ChatWebSocketHandler implements WebsocketClientHandler
                 $frame->text(),
             );
         } catch (\Throwable $exception) {
-            // Never leak internals to the client; log the real cause.
             $this->logger->warning(sprintf('Chat message rejected for %s: %s', (string) $user->id(), $exception->getMessage()));
             $this->sendError($client, 'Message rejected.');
 

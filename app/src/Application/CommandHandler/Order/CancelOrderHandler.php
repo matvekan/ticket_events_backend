@@ -75,7 +75,7 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
 
         // System callers (expiry scheduler) have no user context;
         // interactive calls must prove ownership.
-        if ($userId !== null && !$order->userId()->equals($userId)) {
+        if (!$order->userId()->equals($userId)) {
             throw new AccessDeniedException('You do not own this order.');
         }
 

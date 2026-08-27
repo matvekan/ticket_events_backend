@@ -15,6 +15,7 @@ final class CancelOrderCommand implements CommandInterface
         public readonly string $orderId,
 
         #[Assert\Uuid]
+        #[Assert\NotBlank]
         public readonly ?string $userId = null,
     ) {
     }

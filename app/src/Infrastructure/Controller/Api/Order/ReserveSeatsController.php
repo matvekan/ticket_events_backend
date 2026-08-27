@@ -24,8 +24,6 @@ final class ReserveSeatsController extends AbstractController
 
     public function __invoke(Request $request): JsonResponse
     {
-        // Normalize raw transport input before constructing the command so a
-        // malformed payload becomes 400/422 instead of a TypeError (500).
         $payload = $request->toArray();
         $seatIds = $payload['seatIds'] ?? [];
 
