@@ -102,6 +102,17 @@ services:
 
     App\Domain\Service\ChatAccessPolicy: ~
 
+    App\Domain\Shared\Service\SeatSelectionValidatorInterface:
+        class: App\Domain\Service\Order\SeatSelectionValidator
+
+    App\Domain\Shared\Service\OrderTicketFactoryInterface:
+        class: App\Domain\Service\Order\OrderTicketFactory
+
+    App\Domain\Service\Order\TicketCodeGenerator: ~
+
+    App\Application\Service\Order\ReserveSeatsUseCaseInterface:
+        class: App\Application\Service\Order\ReserveSeatsUseCase
+
     App\Infrastructure\Controller\Api\Admin\VerifyTicketController:
         arguments:
             $cache: '@cache.app'
@@ -153,3 +164,29 @@ services:
                 timeout: 10
             $settings:
                 database: '%env(string:CLICKHOUSE_DB)%'
+
+    # Exception Handlers
+    App\Infrastructure\Http\ExceptionHandler\CompositeExceptionHandler:
+        calls:
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\AccessDeniedExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\ApplicationAccessDeniedExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\InvalidIdentifierExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\ValidationExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\NotEncodableValueExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\HttpExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\DomainEntityNotFoundExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\BusinessRuleViolationExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\ApplicationEntityNotFoundExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\OptimisticLockExceptionHandler']
+            - method: addHandler
+              arguments: ['@App\Infrastructure\Http\ExceptionHandler\DomainExceptionHandler']

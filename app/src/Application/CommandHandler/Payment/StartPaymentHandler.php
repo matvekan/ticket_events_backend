@@ -40,48 +40,42 @@ final readonly class StartPaymentHandler implements CommandHandlerInterface
         $userIdVo = $command->userId !== null ? new UserId($command->userId) : null;
 
         try {
-            $this->startOnce($orderIdVo, $userIdVo);
-        } catch (PersistenceConstraintViolationException) {
-            // A concurrent request created the payment row first; it wins.
-            throw new BusinessRuleViolationException('A payment for this order is already being processed.');
-        }
-    }
+            $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
+                $order = $this->orders->findById($orderIdVo);
+                if (!$order) {
+                    throw new EntityNotFoundException('Order not found.');
+                }
 
-    private function startOnce(OrderId $orderIdVo, ?UserId $userIdVo): void
-    {
-        $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
-            $order = $this->orders->findById($orderIdVo);
-            if (!$order) {
-                throw new EntityNotFoundException('Order not found.');
-            }
+                if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
+                    throw new AccessDeniedException('You do not own this order.');
+                }
 
-            if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
-                throw new AccessDeniedException('You do not own this order.');
-            }
+                if ($order->status() !== OrderStatus::Pending) {
+                    throw new BusinessRuleViolationException('Only pending orders can be paid.');
+                }
 
-            if ($order->status() !== OrderStatus::Pending) {
-                throw new BusinessRuleViolationException('Only pending orders can be paid.');
-            }
+                $existing = $this->payments->findByOrderId($orderIdVo);
+                if ($existing !== null) {
+                    if ($existing->status() === PaymentStatus::Pending) {
+                        return;
+                    }
 
-            $existing = $this->payments->findByOrderId($orderIdVo);
-            if ($existing !== null) {
-                if ($existing->status() === PaymentStatus::Pending) {
+                    $existing->restart();
+                    $this->payments->save($existing);
+
                     return;
                 }
 
-                $existing->restart();
-                $this->payments->save($existing);
-
-                return;
-            }
-
-            $payment = Payment::place(
-                $order->id(),
-                $order->totalPrice()->amount(),
-                $this->clock,
-                $this->ids,
-            );
-            $this->payments->save($payment);
-        });
+                $payment = Payment::place(
+                    $order->id(),
+                    $order->totalPrice()->amount(),
+                    $this->clock,
+                    $this->ids,
+                );
+                $this->payments->save($payment);
+            });
+        } catch (PersistenceConstraintViolationException) {
+            throw new BusinessRuleViolationException('A payment for this order is already being processed.');
+        }
     }
 }

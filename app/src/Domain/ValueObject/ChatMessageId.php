@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject;
 
-final readonly class ChatMessageId
+use Yokai\DoctrineValueObject\StringValueObject;
+
+final readonly class ChatMessageId implements StringValueObject
 {
     public function __construct(private string $value)
     {
@@ -12,9 +14,39 @@ final readonly class ChatMessageId
             throw new \InvalidArgumentException(sprintf('Invalid ChatMessageId UUID: %s', $value));
         }
     }
-    public static function fromString(string $value): self { return new self($value); }
-    public function toString(): string { return $this->value; }
-    public function toRfc4122(): string { return $this->value; }
-    public function equals(self $other): bool { return $this->value === $other->value; }
-    public function __toString(): string { return $this->value; }
+
+    public static function fromString(string $value): self
+    {
+        return new self($value);
+    }
+
+    public static function fromValue(string $value): self
+    {
+        return new self($value);
+    }
+
+    public function toString(): string
+    {
+        return $this->value;
+    }
+
+    public function toValue(): string
+    {
+        return $this->value;
+    }
+
+    public function toRfc4122(): string
+    {
+        return $this->value;
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->value === $other->value;
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
+    }
 }

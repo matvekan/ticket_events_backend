@@ -12,27 +12,14 @@ use App\Domain\ValueObject\VenueName;
 
 class Venue
 {
-    private string $id;
-    private VenueName $name;
-    private VenueAddress $address;
-    private VenueCity $city;
-    private ?float $latitude = null;
-    private ?float $longitude = null;
-
     private function __construct(
-        VenueId $id,
-        VenueName $name,
-        VenueAddress $address,
-        VenueCity $city,
-        ?float $latitude,
-        ?float $longitude,
+        private readonly VenueId $id,
+        private readonly VenueName $name,
+        private readonly VenueAddress $address,
+        private readonly VenueCity $city,
+        private readonly ?float $latitude = null,
+        private readonly ?float $longitude = null,
     ) {
-        $this->id = $id->toString();
-        $this->name = $name;
-        $this->address = $address;
-        $this->city = $city;
-        $this->latitude = $latitude;
-        $this->longitude = $longitude;
     }
 
     public static function create(
@@ -48,10 +35,10 @@ class Venue
 
     public function id(): VenueId
     {
-        return new VenueId($this->id);
+        return $this->id;
     }
 
-    public function rawId(): string { return $this->id; }
+    public function rawId(): string { return $this->id->toString(); }
 
     public function name(): VenueName
     {

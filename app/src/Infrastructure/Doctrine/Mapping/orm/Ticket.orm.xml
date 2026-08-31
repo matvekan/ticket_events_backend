@@ -5,7 +5,7 @@
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Domain\Entity\Ticket" table="tickets">
-        <id name="id" type="string" length="36">
+        <id name="id" type="ticket_id">
             <generator strategy="NONE"/>
         </id>
 
@@ -15,7 +15,7 @@
         </many-to-one>
 
         <!-- Cross-aggregate reference by ID only. -->
-        <field name="eventSeatId" column="event_seat_id" type="string" length="36"/>
+        <field name="eventSeatId" column="event_seat_id" type="event_seat_id"/>
 
         <!-- Price snapshot fixed at purchase time. -->
         <embedded name="price" class="App\Domain\ValueObject\Price" column-prefix="price_"/>

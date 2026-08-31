@@ -17,7 +17,6 @@ use App\Domain\Repository\VenueRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\EventDescription;
-use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\EventTitle;
 use App\Domain\ValueObject\SeatId;
 use App\Domain\ValueObject\VenueId;
@@ -42,10 +41,6 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
             $venue = $this->venues->findById(new VenueId($command->venueId));
             if (!$venue) {
                 throw new EntityNotFoundException('Venue not found.');
-            }
-
-            if ($command->seats === []) {
-                throw new BusinessRuleViolationException('At least one seat must be selected.');
             }
 
             $event = Event::create(

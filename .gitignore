@@ -4,8 +4,21 @@ app/config/jwt/*.pem
 # IDE
 .idea/
 
-# Локальные скрипты и дампы запросов (Postman/бегунок)
+# PHP
+vendor/
+composer.lock
+
+# Symfony
+var/
+.env.local
+.env.local.php
+.env.*.local
+
+# Test files
+app/test_*.php
+
+# Scripts
 scripts/
 
-# Фронтенд живёт в отдельном репозитории (ticket-events-frontend)
+# Frontend
 frontend/

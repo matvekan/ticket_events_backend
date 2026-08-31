@@ -14,27 +14,14 @@ use App\Domain\ValueObject\VenueId;
 
 class Seat
 {
-    private string $id;
-    private string $venueId;
-    private SeatRow $row;
-    private SeatNumber $number;
-    private ?SeatSector $sector = null;
-    private SeatType $type;
-
     private function __construct(
-        SeatId $id,
-        VenueId $venueId,
-        SeatRow $row,
-        SeatNumber $number,
-        SeatType $type,
-        ?SeatSector $sector = null,
+        private readonly SeatId $id,
+        private readonly VenueId $venueId,
+        private readonly SeatRow $row,
+        private readonly SeatNumber $number,
+        private readonly SeatType $type,
+        private readonly ?SeatSector $sector = null,
     ) {
-        $this->id = $id->toString();
-        $this->venueId = $venueId->toString();
-        $this->row = $row;
-        $this->number = $number;
-        $this->type = $type;
-        $this->sector = $sector;
     }
 
     public static function create(
@@ -50,17 +37,17 @@ class Seat
 
     public function id(): SeatId
     {
-        return new SeatId($this->id);
+        return $this->id;
     }
 
-    public function rawId(): string { return $this->id; }
+    public function rawId(): string { return $this->id->toString(); }
 
     /**
      * Reference to the Venue aggregate by ID (cross-aggregate boundary).
      */
     public function venueId(): VenueId
     {
-        return new VenueId($this->venueId);
+        return $this->venueId;
     }
 
     public function row(): SeatRow

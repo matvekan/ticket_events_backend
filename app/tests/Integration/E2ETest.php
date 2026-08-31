@@ -91,8 +91,10 @@ class E2ETest extends WebTestCase
         // User sends a message (application service, same path as the WS handler)
         $user = self::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class)
             ->findByEmail(new \App\Domain\ValueObject\Email($userEmail));
+        $room = self::getContainer()->get(\App\Domain\Repository\ChatRoomRepositoryInterface::class)
+            ->findById(new \App\Domain\ValueObject\ChatRoomId($room['id']));
         $chatService = self::getContainer()->get(\App\Application\Service\Chat\ChatService::class);
-        $chatService->sendMessage($room['id'], $user->id()->toRfc4122(), 'Privet, podderzhka!');
+        $chatService->createMessage($room, $user, 'Privet, podderzhka!');
 
         // History shows the user message
         $this->client->request('GET', sprintf('/api/chat/rooms/%s/messages', $room['id']));
@@ -104,7 +106,9 @@ class E2ETest extends WebTestCase
         // Support replies
         $admin = self::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class)
             ->findByEmail(new \App\Domain\ValueObject\Email($adminEmail));
-        $chatService->sendMessage($room['id'], $admin->id()->toRfc4122(), 'Chem mogu pomoch?');
+        $room = self::getContainer()->get(\App\Domain\Repository\ChatRoomRepositoryInterface::class)
+            ->findById(new \App\Domain\ValueObject\ChatRoomId($room['id']));
+        $chatService->createMessage($room, $admin, 'Chem mogu pomoch?');
 
         // Support room list contains the room with last message preview
         $this->login($adminEmail);

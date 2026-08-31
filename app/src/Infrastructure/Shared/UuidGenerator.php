@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Shared;
 
-use App\Domain\Shared\IdGeneratorInterface;
 use Symfony\Component\Uid\Uuid;
 
-final class UuidGenerator implements IdGeneratorInterface
+final class UuidGenerator
 {
     public function generate(): string
     {

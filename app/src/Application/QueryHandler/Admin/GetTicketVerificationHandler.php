@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Application\QueryHandler\Admin;
 
 use App\Application\Dto\TicketVerificationDto;
+use App\Application\Exception\EventCancelledException;
+use App\Application\Exception\OrderNotPaidException;
+use App\Application\Exception\TicketNotFoundException;
 use App\Application\Port\TicketVerificationReadRepositoryInterface;
 use App\Application\Query\Admin\GetTicketVerificationQuery;
 use App\Application\Query\QueryHandlerInterface;
@@ -22,27 +25,27 @@ final class GetTicketVerificationHandler implements QueryHandlerInterface
 
     public function __invoke(GetTicketVerificationQuery $query): TicketVerificationDto
     {
-        $data = $this->tickets->findByCode($query->code);
+        $ticket = $this->tickets->findByCode($query->code);
 
-        if ($data === null) {
-            return new TicketVerificationDto(false, 'Билет с таким кодом не найден.');
+        if ($ticket === null) {
+            throw new TicketNotFoundException($query->code);
         }
 
-        if ($data->orderStatus !== OrderStatus::Paid->value) {
-            return new TicketVerificationDto(false, 'Заказ по этому билету не оплачен.');
+        if ($ticket->orderStatus !== OrderStatus::Paid->value) {
+            throw new OrderNotPaidException($query->code);
         }
 
-        if ($data->eventStatus === EventStatus::Cancelled->value) {
-            return new TicketVerificationDto(false, 'Событие отменено.');
+        if ($ticket->eventStatus === EventStatus::Cancelled->value) {
+            throw new EventCancelledException($query->code);
         }
 
         return new TicketVerificationDto(true, null, [
-            'code' => $data->code,
-            'eventTitle' => $data->eventTitle,
-            'eventDate' => $data->eventDate,
-            'venueName' => $data->venueName,
-            'seat' => sprintf('%s%s', $data->seatRow, $data->seatNumber),
-            'orderStatus' => $data->orderStatus,
+            'code' => $ticket->code,
+            'eventTitle' => $ticket->eventTitle,
+            'eventDate' => $ticket->eventDate,
+            'venueName' => $ticket->venueName,
+            'seat' => sprintf('%s%s', $ticket->seatRow, $ticket->seatNumber),
+            'orderStatus' => $ticket->orderStatus,
         ]);
     }
 }

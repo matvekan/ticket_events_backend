@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\ValueObject;
 
 use App\Domain\Exception\BusinessRuleViolationException;
+use Yokai\DoctrineValueObject\StringValueObject;
 
-final readonly class MessageText
+final readonly class MessageText implements StringValueObject
 {
     public const MAX_LENGTH = 2000;
 
@@ -24,6 +25,23 @@ final readonly class MessageText
         $this->value = $trimmed;
     }
 
-    public function toString(): string { return $this->value; }
-    public function __toString(): string { return $this->value; }
+    public static function fromValue(string $value): static
+    {
+        return new self($value);
+    }
+
+    public function toValue(): string
+    {
+        return $this->value;
+    }
+
+    public function toString(): string
+    {
+        return $this->value;
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
+    }
 }

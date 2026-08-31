@@ -20,24 +20,20 @@ use App\Domain\ValueObject\UserId;
 class Order
 {
     use EventRecordingCapability;
-    private string $id;
-    private string $userId;
-    private Price $totalPrice;
-    private OrderStatus $status;
-    private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $updatedAt = null;
-    private int $version = 1;
 
-    /** @var Ticket[]|\Traversable<int, Ticket>|null */
-    private $tickets = [];
-
-    private function __construct(OrderId $id, UserId $userId, \DateTimeImmutable $createdAt)
-    {
-        $this->id = $id->toString();
-        $this->userId = $userId->toString();
+    private function __construct(
+        private readonly OrderId $id,
+        private readonly UserId $userId,
+        private Price $totalPrice,
+        private OrderStatus $status,
+        private readonly \DateTimeImmutable $createdAt,
+        private ?\DateTimeImmutable $updatedAt = null,
+        private int $version = 1,
+        /** @var Ticket[] */
+        private array $tickets = [],
+    ) {
         $this->totalPrice = Price::fromAmount(0);
         $this->status = OrderStatus::Pending;
-        $this->createdAt = $createdAt;
     }
 
     public static function create(UserId $userId, ClockInterface $clock, IdGeneratorInterface $ids): self
@@ -53,17 +49,17 @@ class Order
 
     public function id(): OrderId
     {
-        return new OrderId($this->id);
+        return $this->id;
     }
 
     public function rawId(): string
     {
-        return $this->id;
+        return $this->id->toString();
     }
 
     public function userId(): UserId
     {
-        return new UserId($this->userId);
+        return $this->userId;
     }
 
     public function totalPrice(): Price

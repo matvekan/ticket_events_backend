@@ -7,6 +7,30 @@ doctrine:
         #server_version: '16'
 
         profiling_collect_backtrace: '%kernel.debug%'
+
+        types:
+            user_id: 'App\Domain\ValueObject\UserId'
+            chat_message_id: 'App\Domain\ValueObject\ChatMessageId'
+            chat_room_id: 'App\Domain\ValueObject\ChatRoomId'
+            event_id: 'App\Domain\ValueObject\EventId'
+            ticket_id: 'App\Domain\ValueObject\TicketId'
+            seat_id: 'App\Domain\ValueObject\SeatId'
+            venue_id: 'App\Domain\ValueObject\VenueId'
+            payment_id: 'App\Domain\ValueObject\PaymentId'
+            order_id: 'App\Domain\ValueObject\OrderId'
+            event_seat_id: 'App\Domain\ValueObject\EventSeatId'
+            message_text: 'App\Domain\ValueObject\MessageText'
+            name: 'App\Domain\ValueObject\Name'
+            email: 'App\Domain\ValueObject\Email'
+            event_title: 'App\Domain\ValueObject\EventTitle'
+            event_description: 'App\Domain\ValueObject\EventDescription'
+            venue_address: 'App\Domain\ValueObject\VenueAddress'
+            venue_city: 'App\Domain\ValueObject\VenueCity'
+            venue_name: 'App\Domain\ValueObject\VenueName'
+            seat_row: 'App\Domain\ValueObject\SeatRow'
+            seat_number: 'App\Domain\ValueObject\SeatNumber'
+            seat_sector: 'App\Domain\ValueObject\SeatSector'
+            ticket_code: 'App\Domain\ValueObject\TicketCode'
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore

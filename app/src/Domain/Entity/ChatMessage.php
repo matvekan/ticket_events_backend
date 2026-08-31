@@ -15,24 +15,13 @@ class ChatMessage
 {
     public const MAX_TEXT_LENGTH = MessageText::MAX_LENGTH;
 
-    private string $id;
-    private string $roomId;
-    private string $senderId;
-    private string $text;
-    private \DateTimeImmutable $createdAt;
-
     private function __construct(
-        ChatMessageId $id,
-        ChatRoomId $roomId,
-        UserId $senderId,
-        MessageText $text,
-        \DateTimeImmutable $createdAt,
+        private readonly ChatMessageId $id,
+        private readonly ChatRoomId $roomId,
+        private readonly UserId $senderId,
+        private readonly MessageText $text,
+        private readonly \DateTimeImmutable $createdAt,
     ) {
-        $this->id = $id->toString();
-        $this->roomId = $roomId->toString();
-        $this->senderId = $senderId->toString();
-        $this->text = $text->toString();
-        $this->createdAt = $createdAt;
     }
 
     public static function create(
@@ -53,17 +42,17 @@ class ChatMessage
 
     public function id(): ChatMessageId
     {
-        return new ChatMessageId($this->id);
+        return $this->id;
     }
 
-    public function rawId(): string { return $this->id; }
+    public function rawId(): string { return $this->id->toString(); }
 
     /**
      * Reference to the ChatRoom aggregate by ID (cross-aggregate boundary).
      */
     public function roomId(): ChatRoomId
     {
-        return new ChatRoomId($this->roomId);
+        return $this->roomId;
     }
 
     /**
@@ -71,10 +60,10 @@ class ChatMessage
      */
     public function senderId(): UserId
     {
-        return new UserId($this->senderId);
+        return $this->senderId;
     }
 
-    public function text(): string
+    public function text(): MessageText
     {
         return $this->text;
     }

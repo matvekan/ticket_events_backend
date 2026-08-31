@@ -20,42 +20,28 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
     /** @return OutboxMessage[] */
     public function findPending(int $limit): array
     {
-        // Competing workers must not publish the same rows. FOR UPDATE SKIP LOCKED
-        // lets each worker claim a disjoint batch inside a single transaction.
-        $conn = $this->connection;
-        $conn->beginTransaction();
+        $qb = $this->connection->createQueryBuilder()
+            ->select('id')
+            ->from('messenger_outbox')
+            ->where('sent_at IS NULL')
+            ->orderBy('created_at', 'ASC')
+            ->setMaxResults($limit);
 
-        try {
-            $ids = $conn->fetchFirstColumn(
-                'SELECT id FROM messenger_outbox WHERE sent_at IS NULL ORDER BY created_at ASC LIMIT ' . ((int) $limit) . ' FOR UPDATE SKIP LOCKED',
-            );
+        $sql = $qb->getSQL() . ' FOR UPDATE SKIP LOCKED';
 
-            if ($ids === []) {
-                $conn->commit();
+        $ids = $this->connection->fetchFirstColumn($sql);
 
-                return [];
-            }
-
-            // Hydrate the locked rows through the UnitOfWork so the caller can
-            // mutate (markSent/markFailed) and flush them afterwards.
-            $entities = $this->entityManager->createQueryBuilder()
-                ->select('m')
-                ->from(OutboxMessage::class, 'm')
-                ->where('m.id IN (:ids)')
-                ->setParameter('ids', $ids)
-                ->getQuery()
-                ->getResult();
-
-            $conn->commit();
-
-            return $entities;
-        } catch (\Throwable $e) {
-            if ($conn->isTransactionActive()) {
-                $conn->rollBack();
-            }
-
-            throw $e;
+        if ($ids === []) {
+            return [];
         }
+
+        return $this->entityManager->createQueryBuilder()
+            ->select('m')
+            ->from(OutboxMessage::class, 'm')
+            ->where('m.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->getResult();
     }
 
     public function save(OutboxMessage $message): void

@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Doctrine\Fixtures;
 
-use App\Application\Command\Auth\RegisterUserCommand;
+use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\ValueObject\Email;
+use App\Domain\ValueObject\UserId;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Generator;
-use Symfony\Component\Messenger\MessageBusInterface;
 
 final class UserFixtures extends Fixture
 {
     private Generator $faker;
 
     public function __construct(
-        private readonly MessageBusInterface $commandBus,
         private readonly UserRepositoryInterface $users,
     ) {
         $this->faker = Factory::create();
@@ -26,8 +25,8 @@ final class UserFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        $this->createDemoUser('Admin', 'admin@tickets.by', 'admin1234', ['ROLE_ADMIN']);
-        $this->createDemoUser('Demo User', 'demo@tickets.by', 'demo1234');
+        $this->createDemoUser('Admin', 'admin@tickets.by', 'admin1234', ['ROLE_ADMIN'], $manager);
+        $this->createDemoUser('Demo User', 'demo@tickets.by', 'demo1234', [], $manager);
 
         for ($i = 1; $i <= 5; ++$i) {
             $email = sprintf('user%d@tickets.by', $i);
@@ -36,20 +35,22 @@ final class UserFixtures extends Fixture
                 continue;
             }
 
-            $this->commandBus->dispatch(new RegisterUserCommand(
+            $user = new User(
+                id: UserId::generate(),
                 name: sprintf('%s %s', $this->faker->firstName(), $this->faker->lastName()),
-                email: $email,
-                password: $this->faker->password(8),
-            ));
+                email: new Email($email),
+                passwordHash: password_hash($this->faker->password(8), PASSWORD_DEFAULT),
+                roles: ['ROLE_USER'],
+            );
 
-            $user = $this->users->findByEmail(new Email($email));
-            if ($user !== null) {
-                $this->addReference(sprintf('user_%d', $i), $user);
-            }
+            $this->users->save($user);
+            $manager->flush();
+
+            $this->addReference(sprintf('user_%d', $i), $user);
         }
     }
 
-    private function createDemoUser(string $name, string $email, string $password, array $roles = []): void
+    private function createDemoUser(string $name, string $email, string $password, array $roles, ObjectManager $manager): void
     {
         $existing = $this->users->findByEmail(new Email($email));
         if ($existing !== null) {
@@ -57,19 +58,16 @@ final class UserFixtures extends Fixture
             return;
         }
 
-        $this->commandBus->dispatch(new RegisterUserCommand(
+        $user = new User(
+            id: UserId::generate(),
             name: $name,
-            email: $email,
-            password: $password,
-        ));
+            email: new Email($email),
+            passwordHash: password_hash($password, PASSWORD_DEFAULT),
+            roles: array_merge(['ROLE_USER'], $roles),
+        );
 
-        $user = $this->users->findByEmail(new Email($email));
-        if ($user !== null && $roles !== []) {
-            $user->changeRoles([...$roles, 'ROLE_USER']);
-            // Fixture flush happens in the executor; persist explicitly for change.
-            $manager = null; // kept for interface compat, executor will flush
-            $this->users->save($user);
-        }
+        $this->users->save($user);
+        $manager->flush();
 
         $this->addReference($email === 'admin@tickets.by' ? 'user_admin' : 'user_demo', $user);
     }

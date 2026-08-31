@@ -56,7 +56,6 @@ final readonly class RefundOrderHandler implements CommandHandlerInterface
             return $order->releaseEvents();
         });
 
-        // Fresh seat map right after commit (TTL remains as a safety net).
         foreach (array_keys($affectedEventIds) as $eventId) {
             $this->seatAvailabilityCache->invalidate($eventId);
         }

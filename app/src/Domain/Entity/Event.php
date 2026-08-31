@@ -18,39 +18,20 @@ use App\Domain\ValueObject\EventTitle;
 class Event
 {
     use EventRecordingCapability;
-    private string $id;
-    private EventTitle $title;
-    private EventDescription $description;
-    private \DateTimeImmutable $date;
-    private Venue $venue;
-    private EventStatus $status;
-    private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $updatedAt = null;
-
-    /** @var EventSeat[] */
-    private $eventSeats = [];
 
     private function __construct(
-        EventId $id,
-        EventTitle $title,
-        EventDescription $description,
-        \DateTimeImmutable $date,
-        Venue $venue,
-        ClockInterface $clock
+        private readonly EventId $id,
+        private readonly EventTitle $title,
+        private readonly EventDescription $description,
+        private readonly \DateTimeImmutable $date,
+        private readonly Venue $venue,
+        private EventStatus $status,
+        private readonly \DateTimeImmutable $createdAt,
+        private ?\DateTimeImmutable $updatedAt = null,
+        /** @var EventSeat[] */
+        private array $eventSeats = [],
     ) {
-        $this->id = $id->toString();
-        $this->title = $title;
-        $this->description = $description;
-
-        if ($date < $clock->now()) {
-            throw new BusinessRuleViolationException('Event date must be in the future.');
-        }
-
-        $this->date = $date;
-        $this->venue = $venue;
         $this->status = EventStatus::Draft;
-        $this->createdAt = $clock->now();
-
         $this->recordThat(new EventCreatedEvent($this->id, (string) $this->title));
     }
 
@@ -62,15 +43,27 @@ class Event
         ClockInterface $clock,
         IdGeneratorInterface $ids
     ): self {
-        return new self(new EventId($ids->generate()), $title, $description, $date, $venue, $clock);
+        if ($date < $clock->now()) {
+            throw new BusinessRuleViolationException('Event date must be in the future.');
+        }
+
+        return new self(
+            new EventId($ids->generate()),
+            $title,
+            $description,
+            $date,
+            $venue,
+            EventStatus::Draft,
+            $clock->now(),
+        );
     }
 
     public function id(): EventId
     {
-        return new EventId($this->id);
+        return $this->id;
     }
 
-    public function rawId(): string { return $this->id; }
+    public function rawId(): string { return $this->id->toString(); }
 
     public function title(): EventTitle
     {
@@ -168,4 +161,5 @@ class Event
 
         return $seats;
     }
-}
+
+    }

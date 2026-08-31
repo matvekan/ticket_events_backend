@@ -9,7 +9,7 @@
             <unique-constraint name="uniq_users_email" columns="email"/>
         </unique-constraints>
 
-        <id name="id" type="string" length="36">
+        <id name="id" type="user_id">
             <generator strategy="NONE"/>
         </id>
 

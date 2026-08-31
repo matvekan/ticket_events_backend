@@ -7,6 +7,8 @@ namespace App\Application\Service\Chat;
 use App\Application\Dto\ChatMessageDto;
 use App\Application\Exception\AccessDeniedException;
 use App\Application\Transaction\TransactionManagerInterface;
+use App\Domain\Entity\ChatMessage;
+use App\Domain\Entity\ChatRoom;
 use App\Domain\Entity\User;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\ChatMessageRepositoryInterface;
@@ -49,43 +51,32 @@ final readonly class ChatService
         });
     }
 
-    public function sendMessage(string $roomId, string $senderId, string $text): ChatMessageDto
+    public function createMessage(ChatRoom $room, User $sender, string $text): ChatMessageDto
     {
-        return $this->transactionManager->transactional(
-            function () use ($roomId, $senderId, $text): ChatMessageDto {
-                $room = $this->rooms->findById(new ChatRoomId($roomId));
-                if (!$room) {
-                    throw new EntityNotFoundException('Chat room not found.');
-                }
+        return $this->transactionManager->transactional(function () use ($room, $sender, $text): ChatMessageDto {
+            $message = ChatMessage::create(
+                $room->id(),
+                $sender->id(),
+                $text,
+                $this->clock,
+                $this->ids,
+            );
+            $this->messages->save($message);
 
-                $sender = $this->users->findById(new UserId($senderId));
-                if (!$sender) {
-                    throw new EntityNotFoundException('User not found.');
-                }
+            return $this->toDto($message, $sender);
+        });
+    }
 
-                if (!$this->accessPolicy->canParticipate($room, $sender)) {
-                    throw new AccessDeniedException('You do not have access to this chat room.');
-                }
-
-                $message = \App\Domain\Entity\ChatMessage::create(
-                    $room->id(),
-                    $sender->id(),
-                    $text,
-                    $this->clock,
-                    $this->ids,
-                );
-                $this->messages->save($message);
-
-                return new ChatMessageDto(
-                    id: $message->id()->toRfc4122(),
-                    roomId: $message->roomId()->toRfc4122(),
-                    senderId: $message->senderId()->toRfc4122(),
-                    senderName: (string) $sender->name(),
-                    isSupport: $this->accessPolicy->isSupport($sender),
-                    text: $message->text(),
-                    createdAt: $message->createdAt()->format('c'),
-                );
-            },
+    private function toDto(ChatMessage $message, User $sender): ChatMessageDto
+    {
+        return new ChatMessageDto(
+            id: $message->id()->toRfc4122(),
+            roomId: $message->roomId()->toRfc4122(),
+            senderId: $message->senderId()->toRfc4122(),
+            senderName: (string) $sender->name(),
+            isSupport: $this->accessPolicy->isSupport($sender),
+            text: $message->text()->toString(),
+            createdAt: $message->createdAt()->format('c'),
         );
     }
 

@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Doctrine\Fixtures;
 
-use App\Application\Command\Venue\AddSeatsToVenueCommand;
-use App\Application\Command\Venue\CreateVenueCommand;
-use App\Application\Dto\SeatData;
+use App\Domain\Entity\Seat;
 use App\Domain\Entity\Venue;
+use App\Domain\Repository\SeatRepositoryInterface;
 use App\Domain\Repository\VenueRepositoryInterface;
+use App\Domain\ValueObject\SeatId;
 use App\Domain\ValueObject\SeatType;
+use App\Domain\ValueObject\VenueId;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Generator;
-use Symfony\Component\Messenger\MessageBusInterface;
 
 final class VenueFixtures extends Fixture
 {
@@ -31,8 +31,8 @@ final class VenueFixtures extends Fixture
     private Generator $faker;
 
     public function __construct(
-        private readonly MessageBusInterface $commandBus,
         private readonly VenueRepositoryInterface $venues,
+        private readonly SeatRepositoryInterface $seats,
     ) {
         $this->faker = Factory::create();
     }
@@ -46,23 +46,23 @@ final class VenueFixtures extends Fixture
                 continue;
             }
 
-            $this->commandBus->dispatch(new CreateVenueCommand(
+            $venue = new Venue(
+                id: VenueId::generate(),
                 name: $name,
                 address: sprintf('%s, %s', $this->faker->streetName(), $this->faker->buildingNumber()),
                 city: $this->faker->randomElement(['Minsk', 'Grodno', 'Brest', 'Vitebsk', 'Gomel']),
                 latitude: $this->faker->latitude(53.8, 54.0),
                 longitude: $this->faker->longitude(27.4, 27.7),
-            ));
+            );
 
-            $venue = $this->findByName($name);
-            if ($venue === null) {
-                continue;
+            $this->venues->save($venue);
+            $manager->flush();
+
+            $seats = $this->buildSeats($venue);
+            foreach ($seats as $seat) {
+                $this->seats->save($seat);
             }
-
-            $this->commandBus->dispatch(new AddSeatsToVenueCommand(
-                venueId: $venue->id()->toRfc4122(),
-                seats: $this->buildSeats(),
-            ));
+            $manager->flush();
 
             $this->addReference(sprintf('venue_%d', $i), $venue);
         }
@@ -79,23 +79,43 @@ final class VenueFixtures extends Fixture
         return null;
     }
 
-    /** @return SeatData[] */
-    private function buildSeats(): array
+    /** @return Seat[] */
+    private function buildSeats(Venue $venue): array
     {
         $seats = [];
 
         foreach (['A', 'B', 'C', 'D'] as $row) {
             for ($number = 1; $number <= 12; ++$number) {
-                $seats[] = new SeatData($row, $number, SeatType::Standard->value);
+                $seats[] = new Seat(
+                    id: SeatId::generate(),
+                    venueId: $venue->id(),
+                    row: $row,
+                    number: $number,
+                    type: SeatType::Standard,
+                );
             }
         }
 
         for ($number = 1; $number <= 10; ++$number) {
-            $seats[] = new SeatData('E', $number, SeatType::VIP->value, 'VIP zone');
+            $seats[] = new Seat(
+                id: SeatId::generate(),
+                venueId: $venue->id(),
+                row: 'E',
+                number: $number,
+                type: SeatType::VIP,
+                zone: 'VIP zone',
+            );
         }
 
         for ($number = 1; $number <= 6; ++$number) {
-            $seats[] = new SeatData('F', $number, SeatType::Premium->value, 'Fan zone');
+            $seats[] = new Seat(
+                id: SeatId::generate(),
+                venueId: $venue->id(),
+                row: 'F',
+                number: $number,
+                type: SeatType::Premium,
+                zone: 'Fan zone',
+            );
         }
 
         return $seats;

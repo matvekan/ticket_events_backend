@@ -14,38 +14,33 @@ use App\Domain\ValueObject\OrderId;
 
 class Payment
 {
-    private string $id;
-    private string $orderId;
-    private int $amount;
-    private PaymentStatus $status;
-    private \DateTimeImmutable $createdAt;
-    private ?\DateTimeImmutable $paidAt = null;
-    private ?\DateTimeImmutable $failedAt = null;
-
-    private function __construct(PaymentId $id, OrderId $orderId, int $amount, ClockInterface $clock)
-    {
-        $this->id = $id->toString();
-        $this->orderId = $orderId->toString();
-        $this->amount = $amount;
+    private function __construct(
+        private readonly PaymentId $id,
+        private readonly OrderId $orderId,
+        private readonly int $amount,
+        private PaymentStatus $status,
+        private readonly \DateTimeImmutable $createdAt,
+        private ?\DateTimeImmutable $paidAt = null,
+        private ?\DateTimeImmutable $failedAt = null,
+    ) {
         $this->status = PaymentStatus::Pending;
-        $this->createdAt = $clock->now();
     }
 
     public static function place(OrderId $orderId, int $amount, ClockInterface $clock, IdGeneratorInterface $ids): self
     {
-        return new self(new PaymentId($ids->generate()), $orderId, $amount, $clock);
+        return new self(new PaymentId($ids->generate()), $orderId, $amount, $clock->now());
     }
 
     public function id(): PaymentId
     {
-        return new PaymentId($this->id);
+        return $this->id;
     }
 
-    public function rawId(): string { return $this->id; }
+    public function rawId(): string { return $this->id->toString(); }
 
     public function orderId(): OrderId
     {
-        return new OrderId($this->orderId);
+        return $this->orderId;
     }
 
     public function amount(): int

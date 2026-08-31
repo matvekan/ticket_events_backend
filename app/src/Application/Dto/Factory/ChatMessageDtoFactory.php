@@ -7,32 +7,12 @@ namespace App\Application\Dto\Factory;
 use App\Application\Dto\ChatMessageDto;
 use App\Domain\Entity\ChatMessage;
 use App\Domain\Entity\User;
-use App\Domain\Repository\UserRepositoryInterface;
-use App\Domain\ValueObject\UserId;
 
 final class ChatMessageDtoFactory
 {
-    public function __construct(
-        private readonly UserRepositoryInterface $users,
-    ) {
-    }
-
-    public function fromMessage(ChatMessage $message): ChatMessageDto
-    {
-        $sender = $this->users->findById($message->senderId());
-
-        return $this->build($message, $sender);
-    }
-
     /** @param ChatMessage[] $messages @return ChatMessageDto[] */
-    public function fromMessageList(array $messages): array
+    public function fromMessageList(array $messages, array $senders): array
     {
-        // Batch-resolve senders to avoid N+1 lookups.
-        $senders = $this->users->findByIds(array_map(
-            static fn (ChatMessage $message): UserId => $message->senderId(),
-            $messages,
-        ));
-
         return array_map(
             fn (ChatMessage $message): ChatMessageDto => $this->build(
                 $message,
@@ -50,7 +30,7 @@ final class ChatMessageDtoFactory
             senderId: $message->senderId()->toRfc4122(),
             senderName: $sender !== null ? (string) $sender->name() : 'Unknown',
             isSupport: $sender !== null && in_array('ROLE_ADMIN', $sender->roles(), true),
-            text: $message->text(),
+            text: $message->text()->toString(),
             createdAt: $message->createdAt()->format('c'),
         );
     }

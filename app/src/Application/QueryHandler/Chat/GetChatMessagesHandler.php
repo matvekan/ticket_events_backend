@@ -44,6 +44,10 @@ final class GetChatMessagesHandler implements QueryHandlerInterface
             throw new AccessDeniedException('You do not have access to this chat room.');
         }
         $messages = $this->messages->findByRoomId($room->id());
-        return $this->factory->fromMessageList($messages);
+        $senders = $this->users->findByIds(array_map(
+            static fn (ChatMessage $message) => $message->senderId(),
+            $messages,
+        ));
+        return $this->factory->fromMessageList($messages, $senders);
     }
 }

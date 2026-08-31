@@ -5,12 +5,12 @@
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Domain\Entity\Order" table="orders">
-        <id name="id" type="string" length="36">
+        <id name="id" type="order_id">
             <generator strategy="NONE"/>
         </id>
         <field name="version" type="integer" column="version" version="true"/>
 
-        <field name="userId" column="user_id" type="string" length="36"/>
+        <field name="userId" column="user_id" type="user_id"/>
         <embedded name="totalPrice" class="App\Domain\ValueObject\Price" column-prefix="total_"/>
         <field name="status" type="string" enum-type="App\Domain\ValueObject\OrderStatus" length="20"/>
         <field name="createdAt" type="datetime_immutable"/>

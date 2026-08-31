@@ -6,11 +6,23 @@ namespace App\Infrastructure\Controller\Api\Order;
 
 use App\Application\Query\Order\GetUserOrdersQuery;
 use App\Application\Query\QueryBusInterface;
+use OpenApi\Attributes as OA;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Bundle\SecurityBundle\Security;
 
 #[Route('/api/orders/my', name: 'order.my', methods: ['GET'])]
+#[OA\Tag(name: 'Orders')]
+#[OA\Get(
+    path: '/api/orders/my',
+    summary: 'Get current user orders',
+    tags: ['Orders'],
+    security: [['BearerAuth' => []]],
+    responses: [
+        new OA\Response(response: 200, description: 'List of user orders', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/Order'))),
+        new OA\Response(response: 401, description: 'Unauthorized'),
+    ]
+)]
 final class GetUserOrdersController
 {
     public function __construct(

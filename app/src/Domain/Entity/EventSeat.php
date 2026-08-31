@@ -12,22 +12,17 @@ use App\Domain\ValueObject\SeatStatus;
 
 class EventSeat
 {
-    private string $id;
-    private Event $event;
-    private Seat $seat;
-    private Price $price;
-    private SeatStatus $status;
-
-    private function __construct(EventSeatId $id, Event $event, Seat $seat, Price $price)
-    {
+    private function __construct(
+        private readonly EventSeatId $id,
+        private Event $event,
+        private Seat $seat,
+        private readonly Price $price,
+        private SeatStatus $status,
+    ) {
         if (!$seat->venueId()->equals($event->venue()->id())) {
             throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
         }
 
-        $this->id = $id->toString();
-        $this->event = $event;
-        $this->seat = $seat;
-        $this->price = $price;
         $this->status = SeatStatus::Free;
     }
 
@@ -48,10 +43,10 @@ class EventSeat
 
     public function id(): EventSeatId
     {
-        return new EventSeatId($this->id);
+        return $this->id;
     }
 
-    public function rawId(): string { return $this->id; }
+    public function rawId(): string { return $this->id->toString(); }
 
     public function event(): Event
     {

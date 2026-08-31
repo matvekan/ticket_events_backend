@@ -9,10 +9,7 @@ use App\Application\Command\CommandHandlerInterface;
 use App\Application\Service\Chat\ChatService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
-/**
- * Commands are fire-and-forget: the created room is read back via
- * GetChatRoomQuery by whoever needs it.
- */
+
 #[AsMessageHandler]
 final readonly class OpenChatRoomHandler implements CommandHandlerInterface
 {

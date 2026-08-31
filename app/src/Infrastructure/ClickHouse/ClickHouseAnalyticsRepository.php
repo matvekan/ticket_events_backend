@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\ClickHouse;
 
+use App\Application\Dto\Analytics\AnalyticsByDayDto;
+use App\Application\Dto\Analytics\AnalyticsTotalsDto;
+use App\Application\Dto\Analytics\RecentPaymentDto;
+use App\Application\Dto\Analytics\TableTotalsDto;
+use App\Application\Dto\Analytics\TopUserDto;
 use App\Application\Port\AnalyticsRepositoryInterface;
 use ClickHouseDB\Client as ClickHouseClient;
 
@@ -14,25 +19,24 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
     ) {
     }
 
-    public function totals(): array
+    public function totals(): AnalyticsTotalsDto
     {
-        return [
-            'payments' => $this->tableTotals('order_payments'),
-            'refunds' => $this->tableTotals('order_refunds'),
-            'cancellations' => $this->countRows('order_cancellations'),
-            'reservations' => $this->countRows('seat_reservations'),
-        ];
+        return new AnalyticsTotalsDto(
+            payments: $this->tableTotals('order_payments'),
+            refunds: $this->tableTotals('order_refunds'),
+            cancellations: $this->countRows('order_cancellations'),
+            reservations: $this->countRows('seat_reservations'),
+        );
     }
 
-    /** @return array{count: int, amount: int} */
-    public function tableTotals(string $table): array
+    public function tableTotals(string $table): TableTotalsDto
     {
         $row = $this->select("SELECT count() AS cnt, coalesce(sum(amount), 0) AS total FROM {$this->table($table)}");
 
-        return [
-            'count' => (int) ($row[0]['cnt'] ?? 0),
-            'amount' => (int) ($row[0]['total'] ?? 0),
-        ];
+        return new TableTotalsDto(
+            count: (int) ($row[0]['cnt'] ?? 0),
+            amount: (int) ($row[0]['total'] ?? 0),
+        );
     }
 
     public function countRows(string $table): int
@@ -42,7 +46,7 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
         return (int) ($row[0]['cnt'] ?? 0);
     }
 
-    /** @return array<int, array{day: string, revenue: int, refunds: int}> */
+    /** @return AnalyticsByDayDto[] */
     public function byDay(): array
     {
         $payments = $this->select(
@@ -60,24 +64,32 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
 
         $byDay = [];
         foreach ($payments as $row) {
-            $byDay[(string) $row['day']] = [
-                'day' => (string) $row['day'],
-                'revenue' => (int) $row['revenue'],
-                'refunds' => 0,
-            ];
+            $byDay[(string) $row['day']] = new AnalyticsByDayDto(
+                day: (string) $row['day'],
+                revenue: (int) $row['revenue'],
+                refunds: 0,
+            );
         }
         foreach ($refunds as $row) {
             $day = (string) $row['day'];
             if (!isset($byDay[$day])) {
-                $byDay[$day] = ['day' => $day, 'revenue' => 0, 'refunds' => 0];
+                $byDay[$day] = new AnalyticsByDayDto(
+                    day: $day,
+                    revenue: 0,
+                    refunds: 0,
+                );
             }
-            $byDay[$day]['refunds'] = (int) $row['refunds'];
+            $byDay[$day] = new AnalyticsByDayDto(
+                day: $byDay[$day]->day,
+                revenue: $byDay[$day]->revenue,
+                refunds: (int) $row['refunds'],
+            );
         }
 
         return array_values($byDay);
     }
 
-    /** @return array<int, array{user_id: string, orders: int, revenue: int}> */
+    /** @return TopUserDto[] */
     public function topUsers(): array
     {
         $rows = $this->select(
@@ -86,14 +98,14 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
              GROUP BY user_id ORDER BY revenue DESC LIMIT 10",
         );
 
-        return array_map(static fn (array $row): array => [
-            'user_id' => (string) $row['user_id'],
-            'orders' => (int) $row['orders'],
-            'revenue' => (int) $row['revenue'],
-        ], $rows);
+        return array_map(static fn (array $row): TopUserDto => new TopUserDto(
+            userId: (string) $row['user_id'],
+            orders: (int) $row['orders'],
+            revenue: (int) $row['revenue'],
+        ), $rows);
     }
 
-    /** @return array<int, array{order_id: string, user_id: string, amount: int, timestamp: string}> */
+    /** @return RecentPaymentDto[] */
     public function recentPayments(): array
     {
         $rows = $this->select(
@@ -102,12 +114,12 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
              ORDER BY timestamp DESC LIMIT 10",
         );
 
-        return array_map(static fn (array $row): array => [
-            'order_id' => (string) $row['order_id'],
-            'user_id' => (string) $row['user_id'],
-            'amount' => (int) $row['amount'],
-            'timestamp' => (string) $row['timestamp'],
-        ], $rows);
+        return array_map(static fn (array $row): RecentPaymentDto => new RecentPaymentDto(
+            orderId: (string) $row['order_id'],
+            userId: (string) $row['user_id'],
+            amount: (int) $row['amount'],
+            timestamp: (string) $row['timestamp'],
+        ), $rows);
     }
 
     private function database(): string

@@ -12,20 +12,17 @@ use App\Domain\ValueObject\UserId;
 
 class User
 {
-    private string $id;
-    private Name $name;
-    private Email $email;
-    private array $roles = [];
-    private ?string $password = null;
-    private ?string $resetPasswordTokenHash = null;
-    private ?\DateTimeImmutable $resetPasswordTokenExpiresAt = null;
-
-    private function __construct(UserId $id, Name $name, Email $email)
-    {
-        $this->id = $id->toString();
-        $this->name = $name;
-        $this->email = $email;
-        $this->roles = [Role::User->value];
+    private function __construct(
+        private readonly UserId $id,
+        private readonly Name $name,
+        private readonly Email $email,
+        /** @var list<Role> */
+        private array $roles = [],
+        private ?string $password = null,
+        private ?string $resetPasswordTokenHash = null,
+        private ?\DateTimeImmutable $resetPasswordTokenExpiresAt = null,
+    ) {
+        $this->roles = [Role::User];
     }
 
     public static function create(UserId $id, Name $name, Email $email): self
@@ -35,12 +32,12 @@ class User
 
     public function id(): UserId
     {
-        return new UserId($this->id);
+        return $this->id;
     }
 
     public function rawId(): string
     {
-        return $this->id;
+        return $this->id->toString();
     }
 
     public function name(): Name
@@ -53,6 +50,7 @@ class User
         return $this->email;
     }
 
+    /** @return list<Role> */
     public function roles(): array
     {
         return $this->roles;

@@ -5,12 +5,12 @@
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Domain\Entity\ChatRoom" table="chat_rooms">
-        <id name="id" type="string" length="36">
+        <id name="id" type="chat_room_id">
             <generator strategy="NONE"/>
         </id>
 
         <!-- Cross-aggregate reference by ID only. -->
-        <field name="userId" column="user_id" type="string" length="36"/>
+        <field name="userId" column="user_id" type="user_id"/>
         <field name="createdAt" type="datetime_immutable"/>
 
         <unique-constraints>

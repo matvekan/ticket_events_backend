@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject;
 
-final readonly class UserId
+use Yokai\DoctrineValueObject\StringValueObject;
+
+final readonly class UserId implements StringValueObject
 {
     public function __construct(private string $value)
     {
@@ -18,7 +20,17 @@ final readonly class UserId
         return new self($value);
     }
 
+    public static function fromValue(string $value): self
+    {
+        return new self($value);
+    }
+
     public function toString(): string
+    {
+        return $this->value;
+    }
+
+    public function toValue(): string
     {
         return $this->value;
     }

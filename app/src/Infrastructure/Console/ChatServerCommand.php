@@ -9,7 +9,7 @@ use Amp\Http\Server\SocketHttpServer;
 use Amp\Socket\InternetAddress;
 use Amp\Websocket\Server\Rfc6455Acceptor;
 use Amp\Websocket\Server\Websocket;
-use App\Infrastructure\WebSocket\ChatWebSocketHandler;
+use App\Infrastructure\WebSocket\Handler\ChatConnectionManager;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -26,7 +26,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class ChatServerCommand extends Command
 {
     public function __construct(
-        private readonly ChatWebSocketHandler $handler,
+        private readonly ChatConnectionManager $handler,
         private readonly string $chatWsBind,
         private readonly int $chatWsPort,
     ) {

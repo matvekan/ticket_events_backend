@@ -14,22 +14,16 @@ use App\Domain\ValueObject\TicketStatus;
 
 class Ticket
 {
-    private string $id;
-    private Order $order;
-    private string $eventSeatId;
-    private Price $price;
-    private TicketCode $code;
-    private TicketStatus $status;
-
-    private function __construct(TicketId $id, Order $order, EventSeatId $eventSeatId, Price $price, TicketCode $code)
-    {
-        $this->id = $id->toString();
-        $this->order = $order;
-        $this->eventSeatId = $eventSeatId->toString();
+    private function __construct(
+        private readonly TicketId $id,
+        private Order $order,
+        private readonly EventSeatId $eventSeatId,
+        private readonly Price $price,
+        private readonly TicketCode $code,
+        private TicketStatus $status,
+    ) {
         // Price is snapshotted at purchase time: later price changes on the
         // seat must not rewrite the history of already sold tickets.
-        $this->price = $price;
-        $this->code = $code;
         $this->status = TicketStatus::Reserved;
     }
 
@@ -45,10 +39,10 @@ class Ticket
 
     public function id(): TicketId
     {
-        return new TicketId($this->id);
+        return $this->id;
     }
 
-    public function rawId(): string { return $this->id; }
+    public function rawId(): string { return $this->id->toString(); }
 
     public function order(): Order
     {
@@ -60,7 +54,7 @@ class Ticket
      */
     public function eventSeatId(): EventSeatId
     {
-        return new EventSeatId($this->eventSeatId);
+        return $this->eventSeatId;
     }
 
     /**

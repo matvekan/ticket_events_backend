@@ -35,8 +35,6 @@ final readonly class RegisterUserHandler implements CommandHandlerInterface
 
         try {
             $this->transactionManager->transactional(function () use ($email, $command): void {
-                // Fast-fail inside the transaction; the unique constraint on
-                // users(email) remains the authoritative guard against races.
                 if ($this->users->findByEmail($email) !== null) {
                     throw new BusinessRuleViolationException('Email already registered.');
                 }
@@ -47,7 +45,6 @@ final readonly class RegisterUserHandler implements CommandHandlerInterface
                 $this->users->save($user);
             });
         } catch (PersistenceConstraintViolationException) {
-            // Concurrent registration with the same email lost the race.
             throw new BusinessRuleViolationException('Email already registered.');
         }
     }

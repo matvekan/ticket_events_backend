@@ -11,15 +11,11 @@ use App\Domain\ValueObject\UserId;
 
 class ChatRoom
 {
-    private string $id;
-    private string $userId;
-    private \DateTimeImmutable $createdAt;
-
-    private function __construct(ChatRoomId $id, UserId $userId, \DateTimeImmutable $createdAt)
-    {
-        $this->id = $id->toString();
-        $this->userId = $userId->toString();
-        $this->createdAt = $createdAt;
+    private function __construct(
+        private readonly ChatRoomId $id,
+        private readonly UserId $userId,
+        private readonly \DateTimeImmutable $createdAt,
+    ) {
     }
 
     public static function create(UserId $userId, ClockInterface $clock, IdGeneratorInterface $ids): self
@@ -29,17 +25,17 @@ class ChatRoom
 
     public function id(): ChatRoomId
     {
-        return new ChatRoomId($this->id);
+        return $this->id;
     }
 
     public function rawId(): string
     {
-        return $this->id;
+        return $this->id->toString();
     }
 
     public function userId(): UserId
     {
-        return new UserId($this->userId);
+        return $this->userId;
     }
 
     public function createdAt(): \DateTimeImmutable
