@@ -8,7 +8,7 @@ use App\Application\Dto\TicketVerificationDto;
 use App\Application\Exception\EventCancelledException;
 use App\Application\Exception\OrderNotPaidException;
 use App\Application\Exception\TicketNotFoundException;
-use App\Application\Port\TicketVerificationReadRepositoryInterface;
+use App\Domain\Repository\TicketRepositoryInterface;
 use App\Application\Query\Admin\GetTicketVerificationQuery;
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\ValueObject\EventStatus;
@@ -19,13 +19,13 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetTicketVerificationHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly TicketVerificationReadRepositoryInterface $tickets,
+        private readonly TicketRepositoryInterface $tickets,
     ) {
     }
 
     public function __invoke(GetTicketVerificationQuery $query): TicketVerificationDto
     {
-        $ticket = $this->tickets->findByCode($query->code);
+        $ticket = $this->tickets->findVerificationByCode($query->code);
 
         if ($ticket === null) {
             throw new TicketNotFoundException($query->code);

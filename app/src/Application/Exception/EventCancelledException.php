@@ -10,6 +10,6 @@ final class EventCancelledException extends BusinessRuleViolationException
 {
     public function __construct(string $code)
     {
-        parent::__construct(sprintf('Событие по билету "%s" отменено.', $code));
+        parent::__construct(sprintf('Event for ticket "%s" is cancelled.', $code));
     }
 }

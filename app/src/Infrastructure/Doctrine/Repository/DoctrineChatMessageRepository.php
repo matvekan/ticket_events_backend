@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineChatMessageRepository implements ChatMessageRepositoryInterface
 {
-    /** @var EntityRepository<ChatMessage> */
+    
     private readonly EntityRepository $repository;
 
     public function __construct(

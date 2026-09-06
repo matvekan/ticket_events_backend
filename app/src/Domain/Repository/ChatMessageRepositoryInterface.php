@@ -9,7 +9,7 @@ use App\Domain\ValueObject\ChatRoomId;
 
 interface ChatMessageRepositoryInterface
 {
-    /** @return ChatMessage[] */
+    
     public function findByRoomId(ChatRoomId $roomId): array;
 
     public function save(ChatMessage $message): void;

@@ -39,11 +39,7 @@ final class ChatAuthenticator
         return $this->users->findByEmail(new Email($payload['username']));
     }
 
-    /**
-     * Preferred: `Sec-WebSocket-Protocol: <token>` (kept out of URLs and
-     * access logs). Fallback: `?token=` query parameter for browsers that
-     * cannot set custom headers.
-     */
+    
     private function extractToken(Request $request): ?string
     {
         $protocolHeader = $request->getHeader('sec-websocket-protocol');

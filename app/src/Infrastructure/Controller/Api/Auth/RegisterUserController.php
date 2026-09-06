@@ -31,6 +31,7 @@ use Symfony\Component\Routing\Attribute\Route;
     responses: [
         new OA\Response(response: 201, description: 'User registered successfully'),
         new OA\Response(response: 422, description: 'Validation failed'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class RegisterUserController

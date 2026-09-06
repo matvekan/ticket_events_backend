@@ -11,13 +11,6 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 
-/**
- * Translates exceptions thrown by the Application/Domain layers into
- * consistent JSON error responses for /api routes.
- *
- * HTTP status mapping lives here (Infrastructure) — domain and application
- * exceptions carry no transport semantics.
- */
 final class ApiExceptionListener implements EventSubscriberInterface
 {
     public function __construct(

@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
@@ -15,6 +13,7 @@ use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\Price;
+use App\Domain\ValueObject\TicketStatus;
 use App\Domain\ValueObject\UserId;
 
 class Order
@@ -22,15 +21,14 @@ class Order
     use EventRecordingCapability;
 
     private function __construct(
-        private readonly OrderId $id,
-        private readonly UserId $userId,
+        private OrderId $id,
+        private UserId $userId,
         private Price $totalPrice,
         private OrderStatus $status,
-        private readonly \DateTimeImmutable $createdAt,
+        private \DateTimeImmutable $createdAt,
         private ?\DateTimeImmutable $updatedAt = null,
         private int $version = 1,
-        /** @var Ticket[] */
-        private array $tickets = [],
+        private iterable $tickets = [],
     ) {
         $this->totalPrice = Price::fromAmount(0);
         $this->status = OrderStatus::Pending;
@@ -38,13 +36,19 @@ class Order
 
     public static function create(UserId $userId, ClockInterface $clock, IdGeneratorInterface $ids): self
     {
-        return new self(new OrderId($ids->generate()), $userId, $clock->now());
+        return new self(
+            new OrderId($ids->generate()),
+            $userId,
+            Price::fromAmount(0),
+            OrderStatus::Pending,
+            $clock->now()
+        );
     }
 
     public function markSeatsAsReserved(): void
     {
         $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
-        $this->recordThat(new SeatsReservedEvent($this->id, $this->userId, $eventSeatIds));
+        $this->recordThat(new SeatsReservedEvent($this->id->toString(), $this->userId->toString(), $eventSeatIds));
     }
 
     public function id(): OrderId
@@ -77,12 +81,6 @@ class Order
         return $this->createdAt;
     }
 
-    public function updatedAt(): ?\DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
-
-    /** @return Ticket[] */
     public function tickets(): array
     {
         return $this->ticketList();
@@ -91,7 +89,6 @@ class Order
     public function addTicket(Ticket $ticket): void
     {
         $tickets = $this->ticketList();
-
         foreach ($tickets as $existing) {
             if ($existing->id()->equals($ticket->id())) {
                 return;
@@ -113,7 +110,6 @@ class Order
         foreach ($this->ticketList() as $ticket) {
             $total += $ticket->price()->amount();
         }
-
         $this->totalPrice = Price::fromAmount($total, $this->totalPrice->currency());
     }
 
@@ -122,7 +118,6 @@ class Order
         if ($this->status !== OrderStatus::Pending) {
             throw new BusinessRuleViolationException('Only pending orders can be paid.');
         }
-
         if ($this->ticketList() === [] || $this->totalPrice->amount() <= 0) {
             throw new BusinessRuleViolationException('Cannot pay an order without tickets.');
         }
@@ -130,10 +125,14 @@ class Order
         $this->status = OrderStatus::Paid;
         $this->updatedAt = $clock->now();
 
+        foreach ($this->ticketList() as $ticket) {
+            $ticket->activate();
+        }
+
         $ticketIds = array_map(fn (Ticket $ticket) => $ticket->id()->toString(), $this->ticketList());
         $this->recordThat(new OrderPaidEvent(
-            $this->id,
-            $this->userId,
+            $this->id->toString(),
+            $this->userId->toString(),
             $this->totalPrice->amount(),
             $ticketIds,
         ));
@@ -144,7 +143,6 @@ class Order
         if ($this->status !== OrderStatus::Pending) {
             throw new BusinessRuleViolationException('Only pending orders can be cancelled.');
         }
-
         if ($this->ticketList() === []) {
             throw new BusinessRuleViolationException('Cannot cancel an order without tickets.');
         }
@@ -152,8 +150,14 @@ class Order
         $this->status = OrderStatus::Cancelled;
         $this->updatedAt = $clock->now();
 
+        foreach ($this->ticketList() as $ticket) {
+            if ($ticket->status() === TicketStatus::Reserved || $ticket->status() === TicketStatus::Active) {
+                $ticket->cancel();
+            }
+        }
+
         $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
-        $this->recordThat(new OrderCancelledEvent($this->id, $this->userId, $eventSeatIds));
+        $this->recordThat(new OrderCancelledEvent($this->id->toString(), $this->userId->toString(), $eventSeatIds));
     }
 
     public function refund(ClockInterface $clock): void
@@ -161,7 +165,6 @@ class Order
         if ($this->status !== OrderStatus::Paid) {
             throw new BusinessRuleViolationException('Only paid orders can be refunded.');
         }
-
         if ($this->ticketList() === []) {
             throw new BusinessRuleViolationException('Cannot refund an order without tickets.');
         }
@@ -169,25 +172,30 @@ class Order
         $this->status = OrderStatus::Refunded;
         $this->updatedAt = $clock->now();
 
+        foreach ($this->ticketList() as $ticket) {
+            if ($ticket->status() === TicketStatus::Active || $ticket->status() === TicketStatus::Used) {
+                $ticket->refund();
+            } elseif ($ticket->status() === TicketStatus::Reserved) {
+                $ticket->cancel();
+            }
+        }
+
         $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
         $this->recordThat(new OrderRefundedEvent(
-            $this->id,
-            $this->userId,
+            $this->id->toString(),
+            $this->userId->toString(),
             $this->totalPrice->amount(),
             $eventSeatIds,
         ));
     }
 
-    /** @return Ticket[] */
     private function ticketList(): array
     {
         if (is_array($this->tickets)) {
             return $this->tickets;
         }
-
         $tickets = iterator_to_array($this->tickets);
         $this->tickets = $tickets;
-
         return $tickets;
     }
 }

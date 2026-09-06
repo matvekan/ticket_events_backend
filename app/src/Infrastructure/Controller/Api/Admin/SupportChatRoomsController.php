@@ -21,6 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 200, description: 'List of support chat rooms', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/ChatRoom'))),
         new OA\Response(response: 401, description: 'Unauthorized'),
         new OA\Response(response: 403, description: 'Forbidden'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class SupportChatRoomsController

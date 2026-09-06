@@ -24,6 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
     responses: [
         new OA\Response(response: 201, description: 'Chat room opened or retrieved', content: new OA\JsonContent(ref: '#/components/schemas/ChatRoom')),
         new OA\Response(response: 401, description: 'Unauthorized'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class OpenChatRoomController
@@ -37,11 +38,9 @@ final class OpenChatRoomController
 
     public function __invoke(): JsonResponse
     {
-        /** @var \App\Infrastructure\Security\DomainUserAdapter $user */
         $user = $this->security->getUser();
-        $userId = $user->id()->toRfc4122();
+        $userId = $user->id()->toString();
 
-        // Command mutates, query reads back — commands stay void.
         $this->commandBus->dispatch(new OpenChatRoomCommand($userId));
 
         return new JsonResponse(

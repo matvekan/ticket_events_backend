@@ -1,107 +1,101 @@
-# Билетная платформа (ticket_events_backend)
+# Ticket Events Backend
 
-Учебный проект: онлайн-продажа билетов на события (площадки Минска) с бэкендом на Symfony 7 / PHP 8.5, фронтендом на React (Vite) и набором инфраструктурных сервисов.
+Educational project: online ticket sales for events (Minsk venues) with Symfony 7 / PHP 8.5 backend, React (Vite) frontend, and infrastructure services.
 
-## Стек
+## Stack
 
-| Слой | Технология |
+| Layer | Technology |
 |---|---|
-| Backend | Symfony 7, PHP 8.5 (fpm), Doctrine ORM + миграции, Messenger (RabbitMQ), JWT (Lexik) |
+| Backend | Symfony 7, PHP 8.5 (fpm), Doctrine ORM + migrations, Messenger (RabbitMQ), JWT (Lexik) |
 | Frontend | React 18 + Vite, TanStack Query, react-hook-form + zod, Tailwind, `qrcode.react` |
-| БД | PostgreSQL 16 |
-| Аналитика | ClickHouse (событийные таблицы) |
-| Поиск | Elasticsearch 8 |
-| Очереди | RabbitMQ |
-| Кэш | Redis |
-| Веб-сервер | Nginx (порт 80) |
+| Database | PostgreSQL 16 |
+| Analytics | ClickHouse (event tables) |
+| Search | Elasticsearch 8 |
+| Queues | RabbitMQ |
+| Cache | Redis |
+| Web Server | Nginx (port 80) |
 
-## Структура
+## Structure
 
 ```
-app/                  # Symfony-приложение
+app/                  # Symfony application
   src/
-    Domain/           # сущности, value-object'ы, интерфейсы репозиториев
-    Application/      # команды/хендлеры, сервисы, query/query-handler'ы
-    Infrastructure/   # контроллеры API, репозитории Doctrine, ClickHouse, console
-  migrations/         # миграции БД
-  tests/              # интеграционные тесты (PHPUnit)
-frontend/             # React-приложение
-docker/               # Dockerfile PHP, конфиг nginx, init.sql ClickHouse
-scripts/              # E2E-проверки (PowerShell, Windows)
-docker-compose.yaml   # подъём всей инфраструктуры
+    Domain/           # entities, value objects, repository interfaces
+    Application/      # commands/handlers, services, queries/query handlers
+    Infrastructure/   # API controllers, Doctrine repositories, ClickHouse, console
+  migrations/         # DB migrations
+  tests/              # integration tests (PHPUnit)
+frontend/             # React application
+docker/               # PHP Dockerfile, nginx config, ClickHouse init.sql
+scripts/              # E2E checks (PowerShell, Windows)
+docker-compose.yaml   # infrastructure orchestration
 ```
 
-## Демо-аккаунты (после сида)
+## Demo Accounts (after seeding)
 
-| Роль | Email | Пароль |
+| Role | Email | Password |
 |---|---|---|
-| Администратор | `admin@tickets.by` | `admin1234` |
-| Покупатель | `demo@tickets.by` | `demo1234` |
-| Покупатель | `anna@tickets.by` | `anna1234` |
+| Administrator | `admin@tickets.by` | `admin1234` |
+| Customer | `demo@tickets.by` | `demo1234` |
+| Customer | `anna@tickets.by` | `anna1234` |
 
-## Холодный старт
+## Cold Start
 
-Требуется: Docker Desktop, Node.js 18+, PowerShell (для E2E-скриптов).
+Requirements: Docker Desktop, Node.js 18+, PowerShell (for E2E scripts).
 
 ```powershell
-# 1. Инфраструктура (nginx, php-fpm, postgres, redis, rabbitmq, elasticsearch, clickhouse, worker)
+# 1. Infrastructure (nginx, php-fpm, postgres, redis, rabbitmq, elasticsearch, clickhouse, worker)
 docker compose up -d --build
 
-# 2. Зависимости PHP (первый раз)
-docker exec tick_php composer install
-
-# 3. Ключи JWT (файлы config/jwt/*.pem в .gitignore)
-docker exec tick_php php bin/console lexik:jwt:generate-keypair
-
-# 4. Схема БД + демо-данные
+# 2. DB schema + demo data (vendor is baked into the image via multi-stage build)
 docker exec tick_php php bin/console doctrine:migrations:migrate --no-interaction
 docker exec tick_php php bin/console app:seed-demo-data
 
-# 5. Фронтенд
+# 3. Frontend
 cd frontend
 npm install
 npm run dev        # http://localhost:5173
 
-# 6. Бэкенд доступен на http://localhost (nginx, порт 80)
+# 4. Backend available at http://localhost (nginx, port 80)
 ```
 
-Сиды создают 6 реальных площадок Минска (Минск-Арена, Дворец Спорта, Prime Hall, Чижовка-Арена, ДК МАЗ, Белгосфилармония) с 64 местами, 8 событий на авг–дек 2026 (7 опубликованы, 1 черновик) и демо-заказы в разных статусах. Команда идемпотентна — повторный запуск ничего не дублирует.
+Seeds create 6 real Minsk venues (Minsk-Arena, Sports Palace, Prime Hall, Chizhovka-Arena, MAZ Palace, Belarusian State Philharmonic) with 64 seats, 8 events for Aug–Dec 2026 (7 published, 1 draft), and demo orders in various statuses. The command is idempotent — repeated runs do not duplicate data.
 
-## Оплата через мок-банк
+## Mock Bank Payment Flow
 
-1. Пользователь бронирует места → заказ `pending`.
-2. Жмёт «Оплатить» → `POST /api/orders/{id}/pay` возвращает `paymentUrl`.
-3. Фронтенд переходит на страницу банка `GET /mock-bank/{paymentId}` (платёжная форма с предзаполненной картой `4242 4242 4242 4242`).
-4. `POST /mock-bank/{paymentId}/charge` — оплата (≈1 сек, заказ становится `paid`, билеты выпускаются с QR-кодами).
-5. `POST /mock-bank/{paymentId}/decline` — отклонение: заказ остаётся `pending`, повторная оплата переиспользует тот же платёж (restart).
+1. User reserves seats → order `pending`.
+2. Clicks "Pay" → `POST /api/orders/{id}/pay` returns `paymentUrl`.
+3. Frontend redirects to mock bank `GET /mock-bank/{paymentId}` (payment form with prefilled card `4242 4242 4242 4242`).
+4. `POST /mock-bank/{paymentId}/charge` — payment (≈1 sec, order becomes `paid`, tickets issued with QR codes).
+5. `POST /mock-bank/{paymentId}/decline` — decline: order stays `pending`, retry reuses same payment (restart).
 
-После оплаты билеты с QR-кодом доступны на странице заказа. Проверка билета по коду — в админке («Проверка билетов», `GET /api/admin/tickets/{code}`), при этом статусы/причины возвращаются в JSON (`valid`, `reason`, данные билета).
+After payment, tickets with QR codes are available on the order page. Ticket verification by code — in admin ("Ticket Verification", `GET /api/admin/tickets/{code}`), returns statuses/reasons in JSON (`valid`, `reason`, ticket data).
 
-## События и аналитика
+## Events & Analytics
 
-Messenger-воркер (`tick_worker`) потребляет очередь RabbitMQ и обрабатывает доменные события: бронирование, оплата, отмена, возврат. Каждое событие дополнительно пишется в ClickHouse в таблицы `seat_reservations`, `order_payments`, `order_cancellations`, `order_refunds` (schemaless-схема MergeTree: `order_id`, `user_id`, `amount`, `timestamp`).
+Messenger worker (`tick_worker`) consumes RabbitMQ queue and processes domain events: reservation, payment, cancellation, refund. Each event is also written to ClickHouse tables `seat_reservations`, `order_payments`, `order_cancellations`, `order_refunds` (schemaless MergeTree: `order_id`, `user_id`, `amount`, `timestamp`).
 
-Админка «Аналитика» (`GET /api/admin/analytics`) агрегирует эти таблицы: суммарная выручка/возвраты/отмены/бронирования, динамика за 14 дней, топ покупателей, последние платежи. Если ClickHouse недоступен — эндпоинт вернёт `503` с пояснением.
+Admin "Analytics" (`GET /api/admin/analytics`) aggregates these tables: total revenue/refunds/cancellations/reservations, 14-day trend, top buyers, recent payments. Returns `503` with explanation if ClickHouse is unavailable.
 
-## Тесты
+## Tests
 
 ```powershell
-# PHPUnit (отдельная тестовая БД tickets_back_test, создаётся автоматически из миграций)
+# PHPUnit (separate test DB tickets_back_test, created automatically from migrations)
 docker exec tick_php php bin/phpunit
 
-# E2E-сценарий (регистрация → площадка → событие → бронь → оплата через мок-банк → возврат)
-powershell -ExecutionPolicy Bypass -File scripts\e2e.ps1        # ожидаем ALL_E2E_OK
+# E2E scenario (register → venue → event → reserve → mock bank payment → refund)
+powershell -ExecutionPolicy Bypass -File scripts\e2e.ps1        # expect ALL_E2E_OK
 
-# Полный платёжный сценарий (checkout-страница, decline, рестарт платежа, charge)
-powershell -ExecutionPolicy Bypass -File scripts\bank_flow.ps1  # ожидаем BANK_FLOW_OK
+# Full payment scenario (checkout page, decline, payment restart, charge)
+powershell -ExecutionPolicy Bypass -File scripts\bank_flow.ps1  # expect BANK_FLOW_OK
 ```
 
-## Основные API
+## Main API
 
-Публичные: `GET /api/events`, `GET /api/events/{id}`, `GET /api/events/{id}/seats`, `GET /api/events/search?query=`, `POST /api/auth/register`, `POST /api/auth/login`.
+Public: `GET /api/events`, `GET /api/events/{id}`, `GET /api/events/{id}/seats`, `GET /api/events/search?query=`, `POST /api/auth/register`, `POST /api/auth/login`.
 
-Пользователь (JWT): `GET/POST /api/orders/*` (бронь, мои заказы, оплата, отмена), `GET /api/venues/*`.
+User (JWT): `GET/POST /api/orders/*` (reserve, my orders, pay, cancel), `GET /api/venues/*`.
 
-Админ (ROLE_ADMIN): `GET /api/admin/events`, `POST /api/admin/orders/{id}/refund`, `GET /api/admin/analytics`, `GET /api/admin/tickets/{code}`, плюс общие endpoints создания площадок/событий.
+Admin (ROLE_ADMIN): `GET /api/admin/events`, `POST /api/admin/orders/{id}/refund`, `GET /api/admin/analytics`, `GET /api/admin/tickets/{code}`, plus shared venue/event creation endpoints.
 
-Документация OpenAPI: `GET /api/doc`.
+OpenAPI docs: `GET /api/doc`.

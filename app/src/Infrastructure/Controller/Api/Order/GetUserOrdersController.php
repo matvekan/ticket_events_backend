@@ -21,6 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
     responses: [
         new OA\Response(response: 200, description: 'List of user orders', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/Order'))),
         new OA\Response(response: 401, description: 'Unauthorized'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class GetUserOrdersController
@@ -34,7 +35,7 @@ final class GetUserOrdersController
     public function __invoke(): JsonResponse
     {
         return new JsonResponse($this->queryBus->dispatch(new GetUserOrdersQuery(
-            $this->security->getUser()->id()->toRfc4122(),
+            $this->security->getUser()->id()->toString(),
         )));
     }
 }

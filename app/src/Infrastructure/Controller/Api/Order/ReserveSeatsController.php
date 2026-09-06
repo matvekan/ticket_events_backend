@@ -41,6 +41,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 400, description: 'Invalid request'),
         new OA\Response(response: 401, description: 'Unauthorized'),
         new OA\Response(response: 422, description: 'Validation failed or seats unavailable'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class ReserveSeatsController extends AbstractController
@@ -61,7 +62,7 @@ final class ReserveSeatsController extends AbstractController
         }
 
         $this->commandBus->dispatch(new ReserveSeatsCommand(
-            userId: $this->security->getUser()->id()->toRfc4122(),
+            userId: $this->security->getUser()->id()->toString(),
             eventSeatIds: $seatIds,
         ));
 

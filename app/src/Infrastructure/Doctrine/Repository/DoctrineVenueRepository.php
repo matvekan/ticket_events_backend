@@ -12,7 +12,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineVenueRepository implements VenueRepositoryInterface
 {
-    /** @var EntityRepository<Venue> */
+    
     private readonly EntityRepository $repository;
 
     public function __construct(

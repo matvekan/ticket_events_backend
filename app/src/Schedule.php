@@ -22,8 +22,8 @@ class Schedule implements ScheduleProviderInterface
     public function getSchedule(): SymfonySchedule
     {
         return (new SymfonySchedule())
-            ->stateful($this->cache) // ensure missed tasks are executed
-            ->processOnlyLastMissedRun(true) // ensure only last missed task is run
+            ->stateful($this->cache)
+            ->processOnlyLastMissedRun(true)
             ->add(RecurringMessage::every('1 minute', new ExpirePendingOrders()))
             ->add(RecurringMessage::every(
                 sprintf('%d seconds', $this->outboxRelayIntervalSeconds),

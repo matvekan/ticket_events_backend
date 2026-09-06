@@ -31,6 +31,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 200, description: 'Password reset successful'),
         new OA\Response(response: 400, description: 'Invalid or expired token'),
         new OA\Response(response: 422, description: 'Validation failed'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class ResetPasswordController

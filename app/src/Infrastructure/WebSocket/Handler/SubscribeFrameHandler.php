@@ -8,6 +8,7 @@ use Amp\Websocket\WebsocketClient;
 use App\Application\Service\Chat\ChatService;
 use App\Domain\Entity\User;
 use App\Infrastructure\WebSocket\ChatSubscriptions;
+use App\Infrastructure\WebSocket\Dto\SubscribeFrame;
 
 final class SubscribeFrameHandler
 {
@@ -17,7 +18,7 @@ final class SubscribeFrameHandler
     ) {
     }
 
-    public function handle(WebsocketClient $client, User $user, \App\Infrastructure\WebSocket\Dto\SubscribeFrame $frame): void
+    public function handle(WebsocketClient $client, User $user, SubscribeFrame $frame): void
     {
         if (!$this->chatService->canAccess($frame->roomId(), $user)) {
             $this->sendError($client, 'Access denied to chat room.');

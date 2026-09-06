@@ -5,7 +5,7 @@
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Domain\Entity\EventSeat" table="event_seats">
-        <id name="id" type="event_seat_id">
+        <id name="id" type="event_seat_id" length="36">
             <generator strategy="NONE"/>
         </id>
 

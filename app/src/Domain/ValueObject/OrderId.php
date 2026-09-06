@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject;
 
-use Yokai\DoctrineValueObject\StringValueObject;
+use App\Domain\Shared\StringValueObjectInterface;
 
-final readonly class OrderId implements StringValueObject
+final readonly class OrderId implements StringValueObjectInterface
 {
     public function __construct(private string $value)
     {
@@ -15,12 +15,12 @@ final readonly class OrderId implements StringValueObject
         }
     }
 
-    public static function fromString(string $value): self
+    public static function fromString(string $value): static
     {
         return new self($value);
     }
 
-    public static function fromValue(string $value): self
+    public static function fromValue(string $value): static
     {
         return new self($value);
     }
@@ -30,18 +30,12 @@ final readonly class OrderId implements StringValueObject
         return $this->value;
     }
 
-    public function toValue(): string
+    public function equals(StringValueObjectInterface $other): bool
     {
-        return $this->value;
-    }
+        if (!$other instanceof self) {
+            return false;
+        }
 
-    public function toRfc4122(): string
-    {
-        return $this->value;
-    }
-
-    public function equals(self $other): bool
-    {
         return $this->value === $other->value;
     }
 
@@ -55,3 +49,5 @@ final readonly class OrderId implements StringValueObject
         return (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value);
     }
 }
+
+

@@ -42,6 +42,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 403, description: 'Forbidden'),
         new OA\Response(response: 404, description: 'Venue not found'),
         new OA\Response(response: 422, description: 'Validation failed'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class AddSeatsToVenueController
@@ -55,11 +56,11 @@ final class AddSeatsToVenueController
         #[MapRequestPayload] AddSeatsRequest $payload,
     ): JsonResponse {
         $seats = array_map(
-            fn (AddSeatRequest $seat): SeatData => new SeatData(
-                row: $seat->row,
-                number: $seat->number,
-                type: $seat->type,
-                sector: $seat->sector,
+            fn (array $seat): SeatData => new SeatData(
+                row: $seat['row'],
+                number: (int) $seat['number'],
+                type: $seat['type'],
+                sector: $seat['sector'] ?? null,
             ),
             $payload->seats,
         );

@@ -5,20 +5,17 @@ declare(strict_types=1);
 namespace App\Infrastructure\Security;
 
 use App\Domain\Entity\User;
+use App\Domain\ValueObject\UserId;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-/**
- * Bridges Domain User (DDD) to Symfony Security.
- * Keeps Domain clean from framework interfaces.
- */
 final class DomainUserAdapter implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public function __construct(private readonly User $user) {}
 
     public function getUser(): User { return $this->user; }
 
-    public function id(): \App\Domain\ValueObject\UserId { return $this->user->id(); }
+    public function id(): UserId { return $this->user->id(); }
 
     public function getRoles(): array { return $this->user->roles(); }
 

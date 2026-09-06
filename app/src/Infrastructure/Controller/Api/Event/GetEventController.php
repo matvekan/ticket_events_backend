@@ -23,6 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
     responses: [
         new OA\Response(response: 200, description: 'Event details', content: new OA\JsonContent(ref: '#/components/schemas/EventDetails')),
         new OA\Response(response: 404, description: 'Event not found'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class GetEventController

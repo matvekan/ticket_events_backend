@@ -30,7 +30,8 @@ final readonly class ExpirePendingOrdersHandler
         foreach ($this->orders->findPendingExpired($cutoff) as $order) {
             try {
                 $this->commandBus->dispatch(new CancelOrderCommand(
-                    orderId: $order->id()->toRfc4122(),
+                    orderId: $order->id()->toString(),
+                    userId: $order->userId()->toString(),
                 ));
             } catch (DomainException) {
                 continue;

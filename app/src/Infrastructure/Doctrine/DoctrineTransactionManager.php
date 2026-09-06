@@ -6,9 +6,9 @@ namespace App\Infrastructure\Doctrine;
 
 use App\Application\Exception\PersistenceConstraintViolationException;
 use App\Application\Transaction\TransactionManagerInterface;
-use App\Domain\Entity\OutboxMessage;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
+use App\Infrastructure\Outbox\OutboxMessage;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -27,8 +27,6 @@ final class DoctrineTransactionManager implements TransactionManagerInterface
             return $this->entityManager->wrapInTransaction(function () use ($fn): mixed {
                 $result = $fn();
 
-                // Automatically persist domain events to the Outbox within the
-                // same DB transaction. Handlers return them via releaseEvents().
                 if (is_array($result)) {
                     foreach ($result as $event) {
                         if (!is_object($event)) {
@@ -49,7 +47,6 @@ final class DoctrineTransactionManager implements TransactionManagerInterface
                 return $result;
             });
         } catch (UniqueConstraintViolationException $exception) {
-            // Translated so the Application layer never sees Doctrine types.
             throw new PersistenceConstraintViolationException(
                 $exception->getMessage(),
                 0,

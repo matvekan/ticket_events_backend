@@ -10,7 +10,7 @@ use App\Domain\Entity\User;
 
 final class ChatMessageDtoFactory
 {
-    /** @param ChatMessage[] $messages @return ChatMessageDto[] */
+
     public function fromMessageList(array $messages, array $senders): array
     {
         return array_map(
@@ -25,9 +25,9 @@ final class ChatMessageDtoFactory
     private function build(ChatMessage $message, ?User $sender): ChatMessageDto
     {
         return new ChatMessageDto(
-            id: $message->id()->toRfc4122(),
-            roomId: $message->roomId()->toRfc4122(),
-            senderId: $message->senderId()->toRfc4122(),
+            id: $message->id()->toString(),
+            roomId: $message->roomId()->toString(),
+            senderId: $message->senderId()->toString(),
             senderName: $sender !== null ? (string) $sender->name() : 'Unknown',
             isSupport: $sender !== null && in_array('ROLE_ADMIN', $sender->roles(), true),
             text: $message->text()->toString(),

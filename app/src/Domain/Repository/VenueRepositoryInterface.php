@@ -11,7 +11,7 @@ interface VenueRepositoryInterface
 {
     public function findById(VenueId $id): ?Venue;
 
-    /** @return Venue[] */
+    
     public function findAll(): array;
 
     public function save(Venue $venue): void;

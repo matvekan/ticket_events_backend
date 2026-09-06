@@ -24,6 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 403, description: 'Forbidden'),
         new OA\Response(response: 404, description: 'Event not found'),
         new OA\Response(response: 422, description: 'Validation failed or event cannot be published'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class PublishEventController

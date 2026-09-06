@@ -27,6 +27,7 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
         new OA\Response(response: 401, description: 'Unauthorized'),
         new OA\Response(response: 403, description: 'Forbidden - no access to this chat room'),
         new OA\Response(response: 404, description: 'Chat room not found'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class GetChatMessagesController

@@ -4,19 +4,18 @@ declare(strict_types=1);
 
 namespace App\Application\Service\Order;
 
-use App\Application\Cache\SeatAvailabilityCacheInterface;
 use App\Application\Exception\PersistenceConstraintViolationException;
 use App\Application\Transaction\TransactionManagerInterface;
+use App\Domain\Entity\Service\OrderTicketFactoryInterface;
+use App\Domain\Entity\Service\SeatSelectionValidatorInterface;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\EventSeatRepositoryInterface;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Shared\CacheInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
-use App\Domain\Shared\Service\OrderTicketFactoryInterface;
-use App\Domain\Shared\Service\SeatSelectionValidatorInterface;
-use App\Domain\ValueObject\EventSeatId;
 use App\Domain\ValueObject\UserId;
 
 final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
@@ -26,16 +25,14 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
         private EventSeatRepositoryInterface $eventSeats,
         private OrderRepositoryInterface $orders,
         private TransactionManagerInterface $transactionManager,
-        private SeatAvailabilityCacheInterface $seatAvailabilityCache,
+        private CacheInterface $seatAvailabilityCache,
         private SeatSelectionValidatorInterface $seatValidator,
         private OrderTicketFactoryInterface $orderFactory,
         private ClockInterface $clock,
         private IdGeneratorInterface $ids,
     ) {}
 
-    /**
-     * @param EventSeatId[] $seatIds
-     */
+
     public function execute(UserId $userId, array $seatIds): void
     {
         $affectedEventIds = [];
@@ -72,7 +69,7 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
         }
 
         foreach (array_unique($affectedEventIds) as $eventId) {
-            $this->seatAvailabilityCache->invalidate($eventId);
+            $this->seatAvailabilityCache->delete($eventId);
         }
     }
 }

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\QueryHandler\Chat;
 
-use App\Application\Dto\ChatRoomDto;
-use App\Application\Port\ChatRoomReadRepositoryInterface;
+use App\Domain\Repository\ChatRoomRepositoryInterface;
 use App\Application\Query\Chat\GetSupportChatRoomsQuery;
 use App\Application\Query\QueryHandlerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -14,13 +13,13 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final readonly class GetSupportChatRoomsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private ChatRoomReadRepositoryInterface $rooms,
+        private ChatRoomRepositoryInterface $rooms,
     ) {
     }
 
-    /** @return ChatRoomDto[] */
+
     public function __invoke(GetSupportChatRoomsQuery $query): array
     {
-        return $this->rooms->findForSupport();
+        return $this->rooms->findForSupportDto();
     }
 }

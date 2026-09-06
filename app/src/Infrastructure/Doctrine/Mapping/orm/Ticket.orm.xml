@@ -5,27 +5,22 @@
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Domain\Entity\Ticket" table="tickets">
-        <id name="id" type="ticket_id">
+        <id name="id" type="ticket_id" length="36">
             <generator strategy="NONE"/>
         </id>
 
-        <!-- Parent-child association inside the Order aggregate. -->
         <many-to-one field="order" target-entity="App\Domain\Entity\Order" inversed-by="tickets">
             <join-column name="order_id" nullable="false"/>
         </many-to-one>
 
-        <!-- Cross-aggregate reference by ID only. -->
-        <field name="eventSeatId" column="event_seat_id" type="event_seat_id"/>
+        <field name="eventSeatId" column="event_seat_id" type="event_seat_id" length="36"/>
 
-        <!-- Price snapshot fixed at purchase time. -->
         <embedded name="price" class="App\Domain\ValueObject\Price" column-prefix="price_"/>
 
         <field name="code" type="ticket_code" length="12" unique="true"/>
         <field name="status" type="string" enum-type="App\Domain\ValueObject\TicketStatus" length="20"/>
 
         <indexes>
-            <!-- Not unique: a seat accumulates ticket history across orders.
-                 One-active-ticket-per-seat is enforced by the domain. -->
             <index name="IDX_54469DF4448D579A" columns="event_seat_id"/>
         </indexes>
     </entity>

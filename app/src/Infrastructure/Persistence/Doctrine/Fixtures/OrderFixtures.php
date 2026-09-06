@@ -7,161 +7,148 @@ namespace App\Infrastructure\Persistence\Doctrine\Fixtures;
 use App\Domain\Entity\Event;
 use App\Domain\Entity\EventSeat;
 use App\Domain\Entity\Order;
-use App\Domain\Entity\OrderStatus;
 use App\Domain\Entity\Payment;
-use App\Domain\Entity\PaymentStatus;
-use App\Domain\Entity\Refund;
-use App\Domain\Entity\RefundStatus;
+use App\Domain\Entity\Service\OrderTicketFactoryInterface;
 use App\Domain\Entity\User;
-use App\Domain\Repository\EventRepositoryInterface;
 use App\Domain\Repository\EventSeatRepositoryInterface;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
-use App\Domain\Repository\RefundRepositoryInterface;
-use App\Domain\ValueObject\OrderId;
-use App\Domain\ValueObject\PaymentId;
-use App\Domain\ValueObject\Price;
-use App\Domain\ValueObject\RefundId;
+use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\Email;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
-use Faker\Factory;
-use Faker\Generator;
 
 final class OrderFixtures extends Fixture implements DependentFixtureInterface
 {
-    private Generator $faker;
-
     public function __construct(
         private readonly OrderRepositoryInterface $orders,
-        private readonly EventRepositoryInterface $events,
         private readonly EventSeatRepositoryInterface $eventSeats,
         private readonly PaymentRepositoryInterface $payments,
-        private readonly RefundRepositoryInterface $refunds,
+        private readonly UserRepositoryInterface $users,
+        private readonly OrderTicketFactoryInterface $orderTicketFactory,
+        private readonly ClockInterface $clock,
+        private readonly IdGeneratorInterface $ids,
     ) {
-        $this->faker = Factory::create();
     }
 
     public function load(ObjectManager $manager): void
     {
-        // Paid orders for demo users.
-        $this->reserveAndPay('user_demo', 'event_0', 2, $manager);
-        $this->reserveAndPay('user_1', 'event_3', 3, $manager);
-        $this->reserveAndPay('user_2', 'event_5', 1, $manager);
-
-        // Pending (reserved only) order.
-        $this->reserveOnly('user_3', 'event_1', 1, $manager);
-
-        // Refunded order.
-        $this->reserveAndRefund('user_admin', 'event_2', 1, $manager);
+        $this->createDemoOrders($manager);
     }
 
-    /** @return string[] */
     public function getDependencies(): array
     {
         return [UserFixtures::class, EventFixtures::class];
     }
 
-    private function reserveAndPay(string $userRef, string $eventRef, int $count, ObjectManager $manager): void
+    private function createDemoOrders(ObjectManager $manager): void
     {
-        $order = $this->reserveOnly($userRef, $eventRef, $count, $manager);
-        if ($order === null) {
-            return;
+        $demoUser = $this->users->findByEmail(new Email('demo@tickets.by'));
+        $user1 = $this->getReference('user_1', User::class);
+        $user2 = $this->getReference('user_2', User::class);
+        $user3 = $this->getReference('user_3', User::class);
+        $adminUser = $this->users->findByEmail(new Email('admin@tickets.by'));
+
+        $event0 = $this->getReference('event_0', Event::class);
+        $event1 = $this->getReference('event_1', Event::class);
+        $event2 = $this->getReference('event_2', Event::class);
+        $event3 = $this->getReference('event_3', Event::class);
+        $event5 = $this->getReference('event_5', Event::class);
+
+        if ($demoUser) {
+            $this->createPaidOrder($demoUser, $event0, 2, $manager);
         }
+        $this->createPaidOrder($user1, $event3, 3, $manager);
+        $this->createPaidOrder($user2, $event5, 1, $manager);
 
-        $userId = $order->userId();
 
-        $payment = new Payment(
-            id: PaymentId::generate(),
-            orderId: $order->id(),
-            userId: $userId,
-            amount: $order->totalAmount(),
-            status: PaymentStatus::Succeeded,
-        );
+        $this->createPendingOrder($user3, $event1, $manager);
 
-        $this->payments->save($payment);
-        $order->markAsPaid($payment);
-        $this->orders->save($order);
-        $manager->flush();
+        if ($adminUser) {
+            $this->createRefundedOrder($adminUser, $event2, $manager);
+        }
     }
 
-    private function reserveAndRefund(string $userRef, string $eventRef, int $count, ObjectManager $manager): void
+    private function createPaidOrder(User $user, Event $event, int $count, ObjectManager $manager): ?Order
     {
-        $order = $this->reserveOnly($userRef, $eventRef, $count, $manager);
-        if ($order === null) {
-            return;
-        }
-
-        $userId = $order->userId();
-
-        $payment = new Payment(
-            id: PaymentId::generate(),
-            orderId: $order->id(),
-            userId: $userId,
-            amount: $order->totalAmount(),
-            status: PaymentStatus::Succeeded,
-        );
-
-        $this->payments->save($payment);
-        $order->markAsPaid($payment);
-        $this->orders->save($order);
-        $manager->flush();
-
-        $refund = new Refund(
-            id: RefundId::generate(),
-            orderId: $order->id(),
-            paymentId: $payment->id(),
-            amount: $order->totalAmount(),
-            status: RefundStatus::Succeeded,
-        );
-
-        $this->refunds->save($refund);
-        $order->markAsRefunded($refund);
-        $this->orders->save($order);
-        $manager->flush();
-    }
-
-    private function reserveOnly(string $userRef, string $eventRef, int $count, ObjectManager $manager): ?Order
-    {
-        /** @var User $user */
-        $user = $this->getReference($userRef, User::class);
-        /** @var Event $event */
-        $event = $this->getReference($eventRef, Event::class);
-
-        $availableSeats = array_filter(
-            $this->eventSeats->findByEventId($event->id()),
-            static fn (EventSeat $es): bool => $es->isAvailable()
-        );
-
-        if (count($availableSeats) < $count) {
+        $availableSeats = $this->getAvailableSeats($event, $count);
+        if ($availableSeats === null) {
             return null;
         }
 
-        $seatIds = array_map(
-            static fn (EventSeat $eventSeat) => $eventSeat->id(),
-            array_slice(array_values($availableSeats), 0, $count),
-        );
+        $order = $this->orderTicketFactory->create($user->id(), $availableSeats, $this->clock, $this->ids);
+        $this->orders->save($order);
+        $manager->flush();
 
-        $order = new Order(
-            id: OrderId::generate(),
-            userId: $user->id(),
-            eventId: $event->id(),
-            eventSeatIds: $seatIds,
-            status: OrderStatus::Reserved,
-            reservedAt: new \DateTimeImmutable(),
-        );
+        $payment = Payment::place($order->id(), $order->totalPrice()->amount(), $this->clock, $this->ids);
+        $payment->markPaid($this->clock);
+        $this->payments->save($payment);
 
-        foreach ($seatIds as $seatId) {
-            $eventSeat = $this->eventSeats->findById($seatId);
-            if ($eventSeat !== null) {
-                $eventSeat->reserve($order->id());
-                $this->eventSeats->save($eventSeat);
-            }
+        $order->pay($this->clock);
+
+        foreach ($order->tickets() as $ticket) {
+            $ticket->activate();
+        }
+        foreach ($availableSeats as $seat) {
+            $seat->sell();
         }
 
         $this->orders->save($order);
         $manager->flush();
 
         return $order;
+    }
+
+    private function createPendingOrder(User $user, Event $event, ObjectManager $manager): void
+    {
+        $availableSeats = $this->getAvailableSeats($event, 1);
+        if ($availableSeats === null) {
+            return;
+        }
+
+        $order = $this->orderTicketFactory->create($user->id(), $availableSeats, $this->clock, $this->ids);
+        $this->orders->save($order);
+        $manager->flush();
+    }
+
+    private function createRefundedOrder(User $user, Event $event, ObjectManager $manager): void
+    {
+        $order = $this->createPaidOrder($user, $event, 1, $manager);
+        if ($order === null) {
+            return;
+        }
+
+        $order->refund($this->clock);
+
+        foreach ($order->tickets() as $ticket) {
+            $ticket->refund();
+        }
+
+        $seatIds = array_map(static fn ($t) => $t->eventSeatId(), $order->tickets());
+        $seats = $this->eventSeats->findByIds($seatIds);
+
+        foreach ($seats as $seat) {
+            $seat->unsell();
+        }
+
+        $this->orders->save($order);
+        $manager->flush();
+    }
+
+    private function getAvailableSeats(Event $event, int $count): ?array
+    {
+        $availableSeats = array_filter(
+            $this->eventSeats->findByEventId($event->id()),
+            static fn (EventSeat $eventSeat): bool => $eventSeat->isAvailable()
+        );
+
+        if (count($availableSeats) < $count) {
+            return null;
+        }
+
+        return array_slice(array_values($availableSeats), 0, $count);
     }
 }

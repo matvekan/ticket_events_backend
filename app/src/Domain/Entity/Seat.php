@@ -15,12 +15,12 @@ use App\Domain\ValueObject\VenueId;
 class Seat
 {
     private function __construct(
-        private readonly SeatId $id,
-        private readonly VenueId $venueId,
-        private readonly SeatRow $row,
-        private readonly SeatNumber $number,
-        private readonly SeatType $type,
-        private readonly ?SeatSector $sector = null,
+        private SeatId $id,
+        private VenueId $venueId,
+        private SeatRow $row,
+        private SeatNumber $number,
+        private SeatType $type,
+        private ?SeatSector $sector = null,
     ) {
     }
 
@@ -42,9 +42,7 @@ class Seat
 
     public function rawId(): string { return $this->id->toString(); }
 
-    /**
-     * Reference to the Venue aggregate by ID (cross-aggregate boundary).
-     */
+    
     public function venueId(): VenueId
     {
         return $this->venueId;

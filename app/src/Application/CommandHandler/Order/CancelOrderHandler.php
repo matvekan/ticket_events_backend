@@ -1,10 +1,7 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Application\CommandHandler\Order;
 
-use App\Application\Cache\SeatAvailabilityCacheInterface;
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Order\CancelOrderCommand;
 use App\Application\Exception\AccessDeniedException;
@@ -13,10 +10,10 @@ use App\Domain\Entity\Order;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\EventSeatRepositoryInterface;
 use App\Domain\Repository\OrderRepositoryInterface;
+use App\Domain\Shared\CacheInterface;
 use App\Domain\Shared\ClockInterface;
-use App\Domain\ValueObject\EventSeatId;
-use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\OrderId;
+use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\UserId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -27,7 +24,7 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
         private OrderRepositoryInterface $orders,
         private EventSeatRepositoryInterface $eventSeats,
         private TransactionManagerInterface $transactionManager,
-        private SeatAvailabilityCacheInterface $seatAvailabilityCache,
+        private CacheInterface $seatAvailabilityCache,
         private ClockInterface $clock,
     ) {
     }
@@ -45,14 +42,14 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
 
             if ($wasPaid) {
                 $order->refund($this->clock);
-                $this->releaseTickets($order, refund: true);
+                $affected = $this->releaseTickets($order, refund: true);
             } else {
                 $order->cancel($this->clock);
-                $this->releaseTickets($order, refund: false);
+                $affected = $this->releaseTickets($order, refund: false);
             }
 
-            foreach ($order->tickets() as $ticket) {
-                $affectedEventIds[$this->resolveEventId($ticket->eventSeatId())] = true;
+            foreach ($affected as $eventId) {
+                $affectedEventIds[$eventId] = true;
             }
 
             $this->orders->save($order);
@@ -60,9 +57,8 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
             return $order->releaseEvents();
         });
 
-        // Fresh seat map right after commit (TTL remains as a safety net).
         foreach (array_keys($affectedEventIds) as $eventId) {
-            $this->seatAvailabilityCache->invalidate($eventId);
+            $this->seatAvailabilityCache->delete($eventId);
         }
     }
 
@@ -73,36 +69,32 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
             throw new EntityNotFoundException('Order not found.');
         }
 
-        // System callers (expiry scheduler) have no user context;
-        // interactive calls must prove ownership.
-        if (!$order->userId()->equals($userId)) {
+        if ($userId !== null && !$order->userId()->equals($userId)) {
             throw new AccessDeniedException('You do not own this order.');
         }
 
         return $order;
     }
 
-    private function releaseTickets(Order $order, bool $refund): void
+    private function releaseTickets(Order $order, bool $refund): array
     {
         $eventSeatIds = array_map(
             static fn ($ticket) => $ticket->eventSeatId(),
             $order->tickets(),
         );
+
         $eventSeats = $this->eventSeats->lockAndFindByIds($eventSeatIds);
 
         foreach ($order->tickets() as $ticket) {
             $refund ? $ticket->refund() : $ticket->cancel();
         }
 
+        $affectedEvents = [];
         foreach ($eventSeats as $eventSeat) {
             $refund ? $eventSeat->unsell() : $eventSeat->release();
+            $affectedEvents[] = $eventSeat->event()->id()->toString();
         }
-    }
 
-    private function resolveEventId(EventSeatId $eventSeatId): string
-    {
-        $eventSeat = $this->eventSeats->findById($eventSeatId);
-
-        return $eventSeat !== null ? $eventSeat->event()->id()->toString() : '';
+        return $affectedEvents;
     }
 }

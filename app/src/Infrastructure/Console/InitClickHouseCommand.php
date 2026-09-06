@@ -41,7 +41,7 @@ SQL;
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $database = $this->clickhouse->settings['database'] ?? 'default';
+        $database = $this->clickhouse->settings()->getDatabase();
 
         foreach (self::TABLES as $table) {
             $sql = str_replace(
@@ -57,4 +57,3 @@ SQL;
         return Command::SUCCESS;
     }
 }
-

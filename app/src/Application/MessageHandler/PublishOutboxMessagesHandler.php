@@ -1,10 +1,9 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Application\MessageHandler;
 
 use App\Application\Message\PublishOutboxMessages;
+use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Repository\OutboxMessageRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use Psr\Log\LoggerInterface;
@@ -23,31 +22,36 @@ final class PublishOutboxMessagesHandler
         private readonly TransportInterface $eventsTransport,
         private readonly ClockInterface $clock,
         private readonly LoggerInterface $logger,
+        private readonly TransactionManagerInterface $transactionManager,
     ) {
     }
 
     public function __invoke(PublishOutboxMessages $message): void
     {
-        $rows = $this->outboxMessages->findPending(self::BATCH_SIZE);
+        $this->transactionManager->transactional(function (): void {
+            $rows = $this->outboxMessages->findPending(self::BATCH_SIZE);
 
-        foreach ($rows as $row) {
-            try {
-                $this->eventsTransport->send(new Envelope(
-                    unserialize(base64_decode($row->body()), ['allowed_classes' => true]),
-                    [new BusNameStamp('event.bus')],
-                ));
+            foreach ($rows as $row) {
+                if ($row->isSent()) {
+                    continue;
+                }
 
-                $row->markSent($this->clock->now());
-            } catch (\Throwable $exception) {
-                $row->markFailed();
-                $this->logger->error('Failed to publish outbox message {id}: {error}', [
-                    'id' => (string) $row->id(),
-                    'class' => $row->messageClass(),
-                    'error' => $exception->getMessage(),
-                ]);
+                try {
+                    $this->eventsTransport->send(new Envelope(
+                        unserialize(base64_decode($row->body()), ['allowed_classes' => true]),
+                        [new BusNameStamp('event.bus')],
+                    ));
+
+                    $row->markSent($this->clock->now());
+                } catch (\Throwable $exception) {
+                    $row->markFailed();
+                    $this->logger->error('Failed to publish outbox message {id}: {error}', [
+                        'id' => $row->id(),
+                        'class' => $row->messageClass(),
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
             }
-
-            $this->outboxMessages->flush();
-        }
+        });
     }
 }

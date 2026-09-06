@@ -12,12 +12,13 @@ use App\Domain\ValueObject\SeatStatus;
 
 class EventSeat
 {
+    private SeatStatus $status;
+
     private function __construct(
-        private readonly EventSeatId $id,
+        private EventSeatId $id,
         private Event $event,
         private Seat $seat,
-        private readonly Price $price,
-        private SeatStatus $status,
+        private Price $price,
     ) {
         if (!$seat->venueId()->equals($event->venue()->id())) {
             throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
@@ -46,20 +47,14 @@ class EventSeat
         return $this->id;
     }
 
-    public function rawId(): string { return $this->id->toString(); }
+    public function rawId(): string
+    {
+        return $this->id->toString();
+    }
 
     public function event(): Event
     {
         return $this->event;
-    }
-
-    public function assignToEvent(Event $event): void
-    {
-        if (!$this->seat->venueId()->equals($event->venue()->id())) {
-            throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
-        }
-
-        $this->event = $event;
     }
 
     public function seat(): Seat
@@ -87,26 +82,7 @@ class EventSeat
         if ($this->status !== SeatStatus::Free) {
             throw new BusinessRuleViolationException('Seat is not available for reservation.');
         }
-
         $this->status = SeatStatus::Reserved;
-    }
-
-    public function sell(): void
-    {
-        if ($this->status !== SeatStatus::Reserved) {
-            throw new BusinessRuleViolationException('Only reserved seats can be sold.');
-        }
-
-        $this->status = SeatStatus::Sold;
-    }
-
-    public function release(): void
-    {
-        if ($this->status !== SeatStatus::Reserved) {
-            throw new BusinessRuleViolationException('Only reserved seats can be released.');
-        }
-
-        $this->status = SeatStatus::Free;
     }
 
     public function unsell(): void
@@ -114,7 +90,6 @@ class EventSeat
         if ($this->status !== SeatStatus::Sold) {
             throw new BusinessRuleViolationException('Only sold seats can be unsold.');
         }
-
         $this->status = SeatStatus::Free;
     }
 }

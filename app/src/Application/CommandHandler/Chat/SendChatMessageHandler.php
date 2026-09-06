@@ -6,15 +6,15 @@ namespace App\Application\CommandHandler\Chat;
 
 use App\Application\Command\Chat\SendChatMessageCommand;
 use App\Application\Command\CommandHandlerInterface;
+use App\Application\Exception\AccessDeniedException;
 use App\Application\Service\Chat\ChatService;
-use App\Domain\Entity\EntityNotFoundException;
+use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\ChatRoomRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\Service\ChatAccessPolicy;
 use App\Domain\ValueObject\ChatRoomId;
 use App\Domain\ValueObject\UserId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-
 
 #[AsMessageHandler]
 final readonly class SendChatMessageHandler implements CommandHandlerInterface
@@ -40,7 +40,7 @@ final readonly class SendChatMessageHandler implements CommandHandlerInterface
         }
 
         if (!$this->accessPolicy->canParticipate($room, $sender)) {
-            throw new \App\Application\Exception\AccessDeniedException('You do not have access to this chat room.');
+            throw new AccessDeniedException('You do not have access to this chat room.');
         }
 
         $this->chatService->createMessage($room, $sender, $command->text);

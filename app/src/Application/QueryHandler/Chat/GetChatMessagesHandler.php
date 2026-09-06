@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Application\QueryHandler\Chat;
 
-use App\Application\Dto\ChatMessageDto;
 use App\Application\Dto\Factory\ChatMessageDtoFactory;
 use App\Application\Exception\AccessDeniedException;
 use App\Application\Query\Chat\GetChatMessagesQuery;
 use App\Application\Query\QueryHandlerInterface;
+use App\Domain\Entity\ChatMessage;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\ChatMessageRepositoryInterface;
 use App\Domain\Repository\ChatRoomRepositoryInterface;
@@ -29,7 +29,6 @@ final class GetChatMessagesHandler implements QueryHandlerInterface
         private ChatAccessPolicy $accessPolicy,
     ) {}
 
-    /** @return ChatMessageDto[] */
     public function __invoke(GetChatMessagesQuery $query): array
     {
         $room = $this->rooms->findById(new ChatRoomId($query->roomId));

@@ -15,15 +15,13 @@ use App\Domain\ValueObject\TicketStatus;
 class Ticket
 {
     private function __construct(
-        private readonly TicketId $id,
+        private TicketId $id,
         private Order $order,
-        private readonly EventSeatId $eventSeatId,
-        private readonly Price $price,
-        private readonly TicketCode $code,
+        private EventSeatId $eventSeatId,
+        private Price $price,
+        private TicketCode $code,
         private TicketStatus $status,
     ) {
-        // Price is snapshotted at purchase time: later price changes on the
-        // seat must not rewrite the history of already sold tickets.
         $this->status = TicketStatus::Reserved;
     }
 
@@ -34,7 +32,14 @@ class Ticket
         TicketCode $code,
         IdGeneratorInterface $ids,
     ): self {
-        return new self(new TicketId($ids->generate()), $order, $eventSeatId, $priceAtPurchase, $code);
+        return new self(
+            new TicketId($ids->generate()),
+            $order,
+            $eventSeatId,
+            $priceAtPurchase,
+            $code,
+            TicketStatus::Reserved
+        );
     }
 
     public function id(): TicketId
@@ -42,24 +47,21 @@ class Ticket
         return $this->id;
     }
 
-    public function rawId(): string { return $this->id->toString(); }
+    public function rawId(): string
+    {
+        return $this->id->toString();
+    }
 
     public function order(): Order
     {
         return $this->order;
     }
 
-    /**
-     * Reference to the EventSeat aggregate by ID (cross-aggregate boundary).
-     */
     public function eventSeatId(): EventSeatId
     {
         return $this->eventSeatId;
     }
 
-    /**
-     * Price fixed at the moment of purchase.
-     */
     public function price(): Price
     {
         return $this->price;
@@ -93,9 +95,17 @@ class Ticket
 
     public function refund(): void
     {
-        if ($this->status !== TicketStatus::Active) {
-            throw new BusinessRuleViolationException('Only active tickets can be refunded.');
+        if ($this->status !== TicketStatus::Active && $this->status !== TicketStatus::Used) {
+            throw new BusinessRuleViolationException('Only active or used tickets can be refunded.');
         }
         $this->status = TicketStatus::Refunded;
+    }
+
+    public function scan(): void
+    {
+        if ($this->status !== TicketStatus::Active) {
+            throw new BusinessRuleViolationException('Only active tickets can be scanned.');
+        }
+        $this->status = TicketStatus::Used;
     }
 }

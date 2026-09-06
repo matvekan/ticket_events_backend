@@ -7,19 +7,18 @@ namespace App\Domain\Entity;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
-use App\Domain\ValueObject\OrderStatus;
+use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\PaymentId;
 use App\Domain\ValueObject\PaymentStatus;
-use App\Domain\ValueObject\OrderId;
 
 class Payment
 {
     private function __construct(
-        private readonly PaymentId $id,
-        private readonly OrderId $orderId,
-        private readonly int $amount,
+        private PaymentId $id,
+        private OrderId $orderId,
+        private int $amount,
         private PaymentStatus $status,
-        private readonly \DateTimeImmutable $createdAt,
+        private \DateTimeImmutable $createdAt,
         private ?\DateTimeImmutable $paidAt = null,
         private ?\DateTimeImmutable $failedAt = null,
     ) {
@@ -28,7 +27,13 @@ class Payment
 
     public static function place(OrderId $orderId, int $amount, ClockInterface $clock, IdGeneratorInterface $ids): self
     {
-        return new self(new PaymentId($ids->generate()), $orderId, $amount, $clock->now());
+        return new self(
+            new PaymentId($ids->generate()),
+            $orderId,
+            $amount,
+            PaymentStatus::Pending,
+            $clock->now()
+        );
     }
 
     public function id(): PaymentId
@@ -36,7 +41,10 @@ class Payment
         return $this->id;
     }
 
-    public function rawId(): string { return $this->id->toString(); }
+    public function rawId(): string
+    {
+        return $this->id->toString();
+    }
 
     public function orderId(): OrderId
     {
@@ -82,5 +90,15 @@ class Payment
         $this->status = PaymentStatus::Pending;
         $this->paidAt = null;
         $this->failedAt = null;
+    }
+
+    public function markRefunded(ClockInterface $clock): void
+    {
+        if ($this->status !== PaymentStatus::Paid) {
+            throw new BusinessRuleViolationException('Only paid payments can be refunded.');
+        }
+
+        $this->status = PaymentStatus::Refunded;
+        $this->paidAt = null;
     }
 }

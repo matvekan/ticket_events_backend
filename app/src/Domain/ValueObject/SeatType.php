@@ -10,9 +10,10 @@ enum SeatType: string
     case VIP = 'vip';
     case Premium = 'premium';
 
-    /** @return list<string> */
+    
     public static function validTypes(): array
     {
         return array_map(fn (self $case): string => $case->value, self::cases());
     }
 }
+

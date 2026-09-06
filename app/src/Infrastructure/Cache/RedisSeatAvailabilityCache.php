@@ -4,24 +4,21 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Cache;
 
-use App\Application\Cache\SeatAvailabilityCacheInterface;
-use App\Application\Dto\SeatDto;
+use App\Domain\Shared\CacheInterface;
 use Psr\Cache\CacheItemPoolInterface;
 
-final class RedisSeatAvailabilityCache implements SeatAvailabilityCacheInterface
+final class RedisSeatAvailabilityCache implements CacheInterface
 {
     private const PREFIX = 'seat.available.';
 
     public function __construct(
         private readonly CacheItemPoolInterface $cache,
-        private readonly int $ttlSeconds,
     ) {
     }
 
-    /** @return SeatDto[]|null */
-    public function getAvailable(string $eventId): ?array
+    public function get(string $key): mixed
     {
-        $item = $this->cache->getItem(self::key($eventId));
+        $item = $this->cache->getItem(self::PREFIX . strtolower(trim($key)));
 
         if (!$item->isHit()) {
             return null;
@@ -32,22 +29,23 @@ final class RedisSeatAvailabilityCache implements SeatAvailabilityCacheInterface
         return is_array($value) ? $value : null;
     }
 
-    /** @param SeatDto[] $seats */
-    public function setAvailable(string $eventId, array $seats): void
+    public function set(string $key, mixed $value, int $ttl): void
     {
-        $item = $this->cache->getItem(self::key($eventId));
-        $item->set($seats);
-        $item->expiresAfter($this->ttlSeconds);
+        $item = $this->cache->getItem(self::PREFIX . strtolower(trim($key)));
+        $item->set($value);
+        $item->expiresAfter($ttl);
         $this->cache->save($item);
     }
 
-    public function invalidate(string $eventId): void
+    public function delete(string $key): void
     {
-        $this->cache->deleteItem(self::key($eventId));
+        $this->cache->deleteItem(self::PREFIX . strtolower(trim($key)));
     }
 
-    private static function key(string $eventId): string
+    public function has(string $key): bool
     {
-        return self::PREFIX . strtolower(trim($eventId));
+        $item = $this->cache->getItem(self::PREFIX . strtolower(trim($key)));
+
+        return $item->isHit();
     }
 }

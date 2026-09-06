@@ -13,8 +13,8 @@ final class ChatRoomDtoFactory
     public function fromRoom(ChatRoom $room, ?User $owner): ChatRoomDto
     {
         return new ChatRoomDto(
-            id: $room->id()->toRfc4122(),
-            userId: $room->userId()->toRfc4122(),
+            id: $room->id()->toString(),
+            userId: $room->userId()->toString(),
             userEmail: $owner !== null ? (string) $owner->email() : 'Unknown',
             createdAt: $room->createdAt()->format('c'),
             lastMessage: null,

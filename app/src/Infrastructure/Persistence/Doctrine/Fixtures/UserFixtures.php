@@ -6,7 +6,9 @@ namespace App\Infrastructure\Persistence\Doctrine\Fixtures;
 
 use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\Email;
+use App\Domain\ValueObject\Name;
 use App\Domain\ValueObject\UserId;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -19,6 +21,7 @@ final class UserFixtures extends Fixture
 
     public function __construct(
         private readonly UserRepositoryInterface $users,
+        private readonly IdGeneratorInterface $ids,
     ) {
         $this->faker = Factory::create();
     }
@@ -35,13 +38,13 @@ final class UserFixtures extends Fixture
                 continue;
             }
 
-            $user = new User(
-                id: UserId::generate(),
-                name: sprintf('%s %s', $this->faker->firstName(), $this->faker->lastName()),
-                email: new Email($email),
-                passwordHash: password_hash($this->faker->password(8), PASSWORD_DEFAULT),
-                roles: ['ROLE_USER'],
+            $user = User::create(
+                new UserId($this->ids->generate()),
+                new Name(sprintf('%s %s', $this->faker->firstName(), $this->faker->lastName())),
+                new Email($email),
             );
+            $user->changePassword(password_hash($this->faker->password(8), PASSWORD_DEFAULT));
+            $user->changeRoles(['ROLE_USER']);
 
             $this->users->save($user);
             $manager->flush();
@@ -58,13 +61,13 @@ final class UserFixtures extends Fixture
             return;
         }
 
-        $user = new User(
-            id: UserId::generate(),
-            name: $name,
-            email: new Email($email),
-            passwordHash: password_hash($password, PASSWORD_DEFAULT),
-            roles: array_merge(['ROLE_USER'], $roles),
+        $user = User::create(
+            new UserId($this->ids->generate()),
+            new Name($name),
+            new Email($email),
         );
+        $user->changePassword(password_hash($password, PASSWORD_DEFAULT));
+        $user->changeRoles(array_merge(['ROLE_USER'], $roles));
 
         $this->users->save($user);
         $manager->flush();

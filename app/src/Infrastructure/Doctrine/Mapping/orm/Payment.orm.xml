@@ -5,12 +5,11 @@
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
     <entity name="App\Domain\Entity\Payment" table="payments">
-        <id name="id" type="payment_id">
+        <id name="id" type="payment_id" length="36">
             <generator strategy="NONE"/>
         </id>
 
-        <!-- Cross-aggregate reference by ID only. -->
-        <field name="orderId" column="order_id" type="order_id"/>
+        <field name="orderId" column="order_id" type="order_id" length="36"/>
 
         <field name="amount" type="integer"/>
         <field name="status" type="string" enum-type="App\Domain\ValueObject\PaymentStatus" length="16"/>

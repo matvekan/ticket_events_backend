@@ -19,18 +19,19 @@ nelmio_api_doc:
             host_patterns:
                 - ^api\.
     models:
-        - { name: 'App\Application\Dto\EventDto', alias: 'Event' }
-        - { name: 'App\Application\Dto\EventDetailsDto', alias: 'EventDetails' }
-        - { name: 'App\Application\Dto\OrderDto', alias: 'Order' }
-        - { name: 'App\Application\Dto\PaymentDto', alias: 'Payment' }
-        - { name: 'App\Application\Dto\TicketDto', alias: 'Ticket' }
-        - { name: 'App\Application\Dto\TicketVerificationDto', alias: 'TicketVerification' }
-        - { name: 'App\Application\Dto\VenueDto', alias: 'Venue' }
-        - { name: 'App\Application\Dto\SeatDto', alias: 'Seat' }
-        - { name: 'App\Application\Dto\ChatRoomDto', alias: 'ChatRoom' }
-        - { name: 'App\Application\Dto\ChatMessageDto', alias: 'ChatMessage' }
-        - { name: 'App\Application\Dto\Analytics\AnalyticsTotalsDto', alias: 'AnalyticsTotals' }
-        - { name: 'App\Application\Dto\Analytics\TableTotalsDto', alias: 'TableTotals' }
-        - { name: 'App\Application\Dto\Analytics\AnalyticsByDayDto', alias: 'AnalyticsByDay' }
-        - { name: 'App\Application\Dto\Analytics\TopUserDto', alias: 'TopUser' }
-        - { name: 'App\Application\Dto\Analytics\RecentPaymentDto', alias: 'RecentPayment' }
+        names:
+            - { type: 'App\Application\Dto\EventDto', alias: 'Event' }
+            - { type: 'App\Application\Dto\EventDetailsDto', alias: 'EventDetails' }
+            - { type: 'App\Application\Dto\OrderDto', alias: 'Order' }
+            - { type: 'App\Application\Dto\PaymentDto', alias: 'Payment' }
+            - { type: 'App\Application\Dto\TicketDto', alias: 'Ticket' }
+            - { type: 'App\Application\Dto\TicketVerificationDto', alias: 'TicketVerification' }
+            - { type: 'App\Application\Dto\VenueDto', alias: 'Venue' }
+            - { type: 'App\Application\Dto\SeatDto', alias: 'Seat' }
+            - { type: 'App\Application\Dto\ChatRoomDto', alias: 'ChatRoom' }
+            - { type: 'App\Application\Dto\ChatMessageDto', alias: 'ChatMessage' }
+            - { type: 'App\Application\Dto\Analytics\AnalyticsTotalsDto', alias: 'AnalyticsTotals' }
+            - { type: 'App\Application\Dto\Analytics\TableTotalsDto', alias: 'TableTotals' }
+            - { type: 'App\Application\Dto\Analytics\AnalyticsByDayDto', alias: 'AnalyticsByDay' }
+            - { type: 'App\Application\Dto\Analytics\TopUserDto', alias: 'TopUser' }
+            - { type: 'App\Application\Dto\Analytics\RecentPaymentDto', alias: 'RecentPayment' }

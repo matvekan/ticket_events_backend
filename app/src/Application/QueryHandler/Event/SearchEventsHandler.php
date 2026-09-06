@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\QueryHandler\Event;
 
-use App\Application\Dto\EventDto;
-use App\Application\Port\EventSearchInterface;
+use App\Domain\Repository\EventSearchInterface;
 use App\Application\Query\Event\SearchEventsQuery;
 use App\Application\Query\QueryHandlerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -18,7 +17,7 @@ final class SearchEventsHandler implements QueryHandlerInterface
     ) {
     }
 
-    /** @return EventDto[] */
+
     public function __invoke(SearchEventsQuery $query): array
     {
         return $this->eventSearch->search(

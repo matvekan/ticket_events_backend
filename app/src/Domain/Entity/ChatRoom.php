@@ -12,9 +12,9 @@ use App\Domain\ValueObject\UserId;
 class ChatRoom
 {
     private function __construct(
-        private readonly ChatRoomId $id,
-        private readonly UserId $userId,
-        private readonly \DateTimeImmutable $createdAt,
+        private ChatRoomId $id,
+        private UserId $userId,
+        private \DateTimeImmutable $createdAt,
     ) {
     }
 

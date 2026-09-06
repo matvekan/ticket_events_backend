@@ -6,32 +6,31 @@ namespace App\Application\CommandHandler\Event;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Event\CreateEventCommand;
+use App\Application\Message\CreateEventSeatsMessage;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Entity\Event;
-use App\Domain\Entity\EventSeat;
-use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\EventRepositoryInterface;
-use App\Domain\Repository\SeatRepositoryInterface;
 use App\Domain\Repository\VenueRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\EventDescription;
 use App\Domain\ValueObject\EventTitle;
-use App\Domain\ValueObject\SeatId;
 use App\Domain\ValueObject\VenueId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\MessageBusInterface;
+
 
 #[AsMessageHandler]
 final readonly class CreateEventHandler implements CommandHandlerInterface
 {
     public function __construct(
         private VenueRepositoryInterface $venues,
-        private SeatRepositoryInterface $seats,
         private EventRepositoryInterface $events,
         private TransactionManagerInterface $transactionManager,
         private ClockInterface $clock,
         private IdGeneratorInterface $ids,
+        private MessageBusInterface $messageBus,
     ) {
     }
 
@@ -52,21 +51,13 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
                 $this->ids,
             );
 
-            foreach ($command->seats as $seatData) {
-                $seat = $this->seats->findById(new SeatId($seatData->seatId));
-                if (!$seat) {
-                    throw new EntityNotFoundException('Seat not found.');
-                }
-
-                if (!$seat->venueId()->equals($venue->id())) {
-                    throw new BusinessRuleViolationException('Seat does not belong to the given venue.');
-                }
-
-                $eventSeat = EventSeat::create($event, $seat, $seatData->priceAmount, $this->ids);
-                $event->addEventSeat($eventSeat);
-            }
-
             $this->events->save($event);
+
+            $this->messageBus->dispatch(new CreateEventSeatsMessage(
+                $event->id()->toString(),
+                $venue->id()->toString(),
+                $command->seats,
+            ));
 
             return $event->releaseEvents();
         });

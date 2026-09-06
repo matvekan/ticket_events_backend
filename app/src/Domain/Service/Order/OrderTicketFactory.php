@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Service\Order;
 
-use App\Domain\Entity\EventSeat;
 use App\Domain\Entity\Order;
+use App\Domain\Entity\Service\OrderTicketFactoryInterface;
 use App\Domain\Entity\Ticket;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
-use App\Domain\Shared\Service\OrderTicketFactoryInterface;
 use App\Domain\ValueObject\UserId;
 
 final readonly class OrderTicketFactory implements OrderTicketFactoryInterface
@@ -18,9 +17,7 @@ final readonly class OrderTicketFactory implements OrderTicketFactoryInterface
         private TicketCodeGenerator $ticketCodeGenerator,
     ) {}
 
-    /**
-     * @param EventSeat[] $seats
-     */
+
     public function create(
         UserId $userId,
         array $seats,

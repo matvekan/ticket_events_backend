@@ -4,7 +4,7 @@
                   xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
                                       https://doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
 
-    <entity name="App\Domain\Entity\OutboxMessage" table="messenger_outbox">
+    <entity name="App\Infrastructure\Outbox\OutboxMessage" table="messenger_outbox">
         <id name="id" type="string" length="36">
             <generator strategy="NONE"/>
         </id>

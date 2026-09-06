@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject;
 
-use Yokai\DoctrineValueObject\StringValueObject;
+use App\Domain\Shared\StringValueObjectInterface;
 
-final class VenueAddress implements StringValueObject
+final class VenueAddress implements StringValueObjectInterface
 {
     private string $address;
 
@@ -22,9 +22,19 @@ final class VenueAddress implements StringValueObject
         $this->address = $trimmed;
     }
 
+    public static function fromString(string $value): static
+    {
+        return new self($value);
+    }
+
     public static function fromValue(string $value): static
     {
         return new self($value);
+    }
+
+    public function toString(): string
+    {
+        return $this->address;
     }
 
     public function toValue(): string
@@ -32,8 +42,19 @@ final class VenueAddress implements StringValueObject
         return $this->address;
     }
 
+    public function equals(StringValueObjectInterface $other): bool
+    {
+        if (!$other instanceof self) {
+            return false;
+        }
+
+        return $this->address === $other->address;
+    }
+
     public function __toString(): string
     {
         return $this->address;
     }
 }
+
+

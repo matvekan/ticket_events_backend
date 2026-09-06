@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\ValueObject;
 
-use Yokai\DoctrineValueObject\IntegerValueObject;
+use App\Domain\Shared\IntegerValueObjectInterface;
 
-final class SeatNumber implements IntegerValueObject
+final class SeatNumber implements IntegerValueObjectInterface
 {
     private int $number;
 
@@ -24,8 +24,29 @@ final class SeatNumber implements IntegerValueObject
         return new self($value);
     }
 
+    public function toInt(): int
+    {
+        return $this->number;
+    }
+
     public function toValue(): int
     {
         return $this->number;
     }
+
+    public function equals(IntegerValueObjectInterface $other): bool
+    {
+        if (!$other instanceof self) {
+            return false;
+        }
+
+        return $this->number === $other->number;
+    }
+
+    public function __toString(): string
+    {
+        return (string) $this->number;
+    }
 }
+
+

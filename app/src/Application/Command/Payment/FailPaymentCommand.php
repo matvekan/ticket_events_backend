@@ -7,9 +7,6 @@ namespace App\Application\Command\Payment;
 use App\Application\Command\CommandInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-/**
- * Mirrors ConfirmPaymentCommand: payments are addressed by order id.
- */
 final class FailPaymentCommand implements CommandInterface
 {
     public function __construct(

@@ -8,10 +8,6 @@ use App\Domain\Entity\ChatRoom;
 use App\Domain\Entity\User;
 use App\Domain\ValueObject\Role;
 
-/**
- * Pure domain policy: who may participate in a support chat room.
- * Spans two aggregates (ChatRoom + User), hence a domain service.
- */
 final class ChatAccessPolicy
 {
     public function canParticipate(ChatRoom $room, User $user): bool

@@ -15,7 +15,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 {
-    /** @var EntityRepository<EventSeat> */
+    
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -27,6 +27,12 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
     public function findById(EventSeatId $id): ?EventSeat
     {
         return $this->entityManager->find(EventSeat::class, $id->toString());
+    }
+
+    public function findByIds(array $ids): array
+    {
+        $stringIds = array_map(fn(EventSeatId $id) => $id->toString(), $ids);
+        return $this->repository->findBy(['id' => $stringIds]);
     }
 
     public function lockAndFindByIds(array $ids): array
@@ -47,5 +53,15 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
     public function findAvailableByEventId(EventId $eventId): array
     {
         return $this->repository->findBy(['event' => $eventId->toString(), 'status' => SeatStatus::Free]);
+    }
+
+    public function findByEventId(EventId $eventId): array
+    {
+        return $this->repository->findBy(['event' => $eventId->toString()]);
+    }
+
+    public function save(EventSeat $eventSeat): void
+    {
+        $this->entityManager->persist($eventSeat);
     }
 }

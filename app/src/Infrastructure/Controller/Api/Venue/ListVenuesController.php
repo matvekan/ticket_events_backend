@@ -18,6 +18,7 @@ use Symfony\Component\Routing\Attribute\Route;
     tags: ['Venues'],
     responses: [
         new OA\Response(response: 200, description: 'List of venues', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/Venue'))),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class ListVenuesController

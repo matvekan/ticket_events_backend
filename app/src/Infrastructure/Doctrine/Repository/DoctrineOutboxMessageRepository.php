@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Doctrine\Repository;
 
-use App\Domain\Entity\OutboxMessage;
 use App\Domain\Repository\OutboxMessageRepositoryInterface;
+use App\Infrastructure\Outbox\OutboxMessage;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -17,7 +17,7 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
     ) {
     }
 
-    /** @return OutboxMessage[] */
+
     public function findPending(int $limit): array
     {
         $qb = $this->connection->createQueryBuilder()

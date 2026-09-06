@@ -15,6 +15,8 @@ use App\Domain\Shared\ClockInterface;
 use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\PaymentStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use App\Domain\ValueObject\UserId;
+use App\Application\Exception\AccessDeniedException;
 
 #[AsMessageHandler]
 final readonly class FailPaymentHandler implements CommandHandlerInterface
@@ -30,7 +32,7 @@ final readonly class FailPaymentHandler implements CommandHandlerInterface
     public function __invoke(FailPaymentCommand $command): void
     {
         $orderIdVo = new OrderId($command->orderId);
-        $userIdVo = $command->userId !== null ? new \App\Domain\ValueObject\UserId($command->userId) : null;
+        $userIdVo = $command->userId !== null ? new UserId($command->userId) : null;
 
         $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
             $order = $this->orders->findById($orderIdVo);
@@ -38,7 +40,7 @@ final readonly class FailPaymentHandler implements CommandHandlerInterface
                 throw new EntityNotFoundException('Order not found.');
             }
             if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
-                throw new \App\Application\Exception\AccessDeniedException('You do not own this order.');
+                throw new AccessDeniedException('You do not own this order.');
             }
 
             $payment = $this->payments->findByOrderId($orderIdVo);

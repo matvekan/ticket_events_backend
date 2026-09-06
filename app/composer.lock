@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "84b8241d40ee5e3d652f8a5e3890fa64",
+    "content-hash": "e5e7d06087af438f971e9b50246ad4ac",
     "packages": [
         {
             "name": "amphp/amp",
@@ -7738,6 +7738,80 @@
             "time": "2026-05-29T05:06:50+00:00"
         },
         {
+            "name": "symfony/rate-limiter",
+            "version": "v8.1.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/rate-limiter.git",
+                "reference": "dee2fc983ca9944ac37af105a4940507ff5fc42c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/rate-limiter/zipball/dee2fc983ca9944ac37af105a4940507ff5fc42c",
+                "reference": "dee2fc983ca9944ac37af105a4940507ff5fc42c",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.4.1",
+                "symfony/options-resolver": "^7.4|^8.0"
+            },
+            "require-dev": {
+                "psr/cache": "^1.0|^2.0|^3.0",
+                "symfony/lock": "^7.4|^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\RateLimiter\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Wouter de Jong",
+                    "email": "wouter@wouterj.nl"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Provides a Token Bucket implementation to rate limit input and output in your application",
+            "homepage": "https://symfony.com",
+            "keywords": [
+                "limiter",
+                "rate-limiter"
+            ],
+            "support": {
+                "source": "https://github.com/symfony/rate-limiter/tree/v8.1.6"
+            },
+            "funding": [
+                {
+                    "url": "https://symfony.com/sponsor",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/fabpot",
+                    "type": "github"
+                },
+                {
+                    "url": "https://github.com/nicolas-grekas",
+                    "type": "github"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2026-08-07T15:35:35+00:00"
+        },
+        {
             "name": "symfony/routing",
             "version": "v8.1.0",
             "source": {
@@ -9314,60 +9388,6 @@
                 "source": "https://github.com/webmozarts/assert/tree/1.12.1"
             },
             "time": "2025-10-29T15:56:20+00:00"
-        },
-        {
-            "name": "yokai/doctrine-value-object",
-            "version": "v0.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/yokai-php/doctrine-value-object.git",
-                "reference": "b722f1d8b24dc22f07a7a87b42b732109f4bd9bc"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/yokai-php/doctrine-value-object/zipball/b722f1d8b24dc22f07a7a87b42b732109f4bd9bc",
-                "reference": "b722f1d8b24dc22f07a7a87b42b732109f4bd9bc",
-                "shasum": ""
-            },
-            "require": {
-                "doctrine/dbal": "^3.8|^4.0",
-                "doctrine/orm": "^2.7|^3.1",
-                "php": "^8.0",
-                "webmozart/assert": "^1.11"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^1.11",
-                "phpunit/phpunit": "^9.4",
-                "squizlabs/php_codesniffer": "^3.9",
-                "symfony/cache": "^5.4|^6.0|^7.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Yokai\\DoctrineValueObject\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Yann Eugoné",
-                    "email": "eugone.yann@gmail.com"
-                }
-            ],
-            "description": "Value Objects for Doctrine ORM simplified",
-            "keywords": [
-                "Value Object",
-                "doctrine",
-                "orm"
-            ],
-            "support": {
-                "issues": "https://github.com/yokai-php/doctrine-value-object/issues",
-                "source": "https://github.com/yokai-php/doctrine-value-object/tree/v0.2.0"
-            },
-            "time": "2024-07-08T13:34:20+00:00"
         },
         {
             "name": "zircote/swagger-php",

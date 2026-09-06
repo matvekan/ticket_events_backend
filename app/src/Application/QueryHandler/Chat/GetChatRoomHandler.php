@@ -8,7 +8,6 @@ use App\Application\Dto\ChatRoomDto;
 use App\Application\Dto\Factory\ChatRoomDtoFactory;
 use App\Application\Query\Chat\GetChatRoomQuery;
 use App\Application\Query\QueryHandlerInterface;
-use App\Domain\Entity\User;
 use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\ChatRoomRepositoryInterface;
 use App\Domain\Repository\UserRepositoryInterface;

@@ -13,7 +13,7 @@ final class SeatDtoFactory
     public function fromSeat(Seat $seat): SeatDto
     {
         return new SeatDto(
-            id: $seat->id()->toRfc4122(),
+            id: $seat->id()->toString(),
             row: (string) $seat->row(),
             number: $seat->number()->toValue(),
             sector: $seat->sector() !== null ? (string) $seat->sector() : null,
@@ -21,7 +21,7 @@ final class SeatDtoFactory
         );
     }
 
-    /** @param Seat[] $seats @return SeatDto[] */
+
     public function fromSeatList(array $seats): array
     {
         return array_map(fn (Seat $seat): SeatDto => $this->fromSeat($seat), $seats);
@@ -31,7 +31,7 @@ final class SeatDtoFactory
     {
         $seat = $eventSeat->seat();
         return new SeatDto(
-            id: $eventSeat->id()->toRfc4122(),
+            id: $eventSeat->id()->toString(),
             row: (string) $seat->row(),
             number: $seat->number()->toValue(),
             sector: $seat->sector() !== null ? (string) $seat->sector() : null,

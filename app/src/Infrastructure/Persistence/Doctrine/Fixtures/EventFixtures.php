@@ -11,10 +11,10 @@ use App\Domain\Repository\EventRepositoryInterface;
 use App\Domain\Repository\EventSeatRepositoryInterface;
 use App\Domain\Repository\SeatRepositoryInterface;
 use App\Domain\Repository\VenueRepositoryInterface;
-use App\Domain\ValueObject\EventId;
-use App\Domain\ValueObject\EventSeatId;
-use App\Domain\ValueObject\Price;
-use App\Domain\ValueObject\SeatId;
+use App\Domain\Shared\ClockInterface;
+use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\EventDescription;
+use App\Domain\ValueObject\EventTitle;
 use App\Domain\ValueObject\SeatType;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -33,6 +33,8 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
         private readonly VenueRepositoryInterface $venues,
         private readonly SeatRepositoryInterface $seats,
         private readonly EventSeatRepositoryInterface $eventSeats,
+        private readonly ClockInterface $clock,
+        private readonly IdGeneratorInterface $ids,
     ) {
         $this->faker = Factory::create();
     }
@@ -42,7 +44,7 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
         for ($i = 0; $i < self::EVENT_COUNT; ++$i) {
             $venueIndex = $i % 6;
 
-            /** @var Venue $venue */
+
             $venue = $this->getReference(sprintf('venue_%d', $venueIndex), Venue::class);
 
             $title = sprintf('%s — %s', $this->eventKind($i), (string) $venue->name());
@@ -54,13 +56,13 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
 
             $basePrice = $this->faker->randomElement([2000, 2500, 3000, 3500, 4500, 5000]);
 
-            $event = new Event(
-                id: EventId::generate(),
-                title: mb_substr($title, 0, 100),
-                description: $this->faker->realText(300),
-                date: new \DateTimeImmutable(sprintf('+%d days +%d:00', $this->faker->numberBetween(5, 120), $this->faker->numberBetween(16, 21))),
-                venueId: $venue->id(),
-                status: 'draft',
+            $event = Event::create(
+                new EventTitle(mb_substr($title, 0, 100)),
+                new EventDescription($this->faker->realText(300)),
+                new \DateTimeImmutable(sprintf('+%d days +%d:00', $this->faker->numberBetween(5, 120), $this->faker->numberBetween(16, 21))),
+                $venue,
+                $this->clock,
+                $this->ids,
             );
 
             $this->events->save($event);
@@ -72,9 +74,8 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
             }
             $manager->flush();
 
-            // Keep one draft event to exercise the draft flow.
             if ($i !== self::EVENT_COUNT - 1) {
-                $event->publish();
+                $event->publish($this->clock);
                 $this->events->save($event);
                 $manager->flush();
             }
@@ -83,7 +84,6 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
         }
     }
 
-    /** @return string[] */
     public function getDependencies(): array
     {
         return [VenueFixtures::class];
@@ -116,21 +116,17 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
         return null;
     }
 
-    /** @return EventSeat[] */
+
     private function buildEventSeats(Event $event, Venue $venue, int $basePrice): array
     {
         $result = [];
 
         foreach ($this->seats->findByVenueId($venue->id()) as $seat) {
-            $result[] = new EventSeat(
-                id: EventSeatId::generate(),
-                eventId: $event->id(),
-                seatId: $seat->id(),
-                price: new Price(
-                    amount: $this->priceForType($seat->type(), $basePrice),
-                    currency: 'BYN',
-                ),
-                status: 'available',
+            $result[] = EventSeat::create(
+                $event,
+                $seat,
+                $this->priceForType($seat->type(), $basePrice),
+                $this->ids,
             );
         }
 

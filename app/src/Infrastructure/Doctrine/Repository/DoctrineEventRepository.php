@@ -1,23 +1,23 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Infrastructure\Doctrine\Repository;
 
+use App\Application\Dto\Factory\EventDtoFactory;
 use App\Domain\Entity\Event;
 use App\Domain\Repository\EventRepositoryInterface;
+use App\Domain\Repository\EventSearchInterface;
 use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\EventStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
-final class DoctrineEventRepository implements EventRepositoryInterface
+final class DoctrineEventRepository implements EventRepositoryInterface, EventSearchInterface
 {
-    /** @var EntityRepository<Event> */
     private readonly EntityRepository $repository;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
+        private readonly EventDtoFactory $eventDtoFactory,
     ) {
         $this->repository = $entityManager->getRepository(Event::class);
     }
@@ -25,6 +25,16 @@ final class DoctrineEventRepository implements EventRepositoryInterface
     public function findById(EventId $id): ?Event
     {
         return $this->entityManager->find(Event::class, $id->toString());
+    }
+
+    public function findAll(): array
+    {
+        return $this->repository->findBy([], ['date' => 'DESC']);
+    }
+
+    public function save(Event $event): void
+    {
+        $this->entityManager->persist($event);
     }
 
     public function findPublished(int $limit, int $offset): array
@@ -51,18 +61,15 @@ final class DoctrineEventRepository implements EventRepositoryInterface
             $qb->andWhere('(e.title LIKE :query OR e.description LIKE :query)')
                 ->setParameter('query', '%' . $query . '%');
         }
-
         if ($city !== null && $city !== '') {
             $qb->join('e.venue', 'venue')
                 ->andWhere('venue.city LIKE :city')
                 ->setParameter('city', '%' . $city . '%');
         }
-
         if ($dateFrom !== null) {
             $qb->andWhere('e.date >= :dateFrom')
                 ->setParameter('dateFrom', $dateFrom);
         }
-
         if ($dateTo !== null) {
             $qb->andWhere('e.date <= :dateTo')
                 ->setParameter('dateTo', $dateTo);
@@ -71,13 +78,21 @@ final class DoctrineEventRepository implements EventRepositoryInterface
         return $qb->getQuery()->getResult();
     }
 
-    public function findAll(): array
+    public function findPublishedDto(int $limit, int $offset): array
     {
-        return $this->repository->findBy([], ['date' => 'DESC']);
+        $events = $this->findPublished($limit, $offset);
+        return $this->eventDtoFactory->fromEventList($events);
     }
 
-    public function save(Event $event): void
-    {
-        $this->entityManager->persist($event);
+    public function search(
+        ?string $query,
+        ?string $city,
+        ?\DateTimeImmutable $dateFrom,
+        ?\DateTimeImmutable $dateTo,
+        int $limit,
+        int $offset,
+    ): array {
+        $events = $this->searchPublished($query, $city, $dateFrom, $dateTo, $limit, $offset);
+        return $this->eventDtoFactory->fromEventList($events);
     }
 }

@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Application\Query\Admin;
 
@@ -11,11 +9,12 @@ final class GetTicketVerificationQuery implements QueryInterface
 {
     #[Assert\NotBlank]
     #[Assert\Regex(pattern: '/^TKT-[A-Z0-9]{8}$/', message: 'Invalid ticket code format.')]
-    public readonly string $code;
+    public string $code {
+        set => strtoupper(trim($value));
+    }
 
-    public function __construct(
-        string $code,
-    ) {
-        $this->code = strtoupper(trim($code));
+    public function __construct(string $code)
+    {
+        $this->code = $code;
     }
 }

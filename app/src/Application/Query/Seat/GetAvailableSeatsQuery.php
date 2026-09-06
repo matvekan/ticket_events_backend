@@ -7,12 +7,12 @@ namespace App\Application\Query\Seat;
 use App\Application\Query\QueryInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class GetAvailableSeatsQuery implements QueryInterface
+final readonly class GetAvailableSeatsQuery implements QueryInterface
 {
     public function __construct(
         #[Assert\NotBlank]
         #[Assert\Uuid]
-        public readonly string $eventId,
+        public string $eventId,
     ) {
     }
 }

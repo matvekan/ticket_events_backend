@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Event\EventCancelledEvent;
 use App\Domain\Event\EventCreatedEvent;
 use App\Domain\Event\EventRecordingCapability;
 use App\Domain\Event\EventStatusChangedEvent;
@@ -20,19 +21,16 @@ class Event
     use EventRecordingCapability;
 
     private function __construct(
-        private readonly EventId $id,
-        private readonly EventTitle $title,
-        private readonly EventDescription $description,
-        private readonly \DateTimeImmutable $date,
-        private readonly Venue $venue,
+        private EventId $id,
+        private EventTitle $title,
+        private EventDescription $description,
+        private \DateTimeImmutable $date,
+        private Venue $venue,
         private EventStatus $status,
-        private readonly \DateTimeImmutable $createdAt,
+        private \DateTimeImmutable $createdAt,
         private ?\DateTimeImmutable $updatedAt = null,
-        /** @var EventSeat[] */
-        private array $eventSeats = [],
+        private iterable $eventSeats = [],
     ) {
-        $this->status = EventStatus::Draft;
-        $this->recordThat(new EventCreatedEvent($this->id, (string) $this->title));
     }
 
     public static function create(
@@ -47,7 +45,7 @@ class Event
             throw new BusinessRuleViolationException('Event date must be in the future.');
         }
 
-        return new self(
+        $event = new self(
             new EventId($ids->generate()),
             $title,
             $description,
@@ -56,6 +54,9 @@ class Event
             EventStatus::Draft,
             $clock->now(),
         );
+        $event->recordThat(new EventCreatedEvent($event->id->toString(), (string) $event->title));
+
+        return $event;
     }
 
     public function id(): EventId
@@ -108,7 +109,7 @@ class Event
         $this->updatedAt = $clock->now();
 
         $this->recordThat(new EventStatusChangedEvent(
-            $this->id,
+            $this->id->toString(),
             (string) $this->title,
             $this->status->value,
         ));
@@ -124,32 +125,23 @@ class Event
         $this->updatedAt = $clock->now();
 
         $this->recordThat(new EventStatusChangedEvent(
-            $this->id,
+            $this->id->toString(),
             (string) $this->title,
             $this->status->value,
         ));
+
+        $this->recordThat(new EventCancelledEvent(
+            $this->id->toString(),
+            (string) $this->title,
+        ));
     }
 
-    /** @return EventSeat[] */
+
     public function eventSeats(): array
     {
         return $this->eventSeatList();
     }
 
-    public function addEventSeat(EventSeat $eventSeat): void
-    {
-        foreach ($this->eventSeatList() as $existing) {
-            if ($existing === $eventSeat) {
-                return;
-            }
-        }
-        $seats = $this->eventSeatList();
-        $seats[] = $eventSeat;
-        $this->eventSeats = $seats;
-        $eventSeat->assignToEvent($this);
-    }
-
-    /** @return EventSeat[] */
     private function eventSeatList(): array
     {
         if (is_array($this->eventSeats)) {

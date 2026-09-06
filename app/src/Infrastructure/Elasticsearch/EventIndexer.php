@@ -6,9 +6,9 @@ namespace App\Infrastructure\Elasticsearch;
 
 use App\Application\Dto\Factory\EventDtoFactory;
 use App\Domain\Repository\EventRepositoryInterface;
+use App\Domain\ValueObject\EventId;
 use Elastic\Elasticsearch\Client;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 final class EventIndexer
 {
@@ -22,12 +22,15 @@ final class EventIndexer
     ) {
     }
 
-    public function indexEvent(Uuid $eventId): void
+    public function indexEvent(string|EventId $eventId): void
     {
+        $eventIdVo = $eventId instanceof EventId ? $eventId : EventId::fromString($eventId);
+        $rawId = $eventIdVo->toString();
+
         try {
-            $event = $this->events->findById($eventId);
+            $event = $this->events->findById($eventIdVo);
             if (!$event) {
-                $this->logger->warning('EventIndexer: event not found {eventId}', ['eventId' => $eventId->toRfc4122()]);
+                $this->logger->warning('EventIndexer: event not found {eventId}', ['eventId' => $rawId]);
 
                 return;
             }
@@ -51,7 +54,7 @@ final class EventIndexer
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('EventIndexer failed for {eventId}: {error}', [
-                'eventId' => $eventId->toRfc4122(),
+                'eventId' => $rawId,
                 'error' => $e->getMessage(),
             ]);
             throw $e;

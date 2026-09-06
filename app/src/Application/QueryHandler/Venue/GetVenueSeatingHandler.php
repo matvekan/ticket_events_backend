@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\QueryHandler\Venue;
 
 use App\Application\Dto\Factory\SeatDtoFactory;
-use App\Application\Dto\SeatDto;
 use App\Application\Query\QueryHandlerInterface;
 use App\Application\Query\Venue\GetVenueSeatingQuery;
 use App\Domain\Repository\SeatRepositoryInterface;
@@ -21,7 +20,7 @@ final class GetVenueSeatingHandler implements QueryHandlerInterface
     ) {
     }
 
-    /** @return SeatDto[] */
+
     public function __invoke(GetVenueSeatingQuery $query): array
     {
         $seats = $this->seats->findByVenueId(new VenueId($query->venueId));

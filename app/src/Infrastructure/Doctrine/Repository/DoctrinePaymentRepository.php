@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Doctrine\Repository;
 
+use App\Application\Dto\PaymentDto;
 use App\Domain\Entity\Payment;
 use App\Domain\Repository\PaymentRepositoryInterface;
 use App\Domain\ValueObject\OrderId;
@@ -13,7 +14,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrinePaymentRepository implements PaymentRepositoryInterface
 {
-    /** @var EntityRepository<Payment> */
+
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -30,6 +31,33 @@ final class DoctrinePaymentRepository implements PaymentRepositoryInterface
     public function findByOrderId(OrderId $orderId): ?Payment
     {
         return $this->repository->findOneBy(['orderId' => $orderId->toString()]);
+    }
+
+    public function findByOrderIdDto(string $orderId, ?string $userId): ?PaymentDto
+    {
+        $qb = $this->entityManager->getConnection()->createQueryBuilder();
+        $qb->select('p.id, p.status, p.amount')
+            ->from('payments', 'p')
+            ->join('p', 'orders', 'o', 'o.id = p.order_id')
+            ->where('p.order_id = :orderId')
+            ->setParameter('orderId', $orderId);
+
+        if ($userId !== null) {
+            $qb->andWhere('o.user_id = :userId')
+                ->setParameter('userId', $userId);
+        }
+
+        $row = $qb->executeQuery()->fetchAssociative();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return new PaymentDto(
+            id: (string) $row['id'],
+            status: (string) $row['status'],
+            amount: (int) $row['amount'],
+        );
     }
 
     public function save(Payment $payment): void

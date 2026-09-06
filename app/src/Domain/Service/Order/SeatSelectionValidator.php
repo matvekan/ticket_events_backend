@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Service\Order;
 
 use App\Domain\Entity\EventSeat;
+use App\Domain\Entity\Service\SeatSelectionValidatorInterface;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Shared\ClockInterface;
-use App\Domain\Shared\Service\SeatSelectionValidatorInterface;
 use App\Domain\ValueObject\EventStatus;
 
 final readonly class SeatSelectionValidator implements SeatSelectionValidatorInterface

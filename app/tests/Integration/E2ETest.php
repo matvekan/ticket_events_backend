@@ -78,7 +78,6 @@ class E2ETest extends WebTestCase
         $this->login($adminEmail);
         $this->makeAdmin($adminEmail);
 
-        // User opens a room (get-or-create is idempotent)
         $this->login($userEmail);
         $this->client->request('POST', '/api/chat/room', [], [], [], '{}');
         self::assertResponseStatusCodeSame(201);
@@ -88,36 +87,32 @@ class E2ETest extends WebTestCase
         $this->client->request('POST', '/api/chat/room', [], [], [], '{}');
         self::assertSame($room['id'], json_decode($this->client->getResponse()->getContent(), true)['id']);
 
-        // User sends a message (application service, same path as the WS handler)
         $user = self::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class)
             ->findByEmail(new \App\Domain\ValueObject\Email($userEmail));
-        $room = self::getContainer()->get(\App\Domain\Repository\ChatRoomRepositoryInterface::class)
+        $roomEntity = self::getContainer()->get(\App\Domain\Repository\ChatRoomRepositoryInterface::class)
             ->findById(new \App\Domain\ValueObject\ChatRoomId($room['id']));
         $chatService = self::getContainer()->get(\App\Application\Service\Chat\ChatService::class);
-        $chatService->createMessage($room, $user, 'Privet, podderzhka!');
+        $chatService->createMessage($roomEntity, $user, 'Privet, podderzhka!');
 
-        // History shows the user message
-        $this->client->request('GET', sprintf('/api/chat/rooms/%s/messages', $room['id']));
+        $this->client->request('GET', sprintf('/api/chat/rooms/%s/messages', $roomEntity->id()->toString()));
         self::assertResponseIsSuccessful();
         $messages = json_decode($this->client->getResponse()->getContent(), true);
         self::assertCount(1, $messages);
         self::assertFalse($messages[0]['isSupport']);
 
-        // Support replies
         $admin = self::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class)
             ->findByEmail(new \App\Domain\ValueObject\Email($adminEmail));
-        $room = self::getContainer()->get(\App\Domain\Repository\ChatRoomRepositoryInterface::class)
-            ->findById(new \App\Domain\ValueObject\ChatRoomId($room['id']));
-        $chatService->createMessage($room, $admin, 'Chem mogu pomoch?');
+        $roomEntity = self::getContainer()->get(\App\Domain\Repository\ChatRoomRepositoryInterface::class)
+            ->findById(new \App\Domain\ValueObject\ChatRoomId($roomEntity->id()->toString()));
+        $chatService->createMessage($roomEntity, $admin, 'Chem mogu pomoch?');
 
-        // Support room list contains the room with last message preview
         $this->login($adminEmail);
         $this->client->request('GET', '/api/admin/chat/rooms');
         self::assertResponseIsSuccessful();
         $rooms = json_decode($this->client->getResponse()->getContent(), true);
         $foundRoom = null;
         foreach ($rooms as $candidate) {
-            if ($candidate['id'] === $room['id']) {
+            if ($candidate['id'] === $roomEntity->id()->toString()) {
                 $foundRoom = $candidate;
                 break;
             }
@@ -126,9 +121,8 @@ class E2ETest extends WebTestCase
         self::assertSame('Chem mogu pomoch?', $foundRoom['lastMessage']['text']);
         self::assertTrue($foundRoom['lastMessage']['isSupport']);
 
-        // Stranger cannot read the conversation
         $this->login($strangerEmail);
-        $this->client->request('GET', sprintf('/api/chat/rooms/%s/messages', $room['id']));
+        $this->client->request('GET', sprintf('/api/chat/rooms/%s/messages', $roomEntity->id()->toString()));
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -138,7 +132,6 @@ class E2ETest extends WebTestCase
         $userEmail = sprintf('customer_%s@test.com', $suffix);
         $adminEmail = sprintf('admin_%s@test.com', $suffix);
 
-        // Customer: register, login, create venue/event, reserve, pay
         $this->registerUser($userEmail);
         $this->login($userEmail);
         $this->makeAdmin($userEmail);
@@ -153,7 +146,6 @@ class E2ETest extends WebTestCase
         $this->payOrder();
         $this->getOrder('paid');
 
-        // Admin: register, get ROLE_ADMIN, login, refund order
         $this->registerUser($adminEmail);
         $this->makeAdmin($adminEmail);
         $this->login($adminEmail);
@@ -163,7 +155,6 @@ class E2ETest extends WebTestCase
         $data = json_decode($this->client->getResponse()->getContent(), true);
         self::assertSame('Order refunded.', $data['message']);
 
-        // Verify order is refunded
         $this->login($userEmail);
         $this->getOrder('refunded');
     }
@@ -293,7 +284,7 @@ class E2ETest extends WebTestCase
             throw new \RuntimeException(sprintf('Event "%s" not found in database', $title));
         }
 
-        return $event->id()->toRfc4122();
+        return $event->id()->toString();
     }
 
     private function publishEvent(): void
@@ -307,8 +298,7 @@ class E2ETest extends WebTestCase
 
     private function listEvents(): void
     {
-        // Public detail endpoint: deterministic check that the published event is visible,
-        // unlike the paginated list (ties on identical dates may fall outside the first page).
+
         $this->client->request('GET', sprintf('/api/events/%s', $this->eventId));
 
         self::assertResponseIsSuccessful();

@@ -23,6 +23,7 @@ use Symfony\Component\Routing\Attribute\Route;
     ],
     responses: [
         new OA\Response(response: 200, description: 'List of events', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/Event'))),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class ListEventsController

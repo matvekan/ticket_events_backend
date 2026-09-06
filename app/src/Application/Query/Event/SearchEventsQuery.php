@@ -7,26 +7,26 @@ namespace App\Application\Query\Event;
 use App\Application\Query\QueryInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class SearchEventsQuery implements QueryInterface
+final readonly class SearchEventsQuery implements QueryInterface
 {
     public function __construct(
         #[Assert\Length(min: 2, max: 255)]
-        public readonly ?string $query = null,
+        public ?string $query = null,
 
         #[Assert\Length(min: 2, max: 100)]
-        public readonly ?string $city = null,
+        public ?string $city = null,
 
         #[Assert\Type(\DateTimeImmutable::class)]
-        public readonly ?\DateTimeImmutable $dateFrom = null,
+        public ?\DateTimeImmutable $dateFrom = null,
 
         #[Assert\Type(\DateTimeImmutable::class)]
-        public readonly ?\DateTimeImmutable $dateTo = null,
+        public ?\DateTimeImmutable $dateTo = null,
 
         #[Assert\Positive]
-        public readonly int $page = 1,
+        public int $page = 1,
 
         #[Assert\Range(min: 1, max: 100)]
-        public readonly int $limit = 20,
+        public int $limit = 20,
     ) {
     }
 }

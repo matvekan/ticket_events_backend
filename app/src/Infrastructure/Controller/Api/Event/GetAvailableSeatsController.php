@@ -20,6 +20,7 @@ use Symfony\Component\Routing\Attribute\Route;
     responses: [
         new OA\Response(response: 200, description: 'List of available seats', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/Seat'))),
         new OA\Response(response: 404, description: 'Event not found'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class GetAvailableSeatsController

@@ -21,6 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
     responses: [
         new OA\Response(response: 200, description: 'Venue details', content: new OA\JsonContent(ref: '#/components/schemas/Venue')),
         new OA\Response(response: 404, description: 'Venue not found'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class GetVenueController

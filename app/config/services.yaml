@@ -4,7 +4,6 @@ parameters:
     chat_ws_bind: '0.0.0.0'
     chat_ws_port: 8080
 
-    # Business/polling knobs (override per-environment as needed).
     pending_order_ttl_minutes: 15
     seat_cache_ttl_seconds: 30
     outbox_relay_interval_seconds: 10
@@ -59,20 +58,8 @@ services:
     App\Application\Transaction\TransactionManagerInterface:
         class: App\Infrastructure\Doctrine\DoctrineTransactionManager
 
-    App\Application\Port\PasswordHasherInterface:
+    App\Domain\Entity\Service\PasswordHasherInterface:
         class: App\Infrastructure\Security\SymfonyPasswordHasher
-
-    App\Application\Port\OrderReadRepositoryInterface:
-        class: App\Infrastructure\ReadModel\DoctrineOrderReadRepository
-
-    App\Application\Port\PaymentReadRepositoryInterface:
-        class: App\Infrastructure\ReadModel\DoctrinePaymentReadRepository
-
-    App\Application\Port\TicketVerificationReadRepositoryInterface:
-        class: App\Infrastructure\ReadModel\DoctrineTicketVerificationRepository
-
-    App\Application\Port\SeatAvailabilityReadRepositoryInterface:
-        class: App\Infrastructure\ReadModel\DoctrineSeatAvailabilityRepository
 
     App\Domain\Shared\ClockInterface:
         class: App\Infrastructure\Shared\SystemClock
@@ -80,32 +67,17 @@ services:
     App\Domain\Shared\IdGeneratorInterface:
         class: App\Infrastructure\Shared\UuidGenerator
 
-    App\Application\Port\EventSearchInterface:
-        class: App\Infrastructure\Elasticsearch\ElasticsearchEventSearchService
-
-    App\Application\Port\AnalyticsRepositoryInterface:
-        class: App\Infrastructure\ClickHouse\ClickHouseAnalyticsRepository
-
-    App\Domain\Repository\OutboxMessageRepositoryInterface:
-        class: App\Infrastructure\Doctrine\Repository\DoctrineOutboxMessageRepository
-
-    App\Application\Port\EventReadRepositoryInterface:
-        class: App\Infrastructure\ReadModel\DoctrineEventReadRepository
-
-    App\Application\Cache\SeatAvailabilityCacheInterface:
+    App\Domain\Shared\CacheInterface:
         class: App\Infrastructure\Cache\RedisSeatAvailabilityCache
         arguments:
             $cache: '@cache.seat_availability'
 
-    App\Application\Port\ChatRoomReadRepositoryInterface:
-        class: App\Infrastructure\ReadModel\DoctrineChatReadRepository
-
     App\Domain\Service\ChatAccessPolicy: ~
 
-    App\Domain\Shared\Service\SeatSelectionValidatorInterface:
+    App\Domain\Entity\Service\SeatSelectionValidatorInterface:
         class: App\Domain\Service\Order\SeatSelectionValidator
 
-    App\Domain\Shared\Service\OrderTicketFactoryInterface:
+    App\Domain\Entity\Service\OrderTicketFactoryInterface:
         class: App\Domain\Service\Order\OrderTicketFactory
 
     App\Domain\Service\Order\TicketCodeGenerator: ~
@@ -113,15 +85,12 @@ services:
     App\Application\Service\Order\ReserveSeatsUseCaseInterface:
         class: App\Application\Service\Order\ReserveSeatsUseCase
 
-    App\Infrastructure\Controller\Api\Admin\VerifyTicketController:
-        arguments:
-            $cache: '@cache.app'
-
     App\Domain\Repository\UserRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineUserRepository
 
     App\Domain\Repository\EventRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineEventRepository
+
 
     App\Domain\Repository\VenueRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineVenueRepository
@@ -147,6 +116,15 @@ services:
     App\Domain\Repository\ChatMessageRepositoryInterface:
         class: App\Infrastructure\Doctrine\Repository\DoctrineChatMessageRepository
 
+    App\Domain\Repository\OutboxMessageRepositoryInterface:
+        class: App\Infrastructure\Doctrine\Repository\DoctrineOutboxMessageRepository
+
+    App\Domain\Repository\EventSearchInterface:
+        class: App\Infrastructure\Elasticsearch\ElasticsearchEventSearchService
+
+    App\Application\Port\AnalyticsRepositoryInterface:
+        class: App\Infrastructure\ClickHouse\ClickHouseAnalyticsRepository
+
     App\Infrastructure\Elasticsearch\ClientFactory:
         arguments:
             $hosts: '%env(json:ELASTICSEARCH_HOSTS)%'
@@ -165,7 +143,6 @@ services:
             $settings:
                 database: '%env(string:CLICKHOUSE_DB)%'
 
-    # Exception Handlers
     App\Infrastructure\Http\ExceptionHandler\CompositeExceptionHandler:
         calls:
             - method: addHandler

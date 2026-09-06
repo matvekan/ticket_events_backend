@@ -6,7 +6,7 @@ namespace App\Application\QueryHandler\Order;
 
 use App\Application\Dto\PaymentDto;
 use App\Application\Exception\EntityNotFoundException as ApplicationEntityNotFoundException;
-use App\Application\Port\PaymentReadRepositoryInterface;
+use App\Domain\Repository\PaymentRepositoryInterface;
 use App\Application\Query\Order\GetPaymentForOrderQuery;
 use App\Application\Query\QueryHandlerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -15,14 +15,14 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 final class GetPaymentForOrderHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly PaymentReadRepositoryInterface $payments,
+        private readonly PaymentRepositoryInterface $payments,
     ) {
     }
 
     public function __invoke(GetPaymentForOrderQuery $query): PaymentDto
     {
-        // Ownership enforced in the projection: foreign payments read as "not found".
-        $payment = $this->payments->findByOrderId($query->orderId, $query->userId);
+
+        $payment = $this->payments->findByOrderIdDto($query->orderId, $query->userId);
 
         if ($payment === null) {
             throw new ApplicationEntityNotFoundException('Payment not found.');

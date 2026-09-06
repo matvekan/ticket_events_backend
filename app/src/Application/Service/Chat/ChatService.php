@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Service\Chat;
 
 use App\Application\Dto\ChatMessageDto;
-use App\Application\Exception\AccessDeniedException;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Entity\ChatMessage;
 use App\Domain\Entity\ChatRoom;
@@ -33,9 +32,6 @@ final readonly class ChatService
     ) {
     }
 
-    /**
-     * Idempotently ensures a support room exists for the user.
-     */
     public function openRoom(string $userId): void
     {
         $this->transactionManager->transactional(function () use ($userId): void {
@@ -45,7 +41,7 @@ final readonly class ChatService
             }
 
             if ($this->rooms->findByUserId($user->id()) === null) {
-                $room = \App\Domain\Entity\ChatRoom::create($user->id(), $this->clock, $this->ids);
+                $room = ChatRoom::create($user->id(), $this->clock, $this->ids);
                 $this->rooms->save($room);
             }
         });
@@ -70,9 +66,9 @@ final readonly class ChatService
     private function toDto(ChatMessage $message, User $sender): ChatMessageDto
     {
         return new ChatMessageDto(
-            id: $message->id()->toRfc4122(),
-            roomId: $message->roomId()->toRfc4122(),
-            senderId: $message->senderId()->toRfc4122(),
+            id: $message->id()->toString(),
+            roomId: $message->roomId()->toString(),
+            senderId: $message->senderId()->toString(),
             senderName: (string) $sender->name(),
             isSupport: $this->accessPolicy->isSupport($sender),
             text: $message->text()->toString(),

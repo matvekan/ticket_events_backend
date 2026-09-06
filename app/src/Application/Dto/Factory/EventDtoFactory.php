@@ -6,10 +6,10 @@ namespace App\Application\Dto\Factory;
 
 use App\Application\Dto\EventDetailsDto;
 use App\Application\Dto\EventDto;
+use App\Application\Dto\PriceRangeDto;
 use App\Application\Dto\SeatDto;
 use App\Domain\Entity\Event;
 use App\Domain\Entity\EventSeat;
-
 
 final class EventDtoFactory
 {
@@ -18,7 +18,7 @@ final class EventDtoFactory
     ) {
     }
 
-    /** @param Event[] $events @return EventDto[] */
+
     public function fromEventList(array $events): array
     {
         return array_map(fn (Event $event): EventDto => $this->fromEvent($event), $events);
@@ -29,15 +29,15 @@ final class EventDtoFactory
         $prices = $this->getPriceRange($event);
 
         return new EventDto(
-            id: $event->id()->toRfc4122(),
+            id: $event->id()->toString(),
             title: (string) $event->title(),
             description: (string) $event->description(),
             date: $event->date()->format('c'),
             venueName: (string) $event->venue()->name(),
             venueCity: (string) $event->venue()->city(),
-            priceMin: $prices['min'],
-            priceMax: $prices['max'],
-            priceCurrency: $prices['currency'],
+            priceMin: $prices->min,
+            priceMax: $prices->max,
+            priceCurrency: $prices->currency,
             status: $event->status()->value,
         );
     }
@@ -52,7 +52,7 @@ final class EventDtoFactory
         );
 
         return new EventDetailsDto(
-            id: $event->id()->toRfc4122(),
+            id: $event->id()->toString(),
             title: (string) $event->title(),
             description: (string) $event->description(),
             date: $event->date()->format('c'),
@@ -61,26 +61,28 @@ final class EventDtoFactory
             venueCity: (string) $event->venue()->city(),
             venueLatitude: $event->venue()->latitude(),
             venueLongitude: $event->venue()->longitude(),
-            priceMin: $prices['min'],
-            priceMax: $prices['max'],
-            priceCurrency: $prices['currency'],
+            priceMin: $prices->min,
+            priceMax: $prices->max,
+            priceCurrency: $prices->currency,
             status: $event->status()->value,
             seats: $seats,
         );
     }
 
-    /** @return array{min: int, max: int, currency: string} */
-    private function getPriceRange(Event $event): array
+
+    private function getPriceRange(Event $event): PriceRangeDto
     {
         $prices = array_map(
             fn (EventSeat $eventSeat): int => $eventSeat->price()->amount(),
             $event->eventSeats(),
         );
 
-        return [
-            'min' => $prices !== [] ? min($prices) : 0,
-            'max' => $prices !== [] ? max($prices) : 0,
-            'currency' => $prices !== [] ? $event->eventSeats()[0]->price()->currency() : 'BYN',
-        ];
+        $seats = $event->eventSeats();
+
+        return new PriceRangeDto(
+            min: $prices !== [] ? min($prices) : 0,
+            max: $prices !== [] ? max($prices) : 0,
+            currency: $seats !== [] ? $seats[0]->price()->currency() : 'BYN',
+        );
     }
 }

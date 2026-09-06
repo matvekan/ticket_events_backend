@@ -24,6 +24,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 401, description: 'Unauthorized'),
         new OA\Response(response: 404, description: 'Order not found'),
         new OA\Response(response: 422, description: 'Order cannot be cancelled'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class CancelOrderController
@@ -38,7 +39,7 @@ final class CancelOrderController
     {
         $this->commandBus->dispatch(new CancelOrderCommand(
             orderId: $id,
-            userId: $this->security->getUser()?->id()?->toRfc4122(),
+            userId: $this->security->getUser()?->id()?->toString(),
         ));
 
         return new JsonResponse(['message' => 'Order cancelled.']);

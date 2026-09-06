@@ -6,8 +6,8 @@ namespace App\Application\CommandHandler\Auth;
 
 use App\Application\Command\Auth\ResetPasswordCommand;
 use App\Application\Command\CommandHandlerInterface;
-use App\Application\Port\PasswordHasherInterface;
 use App\Application\Transaction\TransactionManagerInterface;
+use App\Domain\Entity\Service\PasswordHasherInterface;
 use App\Domain\Exception\DomainException;
 use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\Shared\ClockInterface;

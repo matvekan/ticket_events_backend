@@ -9,7 +9,6 @@ use App\Application\Command\CommandHandlerInterface;
 use App\Application\Service\Chat\ChatService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
-
 #[AsMessageHandler]
 final readonly class OpenChatRoomHandler implements CommandHandlerInterface
 {

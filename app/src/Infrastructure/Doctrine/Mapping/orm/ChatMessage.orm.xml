@@ -9,15 +9,14 @@
             <index name="idx_chat_messages_room_created" columns="room_id,created_at"/>
         </indexes>
 
-        <id name="id" type="chat_message_id">
+        <id name="id" type="chat_message_id" length="36">
             <generator strategy="NONE"/>
         </id>
 
-        <!-- Cross-aggregate references by ID only. -->
-        <field name="roomId" column="room_id" type="chat_room_id"/>
-        <field name="senderId" column="sender_id" type="user_id"/>
+        <field name="roomId" column="room_id" type="chat_room_id" length="36"/>
+        <field name="senderId" column="sender_id" type="user_id" length="36"/>
 
-        <field name="text" type="message_text"/>
+        <field name="text" type="message_text" length="2000"/>
         <field name="createdAt" type="datetime_immutable"/>
     </entity>
 </doctrine-mapping>

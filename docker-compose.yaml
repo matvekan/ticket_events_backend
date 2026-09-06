@@ -4,6 +4,7 @@ networks:
 
 volumes:
   pg-data:
+  vendor-data:
 
 services:
   nginx:
@@ -27,6 +28,7 @@ services:
       dockerfile: docker/php/Dockerfile
     volumes:
       - ./app:/var/www
+      - vendor-data:/var/www/vendor
     command: ["sh", "-c", "if [ ! -f config/jwt/private.pem ]; then php bin/console lexik:jwt:generate-keypair -q; fi; exec php-fpm"]
     env_file:
       - .env
@@ -116,6 +118,7 @@ services:
       dockerfile: docker/php/Dockerfile
     volumes:
       - ./app:/var/www
+      - vendor-data:/var/www/vendor
     command: php bin/console messenger:consume events scheduler_default -vv --time-limit=3600
     restart: always
     depends_on:
@@ -139,6 +142,7 @@ services:
       dockerfile: docker/php/Dockerfile
     volumes:
       - ./app:/var/www
+      - vendor-data:/var/www/vendor
     command: php bin/console app:chat-server
     restart: always
     ports:

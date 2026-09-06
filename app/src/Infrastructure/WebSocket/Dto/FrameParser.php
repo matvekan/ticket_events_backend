@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\WebSocket\Dto;
 
-/**
- * Parses raw JSON payloads from the WebSocket into typed frames.
- */
 final class FrameParser
 {
-    /** @return IncomingFrame|null null when the payload is malformed or has an unknown type */
+    
     public function parse(string $payload): ?IncomingFrame
     {
         try {

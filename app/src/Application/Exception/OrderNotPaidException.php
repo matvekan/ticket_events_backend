@@ -10,6 +10,6 @@ final class OrderNotPaidException extends BusinessRuleViolationException
 {
     public function __construct(string $code)
     {
-        parent::__construct(sprintf('Заказ по билету "%s" не оплачен.', $code));
+        parent::__construct(sprintf('Order for ticket "%s" not paid.', $code));
     }
 }

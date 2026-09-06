@@ -8,10 +8,10 @@ use Amp\Websocket\WebsocketClient;
 
 final class ChatSubscriptions
 {
-    /** @var array<string, array<int, WebsocketClient>> roomId => clientId => client */
+    
     private array $roomClients = [];
 
-    /** @var array<int, list<string>> clientId => roomIds */
+    
     private array $clientRooms = [];
 
     public function subscribe(WebsocketClient $client, string $roomId): void
@@ -65,7 +65,7 @@ final class ChatSubscriptions
             try {
                 $client->sendText($payload);
             } catch (\Throwable) {
-                // Клиент мог закрыться между кадрами — пропускаем.
+
             }
         }
     }

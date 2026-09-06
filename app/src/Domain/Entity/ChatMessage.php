@@ -16,11 +16,11 @@ class ChatMessage
     public const MAX_TEXT_LENGTH = MessageText::MAX_LENGTH;
 
     private function __construct(
-        private readonly ChatMessageId $id,
-        private readonly ChatRoomId $roomId,
-        private readonly UserId $senderId,
-        private readonly MessageText $text,
-        private readonly \DateTimeImmutable $createdAt,
+        private ChatMessageId $id,
+        private ChatRoomId $roomId,
+        private UserId $senderId,
+        private MessageText $text,
+        private \DateTimeImmutable $createdAt,
     ) {
     }
 
@@ -47,17 +47,13 @@ class ChatMessage
 
     public function rawId(): string { return $this->id->toString(); }
 
-    /**
-     * Reference to the ChatRoom aggregate by ID (cross-aggregate boundary).
-     */
+    
     public function roomId(): ChatRoomId
     {
         return $this->roomId;
     }
 
-    /**
-     * Reference to the User aggregate by ID (cross-aggregate boundary).
-     */
+    
     public function senderId(): UserId
     {
         return $this->senderId;

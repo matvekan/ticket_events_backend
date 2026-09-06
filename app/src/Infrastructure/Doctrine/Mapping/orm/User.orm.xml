@@ -9,11 +9,11 @@
             <unique-constraint name="uniq_users_email" columns="email"/>
         </unique-constraints>
 
-        <id name="id" type="user_id">
+        <id name="id" type="user_id" length="36">
             <generator strategy="NONE"/>
         </id>
 
-        <field name="name" type="name" length="255"/>
+        <field name="name" type="name" length="50"/>
         <field name="email" type="email" length="255"/>
         <field name="roles" type="json"/>
         <field name="password" length="255" nullable="true"/>

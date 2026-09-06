@@ -13,10 +13,10 @@ use App\Domain\ValueObject\UserId;
 class User
 {
     private function __construct(
-        private readonly UserId $id,
-        private readonly Name $name,
-        private readonly Email $email,
-        /** @var list<Role> */
+        private UserId $id,
+        private Name $name,
+        private Email $email,
+        
         private array $roles = [],
         private ?string $password = null,
         private ?string $resetPasswordTokenHash = null,
@@ -50,7 +50,7 @@ class User
         return $this->email;
     }
 
-    /** @return list<Role> */
+    
     public function roles(): array
     {
         return $this->roles;

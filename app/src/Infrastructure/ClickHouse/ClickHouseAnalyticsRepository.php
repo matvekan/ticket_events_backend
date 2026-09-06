@@ -31,7 +31,15 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
 
     public function tableTotals(string $table): TableTotalsDto
     {
-        $row = $this->select("SELECT count() AS cnt, coalesce(sum(amount), 0) AS total FROM {$this->table($table)}");
+        $row = $this->select(sprintf(
+            'SELECT count() AS cnt, coalesce(sum(amt), 0) AS total
+             FROM (
+                 SELECT order_id, any(amount) AS amt
+                 FROM %s
+                 GROUP BY order_id
+             )',
+            $this->table($table),
+        ));
 
         return new TableTotalsDto(
             count: (int) ($row[0]['cnt'] ?? 0),
@@ -41,26 +49,36 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
 
     public function countRows(string $table): int
     {
-        $row = $this->select("SELECT count() AS cnt FROM {$this->table($table)}");
+        $row = $this->select(sprintf('SELECT count(DISTINCT order_id) AS cnt FROM %s', $this->table($table)));
 
         return (int) ($row[0]['cnt'] ?? 0);
     }
 
-    /** @return AnalyticsByDayDto[] */
     public function byDay(): array
     {
-        $payments = $this->select(
-            "SELECT toDate(timestamp) AS day, sum(amount) AS revenue
-             FROM {$this->table('order_payments')}
-             WHERE timestamp >= now() - INTERVAL 14 DAY
-             GROUP BY day ORDER BY day",
-        );
-        $refunds = $this->select(
-            "SELECT toDate(timestamp) AS day, sum(amount) AS refunds
-             FROM {$this->table('order_refunds')}
-             WHERE timestamp >= now() - INTERVAL 14 DAY
-             GROUP BY day ORDER BY day",
-        );
+        $payments = $this->select(sprintf(
+            'SELECT toDate(ts) AS day, sum(amt) AS revenue
+             FROM (
+                 SELECT order_id, any(timestamp) AS ts, any(amount) AS amt
+                 FROM %s
+                 GROUP BY order_id
+             )
+             WHERE ts >= now() - INTERVAL 14 DAY
+             GROUP BY day ORDER BY day',
+            $this->table('order_payments'),
+        ));
+
+        $refunds = $this->select(sprintf(
+            'SELECT toDate(ts) AS day, sum(amt) AS refunds
+             FROM (
+                 SELECT order_id, any(timestamp) AS ts, any(amount) AS amt
+                 FROM %s
+                 GROUP BY order_id
+             )
+             WHERE ts >= now() - INTERVAL 14 DAY
+             GROUP BY day ORDER BY day',
+            $this->table('order_refunds'),
+        ));
 
         $byDay = [];
         foreach ($payments as $row) {
@@ -86,17 +104,23 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
             );
         }
 
+        ksort($byDay);
+
         return array_values($byDay);
     }
 
-    /** @return TopUserDto[] */
     public function topUsers(): array
     {
-        $rows = $this->select(
-            "SELECT user_id, count() AS orders, sum(amount) AS revenue
-             FROM {$this->table('order_payments')}
-             GROUP BY user_id ORDER BY revenue DESC LIMIT 10",
-        );
+        $rows = $this->select(sprintf(
+            'SELECT uid AS user_id, count() AS orders, sum(amt) AS revenue
+             FROM (
+                 SELECT order_id, any(user_id) AS uid, any(amount) AS amt
+                 FROM %s
+                 GROUP BY order_id
+             )
+             GROUP BY user_id ORDER BY revenue DESC LIMIT 10',
+            $this->table('order_payments'),
+        ));
 
         return array_map(static fn (array $row): TopUserDto => new TopUserDto(
             userId: (string) $row['user_id'],
@@ -105,14 +129,15 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
         ), $rows);
     }
 
-    /** @return RecentPaymentDto[] */
     public function recentPayments(): array
     {
-        $rows = $this->select(
-            "SELECT order_id, user_id, amount, timestamp
-             FROM {$this->table('order_payments')}
-             ORDER BY timestamp DESC LIMIT 10",
-        );
+        $rows = $this->select(sprintf(
+            'SELECT order_id, any(user_id) AS user_id, any(amount) AS amount, any(timestamp) AS timestamp
+             FROM %s
+             GROUP BY order_id
+             ORDER BY timestamp DESC LIMIT 10',
+            $this->table('order_payments'),
+        ));
 
         return array_map(static fn (array $row): RecentPaymentDto => new RecentPaymentDto(
             orderId: (string) $row['order_id'],
@@ -122,21 +147,19 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
         ), $rows);
     }
 
-    private function database(): string
-    {
-        return $this->clickhouse->settings['database'] ?? 'default';
-    }
-
     private function table(string $name): string
     {
-        return sprintf('%s.%s', $this->database(), $name);
+        if (!preg_match('/^[a-z_]+$/', $name)) {
+            throw new \InvalidArgumentException('Invalid analytics table name.');
+        }
+
+        $database = $this->clickhouse->settings()->getDatabase();
+
+        return sprintf('`%s`.`%s`', $database, $name);
     }
 
-    /** @return array<int, array<string, mixed>> */
     private function select(string $sql): array
     {
-        $result = $this->clickhouse->select($sql);
-
-        return $result->rows();
+        return $this->clickhouse->select($sql)->rows();
     }
 }

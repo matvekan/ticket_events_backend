@@ -36,6 +36,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 401, description: 'Unauthorized'),
         new OA\Response(response: 403, description: 'Forbidden'),
         new OA\Response(response: 422, description: 'Validation failed'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class CreateVenueController

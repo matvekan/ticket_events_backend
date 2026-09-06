@@ -6,6 +6,16 @@ framework:
         default_context:
             datetime_format: 'Y-m-d\TH:i:sP'
 
+    rate_limiter:
+        anonymous_api:
+            policy: token_bucket
+            limit: 100
+            interval: '1 minute'
+        authenticated_api:
+            policy: token_bucket
+            limit: 1000
+            interval: '1 minute'
+
 when@test:
     framework:
         test: true

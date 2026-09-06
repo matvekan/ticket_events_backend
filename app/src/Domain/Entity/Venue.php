@@ -13,12 +13,12 @@ use App\Domain\ValueObject\VenueName;
 class Venue
 {
     private function __construct(
-        private readonly VenueId $id,
-        private readonly VenueName $name,
-        private readonly VenueAddress $address,
-        private readonly VenueCity $city,
-        private readonly ?float $latitude = null,
-        private readonly ?float $longitude = null,
+        private VenueId $id,
+        private VenueName $name,
+        private VenueAddress $address,
+        private VenueCity $city,
+        private ?float $latitude = null,
+        private ?float $longitude = null,
     ) {
     }
 

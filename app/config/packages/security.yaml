@@ -39,8 +39,7 @@ security:
             jwt: ~
 
     access_control:
-        - { path: ^/mock-bank/[^/]+$, methods: [GET], roles: PUBLIC_ACCESS }
-        - { path: ^/mock-bank, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/mock-bank, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/register, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/forgot-password, roles: PUBLIC_ACCESS }

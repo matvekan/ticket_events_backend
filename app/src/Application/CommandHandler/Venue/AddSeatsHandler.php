@@ -58,7 +58,7 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
         return $venue;
     }
 
-    /** @return array<string, true> map "row/number" => true */
+    
     private function existingPositions(Venue $venue): array
     {
         $positions = [];

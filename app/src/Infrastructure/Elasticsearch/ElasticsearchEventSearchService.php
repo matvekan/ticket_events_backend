@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Elasticsearch;
 
 use App\Application\Dto\EventDto;
-use App\Application\Port\EventSearchInterface;
+use App\Domain\Repository\EventSearchInterface;
 use App\Domain\Repository\EventRepositoryInterface;
 use App\Application\Dto\Factory\EventDtoFactory;
 use Elastic\Elasticsearch\Client;
@@ -23,7 +23,7 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
     ) {
     }
 
-    /** @return EventDto[] */
+
     public function search(
         ?string $query,
         ?string $city,
@@ -85,7 +85,7 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
         ];
     }
 
-    /** @return EventDto[] */
+
     private function mapHits(array $results): array
     {
         $events = [];

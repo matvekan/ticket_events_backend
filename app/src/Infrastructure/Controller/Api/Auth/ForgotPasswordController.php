@@ -29,6 +29,7 @@ use Symfony\Component\Routing\Attribute\Route;
     responses: [
         new OA\Response(response: 200, description: 'If user exists, reset link sent'),
         new OA\Response(response: 422, description: 'Validation failed'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class ForgotPasswordController

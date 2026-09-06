@@ -25,6 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 200, description: 'Order details', content: new OA\JsonContent(ref: '#/components/schemas/Order')),
         new OA\Response(response: 401, description: 'Unauthorized'),
         new OA\Response(response: 404, description: 'Order not found'),
+        new OA\Response(response: 429, description: 'Too many requests'),
     ]
 )]
 final class GetOrderController
@@ -39,7 +40,7 @@ final class GetOrderController
     {
         $order = $this->queryBus->dispatch(new GetOrderDetailsQuery(
             orderId: $id,
-            userId: $this->security->getUser()?->id()?->toRfc4122(),
+            userId: $this->security->getUser()?->id()?->toString(),
         ));
 
         if (!$order instanceof OrderDto) {

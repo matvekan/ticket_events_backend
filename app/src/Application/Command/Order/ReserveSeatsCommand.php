@@ -9,7 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class ReserveSeatsCommand implements CommandInterface
 {
-    /** @param string[] $eventSeatIds */
+    
     public function __construct(
         #[Assert\NotBlank]
         #[Assert\Uuid]

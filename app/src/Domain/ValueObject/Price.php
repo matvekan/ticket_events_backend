@@ -38,3 +38,4 @@ final class Price
         return $this->currency;
     }
 }
+
