@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\Outbox;
+namespace App\Domain\Entity;
 
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;

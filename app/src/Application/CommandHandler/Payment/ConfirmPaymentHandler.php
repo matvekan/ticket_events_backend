@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Application\CommandHandler\Payment;
 
@@ -37,13 +35,12 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
     {
         $orderIdVo = new OrderId($command->orderId);
         $userIdVo = $command->userId !== null ? new UserId($command->userId) : null;
-
         $affectedEventIds = [];
 
         $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo, &$affectedEventIds): array {
             $order = $this->findOwnedOrder($orderIdVo, $userIdVo);
-
             $payment = $this->payments->findByOrderId($orderIdVo);
+
             if ($payment === null) {
                 throw new EntityNotFoundException('Payment not found for this order.');
             }
@@ -57,18 +54,15 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
                 $order->tickets(),
             );
             $eventSeats = $this->eventSeats->lockAndFindByIds($eventSeatIds);
+
             foreach ($eventSeats as $eventSeat) {
                 $eventSeat->sell();
                 $affectedEventIds[$eventSeat->event()->id()->toString()] = true;
             }
 
             $order->pay($this->clock);
-            foreach ($order->tickets() as $ticket) {
-                $ticket->activate();
-            }
 
             $this->orders->save($order);
-
             $payment->markPaid($this->clock);
             $this->payments->save($payment);
 
@@ -86,11 +80,9 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
         if (!$order) {
             throw new EntityNotFoundException('Order not found.');
         }
-
         if ($userId !== null && !$order->userId()->equals($userId)) {
             throw new AccessDeniedException('You do not own this order.');
         }
-
         return $order;
     }
 }

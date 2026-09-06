@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Repository;
 
-use App\Infrastructure\Outbox\OutboxMessage;
+use App\Domain\Entity\OutboxMessage;
 
 interface OutboxMessageRepositoryInterface
 {

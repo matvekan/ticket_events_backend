@@ -77,6 +77,14 @@ class EventSeat
         return $this->status === SeatStatus::Free;
     }
 
+    public function sell(): void
+    {
+        if ($this->status !== SeatStatus::Reserved) {
+            throw new BusinessRuleViolationException('Only reserved seats can be sold.');
+        }
+        $this->status = SeatStatus::Sold;
+    }
+
     public function reserve(): void
     {
         if ($this->status !== SeatStatus::Free) {

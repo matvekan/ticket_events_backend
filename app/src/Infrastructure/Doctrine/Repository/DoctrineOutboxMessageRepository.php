@@ -1,11 +1,9 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace App\Infrastructure\Doctrine\Repository;
 
+use App\Domain\Entity\OutboxMessage;
 use App\Domain\Repository\OutboxMessageRepositoryInterface;
-use App\Infrastructure\Outbox\OutboxMessage;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -17,7 +15,6 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
     ) {
     }
 
-
     public function findPending(int $limit): array
     {
         $qb = $this->connection->createQueryBuilder()
@@ -28,7 +25,6 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
             ->setMaxResults($limit);
 
         $sql = $qb->getSQL() . ' FOR UPDATE SKIP LOCKED';
-
         $ids = $this->connection->fetchFirstColumn($sql);
 
         if ($ids === []) {

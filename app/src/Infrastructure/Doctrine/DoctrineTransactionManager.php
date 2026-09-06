@@ -6,9 +6,9 @@ namespace App\Infrastructure\Doctrine;
 
 use App\Application\Exception\PersistenceConstraintViolationException;
 use App\Application\Transaction\TransactionManagerInterface;
+use App\Domain\Entity\OutboxMessage;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
-use App\Infrastructure\Outbox\OutboxMessage;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
