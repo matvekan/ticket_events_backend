@@ -77,6 +77,7 @@ final class MockBankController
     private function actorUserId(): ?string
     {
         $user = $this->security->getUser();
+
         return $user instanceof DomainUserAdapter ? $user->id()->toString() : null;
     }
 }

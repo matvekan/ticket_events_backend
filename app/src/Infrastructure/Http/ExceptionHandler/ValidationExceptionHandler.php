@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\ExceptionHandler;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Messenger\Exception\ValidationFailedException as MessengerValidationFailedException;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 final class ValidationExceptionHandler implements ExceptionHandlerInterface
 {
@@ -20,6 +20,10 @@ final class ValidationExceptionHandler implements ExceptionHandlerInterface
     {
         $violations = [];
 
+        assert(
+            $throwable instanceof ValidationFailedException
+            || $throwable instanceof MessengerValidationFailedException
+        );
         foreach ($throwable->getViolations() as $violation) {
             $violations[] = [
                 'field' => $violation->getPropertyPath(),

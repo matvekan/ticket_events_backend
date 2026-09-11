@@ -25,7 +25,7 @@ final readonly class ScanTicketHandler implements CommandHandlerInterface
     {
         $this->transactionManager->transactional(function () use ($command): void {
             $ticket = $this->tickets->findByCode(new TicketCode($command->ticketCode));
-            if (!$ticket) {
+            if (! $ticket) {
                 throw new EntityNotFoundException('Ticket not found.');
             }
 

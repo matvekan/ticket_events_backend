@@ -10,7 +10,6 @@ use App\Domain\Entity\User;
 
 final class ChatMessageDtoFactory
 {
-
     public function fromMessageList(array $messages, array $senders): array
     {
         return array_map(

@@ -6,3 +6,7 @@ controllers:
 
 api_login_check:
     path: /api/auth/login
+
+admin_login:
+    path: /api/admin/login
+    methods: POST

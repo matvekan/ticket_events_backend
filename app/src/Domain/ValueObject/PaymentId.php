@@ -10,7 +10,7 @@ final readonly class PaymentId implements StringValueObjectInterface
 {
     public function __construct(private string $value)
     {
-        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
             throw new \InvalidArgumentException(sprintf('Invalid PaymentId UUID: %s', $value));
         }
     }
@@ -32,7 +32,7 @@ final readonly class PaymentId implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (!$other instanceof self) {
+        if (! $other instanceof self) {
             return false;
         }
 
@@ -44,5 +44,3 @@ final readonly class PaymentId implements StringValueObjectInterface
         return $this->value;
     }
 }
-
-

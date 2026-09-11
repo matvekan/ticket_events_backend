@@ -36,7 +36,8 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
 
     public function findByIds(array $ids): array
     {
-        $stringIds = array_map(fn(SeatId $id) => $id->toString(), $ids);
+        $stringIds = array_map(fn (SeatId $id) => $id->toString(), $ids);
+
         return $this->repository->findBy(['id' => $stringIds]);
     }
 

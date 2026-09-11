@@ -6,7 +6,6 @@ namespace App\Infrastructure\Http;
 
 use App\Infrastructure\Http\ExceptionHandler\CompositeExceptionHandler;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
@@ -26,7 +25,7 @@ final class ApiExceptionListener implements EventSubscriberInterface
     public function onKernelException(ExceptionEvent $event): void
     {
         $path = $event->getRequest()->getPathInfo();
-        if (!str_starts_with($path, '/api') && !str_starts_with($path, '/mock-bank')) {
+        if (! str_starts_with($path, '/api') && ! str_starts_with($path, '/mock-bank')) {
             return;
         }
 

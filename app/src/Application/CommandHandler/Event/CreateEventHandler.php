@@ -20,7 +20,6 @@ use App\Domain\ValueObject\VenueId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
 
-
 #[AsMessageHandler]
 final readonly class CreateEventHandler implements CommandHandlerInterface
 {
@@ -38,7 +37,7 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
     {
         $this->transactionManager->transactional(function () use ($command): array {
             $venue = $this->venues->findById(new VenueId($command->venueId));
-            if (!$venue) {
+            if (! $venue) {
                 throw new EntityNotFoundException('Venue not found.');
             }
 

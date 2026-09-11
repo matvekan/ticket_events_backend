@@ -70,6 +70,7 @@ final class ChatConnectionManager implements WebsocketClientHandler
 
         if ($frame === null) {
             $this->sendError($client, 'Malformed or unsupported frame.');
+
             return;
         }
 

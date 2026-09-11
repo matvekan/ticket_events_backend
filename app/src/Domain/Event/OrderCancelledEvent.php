@@ -6,7 +6,6 @@ namespace App\Domain\Event;
 
 final class OrderCancelledEvent
 {
-    
     public function __construct(
         private readonly string $orderId,
         private readonly string $userId,
@@ -14,8 +13,18 @@ final class OrderCancelledEvent
     ) {
     }
 
-    public function orderId(): string { return $this->orderId; }
-    public function userId(): string { return $this->userId; }
-    
-    public function eventSeatIds(): array { return $this->eventSeatIds; }
+    public function orderId(): string
+    {
+        return $this->orderId;
+    }
+
+    public function userId(): string
+    {
+        return $this->userId;
+    }
+
+    public function eventSeatIds(): array
+    {
+        return $this->eventSeatIds;
+    }
 }

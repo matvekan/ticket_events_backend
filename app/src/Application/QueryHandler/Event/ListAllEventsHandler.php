@@ -19,7 +19,6 @@ final class ListAllEventsHandler implements QueryHandlerInterface
     ) {
     }
 
-
     public function __invoke(ListAllEventsQuery $query): array
     {
         return $this->eventDtoFactory->fromEventList($this->events->findAll());

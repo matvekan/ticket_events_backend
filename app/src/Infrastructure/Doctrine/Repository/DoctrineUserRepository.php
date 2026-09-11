@@ -13,7 +13,6 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineUserRepository implements UserRepositoryInterface
 {
-    
     private readonly EntityRepository $repository;
 
     public function __construct(

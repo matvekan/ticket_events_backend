@@ -16,6 +16,16 @@ security:
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
 
+        admin_login:
+            pattern: ^/api/admin/login
+            stateless: true
+            json_login:
+                check_path: /api/admin/login
+                username_path: email
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+
         login:
             pattern: ^/api/auth/login$
             stateless: true
@@ -39,6 +49,8 @@ security:
             jwt: ~
 
     access_control:
+        - { path: ^/api/webhooks/stripe, roles: PUBLIC_ACCESS }
+        - { path: ^/api/admin/login, roles: PUBLIC_ACCESS }
         - { path: ^/mock-bank, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/register, roles: PUBLIC_ACCESS }

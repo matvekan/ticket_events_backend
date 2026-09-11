@@ -8,6 +8,5 @@ use App\Domain\ValueObject\UserId;
 
 interface ReserveSeatsUseCaseInterface
 {
-
     public function execute(UserId $userId, array $seatIds): void;
 }

@@ -10,4 +10,3 @@ enum SeatStatus: string
     case Reserved = 'reserved';
     case Sold = 'sold';
 }
-

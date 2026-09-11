@@ -6,7 +6,6 @@ namespace App\Application\Dto;
 
 readonly class OrderDto
 {
-    
     public function __construct(
         public string $id,
         public string $status,

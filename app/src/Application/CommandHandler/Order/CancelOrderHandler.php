@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Application\CommandHandler\Order;
 
@@ -65,11 +67,11 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
     private function findOwnedOrder(OrderId $orderId, ?UserId $userId): Order
     {
         $order = $this->orders->findById($orderId);
-        if (!$order) {
+        if (! $order) {
             throw new EntityNotFoundException('Order not found.');
         }
 
-        if ($userId !== null && !$order->userId()->equals($userId)) {
+        if ($userId !== null && ! $order->userId()->equals($userId)) {
             throw new AccessDeniedException('You do not own this order.');
         }
 
@@ -84,10 +86,6 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
         );
 
         $eventSeats = $this->eventSeats->lockAndFindByIds($eventSeatIds);
-
-        foreach ($order->tickets() as $ticket) {
-            $refund ? $ticket->refund() : $ticket->cancel();
-        }
 
         $affectedEvents = [];
         foreach ($eventSeats as $eventSeat) {

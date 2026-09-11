@@ -11,12 +11,10 @@ use App\Domain\ValueObject\TicketCode;
 
 interface TicketRepositoryInterface
 {
-    
     public function findByOrderId(OrderId $orderId): array;
 
     public function findByCode(TicketCode $code): ?Ticket;
 
-    
     public function findVerificationByCode(string $code): ?TicketVerificationData;
 
     public function save(Ticket $ticket): void;

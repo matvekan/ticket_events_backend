@@ -9,9 +9,16 @@ final readonly class MessageFrame implements IncomingFrame
     public function __construct(
         private string $roomId,
         private string $text,
-    ) {}
+    ) {
+    }
 
-    public function roomId(): string { return $this->roomId; }
+    public function roomId(): string
+    {
+        return $this->roomId;
+    }
 
-    public function text(): string { return $this->text; }
+    public function text(): string
+    {
+        return $this->text;
+    }
 }

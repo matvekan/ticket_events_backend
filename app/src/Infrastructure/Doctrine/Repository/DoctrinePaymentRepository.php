@@ -14,7 +14,6 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrinePaymentRepository implements PaymentRepositoryInterface
 {
-
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -33,7 +32,7 @@ final class DoctrinePaymentRepository implements PaymentRepositoryInterface
         return $this->repository->findOneBy(['orderId' => $orderId->toString()]);
     }
 
-    public function findByOrderIdDto(string $orderId, ?string $userId): ?PaymentDto
+    public function findDetailsByOrderId(string $orderId, ?string $userId): ?PaymentDto
     {
         $qb = $this->entityManager->getConnection()->createQueryBuilder();
         $qb->select('p.id, p.status, p.amount')

@@ -29,7 +29,7 @@ final class DoctrineTransactionManager implements TransactionManagerInterface
 
                 if (is_array($result)) {
                     foreach ($result as $event) {
-                        if (!is_object($event)) {
+                        if (! is_object($event)) {
                             continue;
                         }
 
@@ -47,11 +47,7 @@ final class DoctrineTransactionManager implements TransactionManagerInterface
                 return $result;
             });
         } catch (UniqueConstraintViolationException $exception) {
-            throw new PersistenceConstraintViolationException(
-                $exception->getMessage(),
-                0,
-                $exception,
-            );
+            throw new PersistenceConstraintViolationException($exception->getMessage(), 0, $exception);
         }
     }
 }

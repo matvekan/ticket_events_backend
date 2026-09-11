@@ -43,7 +43,7 @@ final class Name implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (!$other instanceof self) {
+        if (! $other instanceof self) {
             return false;
         }
 
@@ -55,5 +55,3 @@ final class Name implements StringValueObjectInterface
         return $this->name;
     }
 }
-
-

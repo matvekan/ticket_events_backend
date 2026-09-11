@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Application\CommandHandler\Event;
 
@@ -40,7 +42,7 @@ final readonly class CancelEventHandler implements CommandHandlerInterface
 
         $this->transactionManager->transactional(function () use ($command): array {
             $event = $this->events->findById(new EventId($command->eventId));
-            if (!$event) {
+            if (! $event) {
                 throw new EntityNotFoundException('Event not found.');
             }
 

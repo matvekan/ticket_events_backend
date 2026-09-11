@@ -31,7 +31,7 @@ final class GetAvailableSeatsHandler implements QueryHandlerInterface
         }
 
         $eventSeats = $this->eventSeats->findAvailableByEventId(new EventId($query->eventId));
-        $seatDtos = array_map(fn($es) => $this->seatDtoFactory->fromEventSeat($es), $eventSeats);
+        $seatDtos = array_map(fn ($es) => $this->seatDtoFactory->fromEventSeat($es), $eventSeats);
         $this->cache->set($query->eventId, $seatDtos, $this->ttlSeconds);
 
         return $seatDtos;

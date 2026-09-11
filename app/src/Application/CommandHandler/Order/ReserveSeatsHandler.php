@@ -16,7 +16,8 @@ final readonly class ReserveSeatsHandler implements CommandHandlerInterface
 {
     public function __construct(
         private ReserveSeatsUseCaseInterface $reserveSeatsUseCase,
-    ) {}
+    ) {
+    }
 
     public function __invoke(ReserveSeatsCommand $command): void
     {

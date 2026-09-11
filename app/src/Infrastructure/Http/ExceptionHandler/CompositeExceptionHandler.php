@@ -8,7 +8,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 final class CompositeExceptionHandler implements ExceptionHandlerInterface
 {
-    
     private array $handlers = [];
 
     public function addHandler(ExceptionHandlerInterface $handler): void

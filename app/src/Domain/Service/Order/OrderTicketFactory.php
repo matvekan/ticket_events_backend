@@ -15,8 +15,8 @@ final readonly class OrderTicketFactory implements OrderTicketFactoryInterface
 {
     public function __construct(
         private TicketCodeGenerator $ticketCodeGenerator,
-    ) {}
-
+    ) {
+    }
 
     public function create(
         UserId $userId,

@@ -8,6 +8,5 @@ use App\Domain\Shared\ClockInterface;
 
 interface SeatSelectionValidatorInterface
 {
-
     public function validate(array $seats, ClockInterface $clock): void;
 }

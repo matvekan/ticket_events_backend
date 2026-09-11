@@ -11,4 +11,3 @@ enum EventStatus: string
     case SoldOut = 'sold_out';
     case Cancelled = 'cancelled';
 }
-

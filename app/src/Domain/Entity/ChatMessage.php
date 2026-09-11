@@ -45,15 +45,16 @@ class ChatMessage
         return $this->id;
     }
 
-    public function rawId(): string { return $this->id->toString(); }
+    public function rawId(): string
+    {
+        return $this->id->toString();
+    }
 
-    
     public function roomId(): ChatRoomId
     {
         return $this->roomId;
     }
 
-    
     public function senderId(): UserId
     {
         return $this->senderId;

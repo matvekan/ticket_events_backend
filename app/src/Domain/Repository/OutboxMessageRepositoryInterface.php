@@ -8,7 +8,6 @@ use App\Domain\Entity\OutboxMessage;
 
 interface OutboxMessageRepositoryInterface
 {
-
     public function findPending(int $limit): array;
 
     public function save(OutboxMessage $message): void;

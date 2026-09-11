@@ -20,7 +20,7 @@ final class RedisSeatAvailabilityCache implements CacheInterface
     {
         $item = $this->cache->getItem(self::PREFIX . strtolower(trim($key)));
 
-        if (!$item->isHit()) {
+        if (! $item->isHit()) {
             return null;
         }
 

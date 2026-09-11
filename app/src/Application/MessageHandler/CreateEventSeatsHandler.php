@@ -31,7 +31,7 @@ final readonly class CreateEventSeatsHandler
     {
         $this->transactionManager->transactional(function () use ($message): void {
             $event = $this->events->findById(new EventId($message->eventId));
-            if (!$event) {
+            if (! $event) {
                 return;
             }
 
@@ -53,7 +53,7 @@ final readonly class CreateEventSeatsHandler
 
                 $seat = $seatById[$seatIdStr] ?? null;
 
-                if (!$seat || $seat->venueId()->toString() !== $message->venueId) {
+                if (! $seat || $seat->venueId()->toString() !== $message->venueId) {
                     continue;
                 }
 

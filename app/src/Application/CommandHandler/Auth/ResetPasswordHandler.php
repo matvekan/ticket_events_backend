@@ -28,7 +28,7 @@ final readonly class ResetPasswordHandler implements CommandHandlerInterface
     {
         $user = $this->users->findByPasswordResetTokenHash(hash('sha256', $command->token));
 
-        if ($user === null || !$user->isPasswordResetTokenValid($this->clock->now())) {
+        if ($user === null || ! $user->isPasswordResetTokenValid($this->clock->now())) {
             throw new DomainException('Invalid or expired reset token.');
         }
 

@@ -8,13 +8,12 @@ use App\Application\Dto\TicketVerificationData;
 use App\Domain\Entity\Ticket;
 use App\Domain\Repository\TicketRepositoryInterface;
 use App\Domain\ValueObject\OrderId;
+use App\Domain\ValueObject\TicketCode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use App\Domain\ValueObject\TicketCode;
 
 final class DoctrineTicketRepository implements TicketRepositoryInterface
 {
-
     private readonly EntityRepository $repository;
 
     public function __construct(

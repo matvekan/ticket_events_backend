@@ -6,6 +6,7 @@ namespace App\Application\CommandHandler\Payment;
 
 use App\Application\Command\CommandHandlerInterface;
 use App\Application\Command\Payment\FailPaymentCommand;
+use App\Application\Exception\AccessDeniedException;
 use App\Application\Transaction\TransactionManagerInterface;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\Exception\EntityNotFoundException;
@@ -14,9 +15,8 @@ use App\Domain\Repository\PaymentRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\PaymentStatus;
-use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use App\Domain\ValueObject\UserId;
-use App\Application\Exception\AccessDeniedException;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
 final readonly class FailPaymentHandler implements CommandHandlerInterface
@@ -36,10 +36,10 @@ final readonly class FailPaymentHandler implements CommandHandlerInterface
 
         $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
             $order = $this->orders->findById($orderIdVo);
-            if (!$order) {
+            if (! $order) {
                 throw new EntityNotFoundException('Order not found.');
             }
-            if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
+            if ($userIdVo !== null && ! $order->userId()->equals($userIdVo)) {
                 throw new AccessDeniedException('You do not own this order.');
             }
 

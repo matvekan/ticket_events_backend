@@ -13,15 +13,11 @@ interface SeatRepositoryInterface
 {
     public function findById(SeatId $id): ?Seat;
 
-
     public function findByIds(array $ids): array;
-
 
     public function findByVenueId(VenueId $venueId): array;
 
-
     public function findAvailableByEventId(EventId $eventId): array;
-
 
     public function saveAll(array $seats): void;
 }

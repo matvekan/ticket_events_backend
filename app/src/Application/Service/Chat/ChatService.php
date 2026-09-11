@@ -36,7 +36,7 @@ final readonly class ChatService
     {
         $this->transactionManager->transactional(function () use ($userId): void {
             $user = $this->users->findById(new UserId($userId));
-            if (!$user) {
+            if (! $user) {
                 throw new EntityNotFoundException('User not found.');
             }
 
@@ -79,7 +79,7 @@ final readonly class ChatService
     public function canAccess(string $roomId, User $viewer): bool
     {
         $room = $this->rooms->findById(new ChatRoomId($roomId));
-        if (!$room) {
+        if (! $room) {
             return false;
         }
 

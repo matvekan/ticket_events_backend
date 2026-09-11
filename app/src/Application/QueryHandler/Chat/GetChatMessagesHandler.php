@@ -27,19 +27,20 @@ final class GetChatMessagesHandler implements QueryHandlerInterface
         private UserRepositoryInterface $users,
         private ChatMessageDtoFactory $factory,
         private ChatAccessPolicy $accessPolicy,
-    ) {}
+    ) {
+    }
 
     public function __invoke(GetChatMessagesQuery $query): array
     {
         $room = $this->rooms->findById(new ChatRoomId($query->roomId));
-        if (!$room) {
+        if (! $room) {
             throw new EntityNotFoundException('Chat room not found.');
         }
         $viewer = $this->users->findById(new UserId($query->viewerId));
-        if (!$viewer) {
+        if (! $viewer) {
             throw new EntityNotFoundException('User not found.');
         }
-        if (!$this->accessPolicy->canParticipate($room, $viewer)) {
+        if (! $this->accessPolicy->canParticipate($room, $viewer)) {
             throw new AccessDeniedException('You do not have access to this chat room.');
         }
         $messages = $this->messages->findByRoomId($room->id());
@@ -47,6 +48,7 @@ final class GetChatMessagesHandler implements QueryHandlerInterface
             static fn (ChatMessage $message) => $message->senderId(),
             $messages,
         ));
+
         return $this->factory->fromMessageList($messages, $senders);
     }
 }

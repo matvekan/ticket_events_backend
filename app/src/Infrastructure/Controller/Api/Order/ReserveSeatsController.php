@@ -57,7 +57,7 @@ final class ReserveSeatsController extends AbstractController
         $payload = $request->toArray();
         $seatIds = $payload['seatIds'] ?? [];
 
-        if (!is_array($seatIds)) {
+        if (! is_array($seatIds)) {
             throw new BadRequestHttpException('seatIds must be an array of seat identifiers.');
         }
 

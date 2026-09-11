@@ -39,7 +39,7 @@ class Event
         \DateTimeImmutable $date,
         Venue $venue,
         ClockInterface $clock,
-        IdGeneratorInterface $ids
+        IdGeneratorInterface $ids,
     ): self {
         if ($date < $clock->now()) {
             throw new BusinessRuleViolationException('Event date must be in the future.');
@@ -64,7 +64,10 @@ class Event
         return $this->id;
     }
 
-    public function rawId(): string { return $this->id->toString(); }
+    public function rawId(): string
+    {
+        return $this->id->toString();
+    }
 
     public function title(): EventTitle
     {
@@ -115,6 +118,17 @@ class Event
         ));
     }
 
+    public function ensureCanBeBooked(ClockInterface $clock): void
+    {
+        if ($this->status !== EventStatus::Published) {
+            throw new BusinessRuleViolationException('Event is not published.');
+        }
+
+        if ($this->date <= $clock->now()) {
+            throw new BusinessRuleViolationException('Event has already occurred or is in the past.');
+        }
+    }
+
     public function cancel(ClockInterface $clock): void
     {
         if ($this->status === EventStatus::Cancelled) {
@@ -136,7 +150,6 @@ class Event
         ));
     }
 
-
     public function eventSeats(): array
     {
         return $this->eventSeatList();
@@ -153,5 +166,4 @@ class Event
 
         return $seats;
     }
-
-    }
+}

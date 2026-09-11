@@ -64,7 +64,6 @@ final class OrderFixtures extends Fixture implements DependentFixtureInterface
         $this->createPaidOrder($user1, $event3, 3, $manager);
         $this->createPaidOrder($user2, $event5, 1, $manager);
 
-
         $this->createPendingOrder($user3, $event1, $manager);
 
         if ($adminUser) {

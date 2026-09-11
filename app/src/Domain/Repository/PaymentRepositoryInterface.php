@@ -13,11 +13,9 @@ interface PaymentRepositoryInterface
 {
     public function findById(PaymentId $id): ?Payment;
 
-
     public function findByOrderId(OrderId $orderId): ?Payment;
 
-
-    public function findByOrderIdDto(string $orderId, ?string $userId): ?PaymentDto;
+    public function findDetailsByOrderId(string $orderId, ?string $userId): ?PaymentDto;
 
     public function save(Payment $payment): void;
 }

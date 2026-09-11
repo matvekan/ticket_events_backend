@@ -10,7 +10,7 @@ final readonly class UserId implements StringValueObjectInterface
 {
     public function __construct(private string $value)
     {
-        if (!self::isValidUuid($value)) {
+        if (! self::isValidUuid($value)) {
             throw new \InvalidArgumentException(sprintf('Invalid UserId UUID: %s', $value));
         }
     }
@@ -32,7 +32,7 @@ final readonly class UserId implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (!$other instanceof self) {
+        if (! $other instanceof self) {
             return false;
         }
 
@@ -49,5 +49,3 @@ final readonly class UserId implements StringValueObjectInterface
         return (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value);
     }
 }
-
-

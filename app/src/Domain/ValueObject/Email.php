@@ -14,7 +14,7 @@ final class Email implements StringValueObjectInterface
     {
         $email = mb_strtolower(trim($email));
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException('Invalid email address.');
         }
 
@@ -43,7 +43,7 @@ final class Email implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (!$other instanceof self) {
+        if (! $other instanceof self) {
             return false;
         }
 
@@ -55,5 +55,3 @@ final class Email implements StringValueObjectInterface
         return $this->email;
     }
 }
-
-

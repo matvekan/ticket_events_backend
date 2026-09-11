@@ -44,13 +44,13 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
         for ($i = 0; $i < self::EVENT_COUNT; ++$i) {
             $venueIndex = $i % 6;
 
-
             $venue = $this->getReference(sprintf('venue_%d', $venueIndex), Venue::class);
 
             $title = sprintf('%s — %s', $this->eventKind($i), (string) $venue->name());
 
             if ($this->findByTitle($title) !== null) {
                 $this->addReference(sprintf('event_%d', $i), $this->findByTitle($title));
+
                 continue;
             }
 
@@ -115,7 +115,6 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
 
         return null;
     }
-
 
     private function buildEventSeats(Event $event, Venue $venue, int $basePrice): array
     {

@@ -19,7 +19,7 @@ final class SeatRow implements StringValueObjectInterface
             throw new \InvalidArgumentException('Seat row must be between 1 and 10 characters.');
         }
 
-        if (!preg_match('/^[A-Za-z0-9]+$/', $trimmed)) {
+        if (! preg_match('/^[A-Za-z0-9]+$/', $trimmed)) {
             throw new \InvalidArgumentException('Seat row may only contain letters and digits.');
         }
 
@@ -48,7 +48,7 @@ final class SeatRow implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (!$other instanceof self) {
+        if (! $other instanceof self) {
             return false;
         }
 
@@ -60,5 +60,3 @@ final class SeatRow implements StringValueObjectInterface
         return $this->row;
     }
 }
-
-

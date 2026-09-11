@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Application\QueryHandler\Order;
 
-use App\Domain\Repository\OrderRepositoryInterface;
 use App\Application\Query\Order\GetUserOrdersQuery;
 use App\Application\Query\QueryHandlerInterface;
+use App\Domain\Repository\OrderRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
@@ -17,9 +17,8 @@ final class GetUserOrdersHandler implements QueryHandlerInterface
     ) {
     }
 
-
     public function __invoke(GetUserOrdersQuery $query): array
     {
-        return $this->orders->findByUserIdDto($query->userId);
+        return $this->orders->findOrderByUserId($query->userId);
     }
 }

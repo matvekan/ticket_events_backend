@@ -20,7 +20,6 @@ final class GetVenueSeatingHandler implements QueryHandlerInterface
     ) {
     }
 
-
     public function __invoke(GetVenueSeatingQuery $query): array
     {
         $seats = $this->seats->findByVenueId(new VenueId($query->venueId));

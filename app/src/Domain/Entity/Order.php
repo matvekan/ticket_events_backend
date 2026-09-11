@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
@@ -129,12 +131,10 @@ class Order
             $ticket->activate();
         }
 
-        $ticketIds = array_map(fn (Ticket $ticket) => $ticket->id()->toString(), $this->ticketList());
         $this->recordThat(new OrderPaidEvent(
             $this->id->toString(),
             $this->userId->toString(),
             $this->totalPrice->amount(),
-            $ticketIds,
         ));
     }
 
@@ -196,6 +196,7 @@ class Order
         }
         $tickets = iterator_to_array($this->tickets);
         $this->tickets = $tickets;
+
         return $tickets;
     }
 }

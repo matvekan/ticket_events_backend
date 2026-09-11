@@ -11,7 +11,6 @@ use App\Domain\ValueObject\UserId;
 
 interface OrderTicketFactoryInterface
 {
-
     public function create(
         UserId $userId,
         array $seats,

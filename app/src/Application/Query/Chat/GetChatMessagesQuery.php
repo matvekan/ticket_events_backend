@@ -16,5 +16,6 @@ final class GetChatMessagesQuery implements QueryInterface
         #[Assert\NotBlank]
         #[Assert\Uuid]
         public readonly string $viewerId,
-    ) {}
+    ) {
+    }
 }

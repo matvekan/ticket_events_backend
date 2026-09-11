@@ -19,5 +19,6 @@ final class SendChatMessageCommand implements CommandInterface
         #[Assert\NotBlank]
         #[Assert\Length(max: 2000)]
         public readonly string $text,
-    ) {}
+    ) {
+    }
 }

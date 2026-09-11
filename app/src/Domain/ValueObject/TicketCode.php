@@ -12,10 +12,8 @@ final class TicketCode implements StringValueObjectInterface
 
     public function __construct(string $code)
     {
-        if (!preg_match('/^TKT-[A-Z0-9]{8}$/', $code)) {
-            throw new \InvalidArgumentException(
-                'Ticket code must match pattern TKT-XXXXXXXX (8 uppercase alphanumeric characters).'
-            );
+        if (! preg_match('/^TKT-[A-Z0-9]{8}$/', $code)) {
+            throw new \InvalidArgumentException('Ticket code must match pattern TKT-XXXXXXXX (8 uppercase alphanumeric characters).');
         }
 
         $this->code = $code;
@@ -43,7 +41,7 @@ final class TicketCode implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (!$other instanceof self) {
+        if (! $other instanceof self) {
             return false;
         }
 
@@ -55,5 +53,3 @@ final class TicketCode implements StringValueObjectInterface
         return $this->code;
     }
 }
-
-

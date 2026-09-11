@@ -14,12 +14,9 @@ interface EventSeatRepositoryInterface
 
     public function findByIds(array $ids): array;
 
-
     public function lockAndFindByIds(array $ids): array;
 
-
     public function findAvailableByEventId(EventId $eventId): array;
-
 
     public function findByEventId(EventId $eventId): array;
 

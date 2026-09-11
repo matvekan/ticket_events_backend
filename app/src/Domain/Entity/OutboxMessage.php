@@ -6,13 +6,12 @@ namespace App\Domain\Entity;
 
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
-use DateTimeImmutable;
 
 final class OutboxMessage
 {
     private string $id;
-    private DateTimeImmutable $createdAt;
-    private ?DateTimeImmutable $sentAt = null;
+    private \DateTimeImmutable $createdAt;
+    private ?\DateTimeImmutable $sentAt = null;
     private int $attempts = 0;
 
     public function __construct(private readonly string $messageClass, private readonly string $body, ClockInterface $clock, IdGeneratorInterface $ids)
@@ -36,7 +35,7 @@ final class OutboxMessage
         return $this->body;
     }
 
-    public function createdAt(): DateTimeImmutable
+    public function createdAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -46,7 +45,7 @@ final class OutboxMessage
         ++$this->attempts;
     }
 
-    public function markSent(DateTimeImmutable $sentAt): void
+    public function markSent(\DateTimeImmutable $sentAt): void
     {
         $this->sentAt = $sentAt;
     }

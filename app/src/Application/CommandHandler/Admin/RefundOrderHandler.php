@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Application\CommandHandler\Admin;
 
@@ -11,10 +13,10 @@ use App\Domain\Repository\EventSeatRepositoryInterface;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
 use App\Domain\Shared\CacheInterface;
+use App\Domain\Shared\ClockInterface;
 use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\PaymentStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-use App\Domain\Shared\ClockInterface;
 
 #[AsMessageHandler]
 final readonly class RefundOrderHandler implements CommandHandlerInterface
@@ -36,7 +38,7 @@ final readonly class RefundOrderHandler implements CommandHandlerInterface
 
         $this->transactionManager->transactional(function () use ($orderIdVo, &$affectedEventIds): array {
             $order = $this->orders->findById($orderIdVo);
-            if (!$order) {
+            if (! $order) {
                 throw new EntityNotFoundException('Order not found.');
             }
 

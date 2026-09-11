@@ -13,7 +13,18 @@ final class EventStatusChangedEvent
     ) {
     }
 
-    public function eventId(): string { return $this->eventId; }
-    public function title(): string { return $this->title; }
-    public function newStatus(): string { return $this->newStatus; }
+    public function eventId(): string
+    {
+        return $this->eventId;
+    }
+
+    public function title(): string
+    {
+        return $this->title;
+    }
+
+    public function newStatus(): string
+    {
+        return $this->newStatus;
+    }
 }

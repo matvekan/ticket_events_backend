@@ -24,7 +24,7 @@ final class GetVenueHandler implements QueryHandlerInterface
     public function __invoke(GetVenueQuery $query): ?VenueDto
     {
         $venue = $this->venues->findById(new VenueId($query->venueId));
-        if (!$venue) {
+        if (! $venue) {
             return null;
         }
 

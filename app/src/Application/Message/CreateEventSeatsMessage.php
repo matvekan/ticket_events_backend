@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\Message;
 
-
 final readonly class CreateEventSeatsMessage
 {
     public function __construct(

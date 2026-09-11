@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Infrastructure\Doctrine\DBAL\Types;
 
@@ -22,6 +24,7 @@ abstract class AbstractIntegerValueObjectType extends Type
         }
 
         $class = $this->getValueObjectClass();
+
         return $class::fromValue((int) $value);
     }
 

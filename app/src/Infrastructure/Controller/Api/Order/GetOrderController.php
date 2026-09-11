@@ -43,7 +43,7 @@ final class GetOrderController
             userId: $this->security->getUser()?->id()?->toString(),
         ));
 
-        if (!$order instanceof OrderDto) {
+        if (! $order instanceof OrderDto) {
             return new JsonResponse(['error' => 'Order not found.'], Response::HTTP_NOT_FOUND);
         }
 

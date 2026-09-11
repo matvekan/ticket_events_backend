@@ -6,7 +6,6 @@ namespace App\Domain\Event;
 
 final class OrderPaidEvent
 {
-
     public function __construct(
         private readonly string $orderId,
         private readonly string $userId,
@@ -14,8 +13,18 @@ final class OrderPaidEvent
     ) {
     }
 
-    public function orderId(): string { return $this->orderId; }
-    public function userId(): string { return $this->userId; }
-    public function totalAmount(): int { return $this->totalAmount; }
+    public function orderId(): string
+    {
+        return $this->orderId;
+    }
 
+    public function userId(): string
+    {
+        return $this->userId;
+    }
+
+    public function totalAmount(): int
+    {
+        return $this->totalAmount;
+    }
 }

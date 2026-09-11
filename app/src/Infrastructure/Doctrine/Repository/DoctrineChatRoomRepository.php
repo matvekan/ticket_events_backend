@@ -15,7 +15,6 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
 {
-
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -39,7 +38,7 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
         return $this->repository->findAll();
     }
 
-    public function findForSupportDto(): array
+    public function findSupportRooms(): array
     {
         $qb = $this->entityManager->getConnection()->createQueryBuilder();
 

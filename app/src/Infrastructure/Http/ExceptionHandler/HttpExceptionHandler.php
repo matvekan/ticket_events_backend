@@ -16,6 +16,8 @@ final class HttpExceptionHandler implements ExceptionHandlerInterface
 
     public function handle(\Throwable $throwable): JsonResponse
     {
+        assert($throwable instanceof HttpExceptionInterface);
+
         return new JsonResponse(
             ['error' => $throwable->getMessage()],
             $throwable->getStatusCode(),

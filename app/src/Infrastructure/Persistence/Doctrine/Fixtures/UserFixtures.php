@@ -35,6 +35,7 @@ final class UserFixtures extends Fixture
             $email = sprintf('user%d@tickets.by', $i);
             if ($this->users->findByEmail(new Email($email)) !== null) {
                 $this->addReference(sprintf('user_%d', $i), $this->users->findByEmail(new Email($email)));
+
                 continue;
             }
 
@@ -58,6 +59,7 @@ final class UserFixtures extends Fixture
         $existing = $this->users->findByEmail(new Email($email));
         if ($existing !== null) {
             $this->addReference($email === 'admin@tickets.by' ? 'user_admin' : 'user_demo', $existing);
+
             return;
         }
 

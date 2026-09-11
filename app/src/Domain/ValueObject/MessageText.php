@@ -47,7 +47,7 @@ final readonly class MessageText implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (!$other instanceof self) {
+        if (! $other instanceof self) {
             return false;
         }
 
@@ -59,5 +59,3 @@ final readonly class MessageText implements StringValueObjectInterface
         return $this->value;
     }
 }
-
-

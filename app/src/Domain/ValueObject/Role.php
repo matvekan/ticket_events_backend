@@ -10,4 +10,3 @@ enum Role: string
     case Admin = 'ROLE_ADMIN';
     case Manager = 'ROLE_MANAGER';
 }
-

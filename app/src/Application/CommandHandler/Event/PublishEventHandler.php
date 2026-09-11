@@ -27,7 +27,7 @@ final readonly class PublishEventHandler implements CommandHandlerInterface
     {
         $this->transactionManager->transactional(function () use ($command): array {
             $event = $this->events->findById(new EventId($command->eventId));
-            if (!$event) {
+            if (! $event) {
                 throw new EntityNotFoundException('Event not found.');
             }
 

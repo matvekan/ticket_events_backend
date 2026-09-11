@@ -15,7 +15,6 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 {
-    
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -31,13 +30,14 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 
     public function findByIds(array $ids): array
     {
-        $stringIds = array_map(fn(EventSeatId $id) => $id->toString(), $ids);
+        $stringIds = array_map(fn (EventSeatId $id) => $id->toString(), $ids);
+
         return $this->repository->findBy(['id' => $stringIds]);
     }
 
     public function lockAndFindByIds(array $ids): array
     {
-        $stringIds = array_map(fn(EventSeatId $id) => $id->toString(), $ids);
+        $stringIds = array_map(fn (EventSeatId $id) => $id->toString(), $ids);
         $qb = $this->entityManager->createQueryBuilder();
         $qb->select('es')
             ->from(EventSeat::class, 'es')

@@ -34,6 +34,7 @@ final class SeedDemoDataCommand extends Command
         $fixtures = $this->fixturesLoader->getFixtures();
         if (count($fixtures) === 0) {
             $io->warning('No fixtures found.');
+
             return Command::FAILURE;
         }
 

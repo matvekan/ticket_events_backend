@@ -29,7 +29,7 @@ final class EventIndexer
 
         try {
             $event = $this->events->findById($eventIdVo);
-            if (!$event) {
+            if (! $event) {
                 $this->logger->warning('EventIndexer: event not found {eventId}', ['eventId' => $rawId]);
 
                 return;
@@ -57,6 +57,7 @@ final class EventIndexer
                 'eventId' => $rawId,
                 'error' => $e->getMessage(),
             ]);
+
             throw $e;
         }
     }

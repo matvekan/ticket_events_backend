@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Application\CommandHandler\Payment;
 
@@ -77,12 +79,13 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
     private function findOwnedOrder(OrderId $orderId, ?UserId $userId): Order
     {
         $order = $this->orders->findById($orderId);
-        if (!$order) {
+        if (! $order) {
             throw new EntityNotFoundException('Order not found.');
         }
-        if ($userId !== null && !$order->userId()->equals($userId)) {
+        if ($userId !== null && ! $order->userId()->equals($userId)) {
             throw new AccessDeniedException('You do not own this order.');
         }
+
         return $order;
     }
 }

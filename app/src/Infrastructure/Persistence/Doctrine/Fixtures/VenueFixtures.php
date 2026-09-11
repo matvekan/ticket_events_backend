@@ -9,13 +9,13 @@ use App\Domain\Entity\Venue;
 use App\Domain\Repository\SeatRepositoryInterface;
 use App\Domain\Repository\VenueRepositoryInterface;
 use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\SeatNumber;
+use App\Domain\ValueObject\SeatRow;
+use App\Domain\ValueObject\SeatSector;
 use App\Domain\ValueObject\SeatType;
-use App\Domain\ValueObject\VenueName;
 use App\Domain\ValueObject\VenueAddress;
 use App\Domain\ValueObject\VenueCity;
-use App\Domain\ValueObject\SeatRow;
-use App\Domain\ValueObject\SeatNumber;
-use App\Domain\ValueObject\SeatSector;
+use App\Domain\ValueObject\VenueName;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
@@ -48,6 +48,7 @@ final class VenueFixtures extends Fixture
             $venue = $this->findByName($name);
             if ($venue !== null) {
                 $this->addReference(sprintf('venue_%d', $i), $venue);
+
                 continue;
             }
 

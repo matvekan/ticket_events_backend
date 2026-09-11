@@ -20,7 +20,7 @@ class EventSeat
         private Seat $seat,
         private Price $price,
     ) {
-        if (!$seat->venueId()->equals($event->venue()->id())) {
+        if (! $seat->venueId()->equals($event->venue()->id())) {
             throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
         }
 
@@ -83,6 +83,15 @@ class EventSeat
             throw new BusinessRuleViolationException('Only reserved seats can be sold.');
         }
         $this->status = SeatStatus::Sold;
+    }
+
+    public function release(): void
+    {
+        if ($this->status !== SeatStatus::Reserved) {
+            throw new BusinessRuleViolationException('Only reserved seats can be released.');
+        }
+
+        $this->status = SeatStatus::Free;
     }
 
     public function reserve(): void

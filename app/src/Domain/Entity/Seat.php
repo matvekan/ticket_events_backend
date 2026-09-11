@@ -40,9 +40,11 @@ class Seat
         return $this->id;
     }
 
-    public function rawId(): string { return $this->id->toString(); }
+    public function rawId(): string
+    {
+        return $this->id->toString();
+    }
 
-    
     public function venueId(): VenueId
     {
         return $this->venueId;

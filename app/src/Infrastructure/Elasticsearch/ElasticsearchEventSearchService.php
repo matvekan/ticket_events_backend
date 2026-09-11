@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Elasticsearch;
 
 use App\Application\Dto\EventDto;
-use App\Domain\Repository\EventSearchInterface;
-use App\Domain\Repository\EventRepositoryInterface;
 use App\Application\Dto\Factory\EventDtoFactory;
+use App\Domain\Repository\EventRepositoryInterface;
+use App\Domain\Repository\EventSearchInterface;
 use Elastic\Elasticsearch\Client;
 use Psr\Log\LoggerInterface;
 
@@ -22,7 +22,6 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
         private readonly LoggerInterface $logger,
     ) {
     }
-
 
     public function search(
         ?string $query,
@@ -84,7 +83,6 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
             'size' => $limit,
         ];
     }
-
 
     private function mapHits(array $results): array
     {

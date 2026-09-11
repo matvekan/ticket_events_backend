@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Repository;
 
-use App\Domain\Entity\Event;
 use App\Application\Dto\EventDto;
+use App\Domain\Entity\Event;
 use App\Domain\ValueObject\EventId;
 
 interface EventRepositoryInterface
@@ -28,6 +28,5 @@ interface EventRepositoryInterface
     public function save(Event $event): void;
 
     /** @return EventDto[] */
-    public function findPublishedDto(int $limit, int $offset): array;
-
+    public function findPublishedList(int $limit, int $offset): array;
 }

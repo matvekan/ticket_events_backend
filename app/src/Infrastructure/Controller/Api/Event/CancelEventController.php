@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Controller\Api\Event;
 
-use App\Application\Command\Event\CancelEventCommand;
 use App\Application\Command\CommandBusInterface;
+use App\Application\Command\Event\CancelEventCommand;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;

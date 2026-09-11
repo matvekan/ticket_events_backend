@@ -77,10 +77,11 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         if ($rows === []) {
             return null;
         }
+
         return $this->hydrate($rows);
     }
 
-    public function findByUserIdDto(string $userId): array
+    public function findOrderByUserId(string $userId): array
     {
         $rows = $this->getOrderRowsForUser($userId);
         if ($rows === []) {
@@ -92,7 +93,7 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
             $ordersById[$row['id']][] = $row;
         }
 
-        return array_map(fn(array $orderRows) => $this->hydrate($orderRows), array_values($ordersById));
+        return array_map(fn (array $orderRows) => $this->hydrate($orderRows), array_values($ordersById));
     }
 
     private function getOrderRows(string $orderId, ?string $userId): array
@@ -165,7 +166,7 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
             code: (string) $row['ticket_code'],
             eventSeatId: (string) $row['event_seat_id'],
             eventTitle: $row['event_title'] !== null ? (string) $row['event_title'] : '',
-            eventDate: isset($row['event_date']) && $row['event_date'] !== null
+            eventDate: isset($row['event_date'])
                 ? $this->formatDate($row['event_date'])
                 : '',
             venueName: $row['venue_name'] !== null ? (string) $row['venue_name'] : '',

@@ -38,7 +38,10 @@ class Venue
         return $this->id;
     }
 
-    public function rawId(): string { return $this->id->toString(); }
+    public function rawId(): string
+    {
+        return $this->id->toString();
+    }
 
     public function name(): VenueName
     {

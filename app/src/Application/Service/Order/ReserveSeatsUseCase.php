@@ -30,8 +30,8 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
         private OrderTicketFactoryInterface $orderFactory,
         private ClockInterface $clock,
         private IdGeneratorInterface $ids,
-    ) {}
-
+    ) {
+    }
 
     public function execute(UserId $userId, array $seatIds): void
     {
@@ -41,7 +41,7 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
             $this->transactionManager->transactional(
                 function () use ($userId, $seatIds, &$affectedEventIds): void {
                     $user = $this->users->findById($userId);
-                    if (!$user) {
+                    if (! $user) {
                         throw new EntityNotFoundException('User not found.');
                     }
 

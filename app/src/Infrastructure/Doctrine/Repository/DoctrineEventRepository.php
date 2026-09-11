@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace App\Infrastructure\Doctrine\Repository;
 
@@ -78,9 +80,10 @@ final class DoctrineEventRepository implements EventRepositoryInterface, EventSe
         return $qb->getQuery()->getResult();
     }
 
-    public function findPublishedDto(int $limit, int $offset): array
+    public function findPublishedList(int $limit, int $offset): array
     {
         $events = $this->findPublished($limit, $offset);
+
         return $this->eventDtoFactory->fromEventList($events);
     }
 
@@ -93,6 +96,7 @@ final class DoctrineEventRepository implements EventRepositoryInterface, EventSe
         int $offset,
     ): array {
         $events = $this->searchPublished($query, $city, $dateFrom, $dateTo, $limit, $offset);
+
         return $this->eventDtoFactory->fromEventList($events);
     }
 }

@@ -9,7 +9,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class ReserveSeatsCommand implements CommandInterface
 {
-    
     public function __construct(
         #[Assert\NotBlank]
         #[Assert\Uuid]

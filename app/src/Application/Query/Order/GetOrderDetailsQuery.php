@@ -12,7 +12,7 @@ final readonly class GetOrderDetailsQuery implements QueryInterface
     public function __construct(
         #[Assert\NotBlank]
         #[Assert\Uuid]
-        public string  $orderId,
+        public string $orderId,
 
         #[Assert\Uuid]
         public ?string $userId = null,

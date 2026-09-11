@@ -51,14 +51,13 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
     private function findVenue(AddSeatsToVenueCommand $command): Venue
     {
         $venue = $this->venues->findById(new VenueId($command->venueId));
-        if (!$venue) {
+        if (! $venue) {
             throw new EntityNotFoundException('Venue not found.');
         }
 
         return $venue;
     }
 
-    
     private function existingPositions(Venue $venue): array
     {
         $positions = [];

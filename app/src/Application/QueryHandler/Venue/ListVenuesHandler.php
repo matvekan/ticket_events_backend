@@ -19,7 +19,6 @@ final class ListVenuesHandler implements QueryHandlerInterface
     ) {
     }
 
-
     public function __invoke(ListVenuesQuery $query): array
     {
         return $this->venueDtoFactory->fromVenueList($this->venues->findAll());

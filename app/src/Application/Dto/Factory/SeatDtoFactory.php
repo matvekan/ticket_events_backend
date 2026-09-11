@@ -21,7 +21,6 @@ final class SeatDtoFactory
         );
     }
 
-
     public function fromSeatList(array $seats): array
     {
         return array_map(fn (Seat $seat): SeatDto => $this->fromSeat($seat), $seats);
@@ -30,6 +29,7 @@ final class SeatDtoFactory
     public function fromEventSeat(EventSeat $eventSeat): SeatDto
     {
         $seat = $eventSeat->seat();
+
         return new SeatDto(
             id: $eventSeat->id()->toString(),
             row: (string) $seat->row(),

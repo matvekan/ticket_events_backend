@@ -12,6 +12,7 @@ class E2ETest extends WebTestCase
 {
     private KernelBrowser $client;
     private string $userToken;
+    private string $userEmail;
     private string $venueId;
     private string $venueName;
     private string $seatId;
@@ -114,6 +115,7 @@ class E2ETest extends WebTestCase
         foreach ($rooms as $candidate) {
             if ($candidate['id'] === $roomEntity->id()->toString()) {
                 $foundRoom = $candidate;
+
                 break;
             }
         }
@@ -174,11 +176,24 @@ class E2ETest extends WebTestCase
 
     private function login(string $email): void
     {
-        $this->client->request('POST', '/api/auth/login', [], [], [], json_encode([
+        $this->userEmail = $email;
+        $payload = json_encode([
             'email' => $email,
             'password' => 'password123',
-        ]));
+        ]);
 
+        // Arrange: обычные пользователи логинятся через /api/auth/login,
+        // администраторы (AdminLoginSubscriber) — только через /api/admin/login.
+        // Act
+        $this->client->request('POST', '/api/auth/login', [], [], [], $payload);
+
+        if ($this->client->getResponse()->getStatusCode() === 403
+            && str_contains($this->client->getResponse()->getContent(), 'Admins must use the admin login page.')
+        ) {
+            $this->client->request('POST', '/api/admin/login', [], [], [], $payload);
+        }
+
+        // Assert
         self::assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);
         self::assertArrayHasKey('token', $data);
@@ -192,7 +207,7 @@ class E2ETest extends WebTestCase
         $userRepository = self::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class);
         $user = $userRepository->findByEmail(new \App\Domain\ValueObject\Email($email));
 
-        if (!$user) {
+        if (! $user) {
             throw new \RuntimeException(sprintf('User with email "%s" not found', $email));
         }
 
@@ -221,6 +236,7 @@ class E2ETest extends WebTestCase
         foreach ($venues as $venue) {
             if ($venue['name'] === $this->venueName) {
                 $this->venueId = $venue['id'];
+
                 return;
             }
         }
@@ -241,7 +257,7 @@ class E2ETest extends WebTestCase
 
     private function createEvent(string $title, string $description): void
     {
-        if (!isset($this->venueId)) {
+        if (! isset($this->venueId)) {
             $this->createVenue();
             $this->setVenueId();
             $this->addSeats();
@@ -280,7 +296,7 @@ class E2ETest extends WebTestCase
             ->getQuery()
             ->getOneOrNullResult();
 
-        if (!$event) {
+        if (! $event) {
             throw new \RuntimeException(sprintf('Event "%s" not found in database', $title));
         }
 
@@ -298,7 +314,6 @@ class E2ETest extends WebTestCase
 
     private function listEvents(): void
     {
-
         $this->client->request('GET', sprintf('/api/events/%s', $this->eventId));
 
         self::assertResponseIsSuccessful();
@@ -343,15 +358,27 @@ class E2ETest extends WebTestCase
 
     private function payOrder(): void
     {
-        $this->client->request('POST', sprintf('/api/orders/%s/pay', $this->orderId), [], [], [], '{}');
+        // Arrange: POST /api/orders/{id}/pay ходит в реальный Stripe API,
+        // поэтому в E2E создаём платёж напрямую через шину команд (синхронно),
+        // а списание проводим через MockBank — тестовый дубль эквайринга.
+        $container = self::getContainer();
+        $user = $container->get(\App\Domain\Repository\UserRepositoryInterface::class)
+            ->findByEmail(new \App\Domain\ValueObject\Email($this->userEmail));
+        $container->get(\App\Application\Command\CommandBusInterface::class)->dispatch(
+            new \App\Application\Command\Payment\StartPaymentCommand($this->orderId, $user->rawId())
+        );
+        $payment = $container->get(\App\Domain\Repository\PaymentRepositoryInterface::class)
+            ->findByOrderId(new \App\Domain\ValueObject\OrderId($this->orderId));
+        self::assertNotNull($payment, 'Payment should be created for the order');
 
+        // Act
+        $this->client->request('POST', sprintf('/api/mock-bank/%s/charge', $payment->rawId()));
+
+        // Assert
         self::assertResponseIsSuccessful();
         $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('paymentUrl', $data);
-        self::assertStringStartsWith('/mock-bank/', $data['paymentUrl']);
-
-        $this->client->request('POST', sprintf('%s/charge', $data['paymentUrl']));
-        self::assertResponseRedirects();
+        self::assertSame('success', $data['status']);
+        self::assertSame($this->orderId, $data['orderId']);
 
         $this->client->request('GET', sprintf('/api/orders/%s', $this->orderId), [], [], ['HTTP_AUTHORIZATION' => 'Bearer ' . $this->userToken]);
         self::assertResponseIsSuccessful();

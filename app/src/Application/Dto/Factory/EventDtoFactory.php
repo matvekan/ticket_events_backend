@@ -18,7 +18,6 @@ final class EventDtoFactory
     ) {
     }
 
-
     public function fromEventList(array $events): array
     {
         return array_map(fn (Event $event): EventDto => $this->fromEvent($event), $events);
@@ -68,7 +67,6 @@ final class EventDtoFactory
             seats: $seats,
         );
     }
-
 
     private function getPriceRange(Event $event): PriceRangeDto
     {

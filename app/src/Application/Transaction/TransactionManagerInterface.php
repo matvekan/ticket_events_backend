@@ -6,6 +6,5 @@ namespace App\Application\Transaction;
 
 interface TransactionManagerInterface
 {
-    
     public function transactional(callable $fn): mixed;
 }

@@ -20,8 +20,9 @@ final class SubscribeFrameHandler
 
     public function handle(WebsocketClient $client, User $user, SubscribeFrame $frame): void
     {
-        if (!$this->chatService->canAccess($frame->roomId(), $user)) {
+        if (! $this->chatService->canAccess($frame->roomId(), $user)) {
             $this->sendError($client, 'Access denied to chat room.');
+
             return;
         }
 

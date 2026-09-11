@@ -16,8 +16,8 @@ use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Repository\PaymentRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
-use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\OrderId;
+use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\PaymentStatus;
 use App\Domain\ValueObject\UserId;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -42,11 +42,11 @@ final readonly class StartPaymentHandler implements CommandHandlerInterface
         try {
             $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
                 $order = $this->orders->findById($orderIdVo);
-                if (!$order) {
+                if (! $order) {
                     throw new EntityNotFoundException('Order not found.');
                 }
 
-                if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
+                if ($userIdVo !== null && ! $order->userId()->equals($userIdVo)) {
                     throw new AccessDeniedException('You do not own this order.');
                 }
 

@@ -90,7 +90,7 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
         }
         foreach ($refunds as $row) {
             $day = (string) $row['day'];
-            if (!isset($byDay[$day])) {
+            if (! isset($byDay[$day])) {
                 $byDay[$day] = new AnalyticsByDayDto(
                     day: $day,
                     revenue: 0,
@@ -149,7 +149,7 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
 
     private function table(string $name): string
     {
-        if (!preg_match('/^[a-z_]+$/', $name)) {
+        if (! preg_match('/^[a-z_]+$/', $name)) {
             throw new \InvalidArgumentException('Invalid analytics table name.');
         }
 

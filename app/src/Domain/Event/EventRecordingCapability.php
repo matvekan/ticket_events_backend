@@ -6,7 +6,6 @@ namespace App\Domain\Event;
 
 trait EventRecordingCapability
 {
-    
     private array $recordedEvents = [];
 
     protected function recordThat(object $event): void
@@ -14,7 +13,6 @@ trait EventRecordingCapability
         $this->recordedEvents[] = $event;
     }
 
-    
     public function releaseEvents(): array
     {
         $events = $this->recordedEvents;
