@@ -8,8 +8,10 @@ use Amp\Websocket\WebsocketClient;
 
 final class ChatSubscriptions
 {
+    /** @var array<string, array<int, WebsocketClient>> */
     private array $roomClients = [];
 
+    /** @var array<int, array<int, string>> */
     private array $clientRooms = [];
 
     public function subscribe(WebsocketClient $client, string $roomId): void
@@ -19,7 +21,7 @@ final class ChatSubscriptions
 
         $this->roomClients[$roomId][$clientId] = $client;
 
-        if (! in_array($roomId, $this->clientRooms[$clientId] ?? [], true)) {
+        if (!\in_array($roomId, $this->clientRooms[$clientId] ?? [], true)) {
             $this->clientRooms[$clientId][] = $roomId;
         }
     }

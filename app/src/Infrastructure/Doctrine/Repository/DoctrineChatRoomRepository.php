@@ -15,6 +15,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
 {
+    /** @var EntityRepository<ChatRoom> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -33,17 +34,26 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
         return $this->repository->findOneBy(['userId' => $userId->toString()]);
     }
 
+    /**
+     * @return array<int, ChatRoom>
+     */
     public function findAll(): array
     {
         return $this->repository->findAll();
     }
 
+    /**
+     * @return array<int, \App\Application\Dto\ChatRoomDto>
+     */
     public function findSupportRooms(): array
     {
         $qb = $this->entityManager->getConnection()->createQueryBuilder();
 
         $qb->select(
-            'r.id', 'r.user_id', 'u.email AS user_email', 'r.created_at',
+            'r.id',
+            'r.user_id',
+            'u.email AS user_email',
+            'r.created_at',
             'lm.id AS last_message_id',
             'lm.text AS last_message_text',
             'lm.created_at AS last_message_created_at',
@@ -65,28 +75,48 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
 
         $rows = $qb->executeQuery()->fetchAllAssociative();
 
-        return array_map(static fn (array $row): ChatRoomDto => new ChatRoomDto(
-            id: (string) $row['id'],
-            userId: (string) $row['user_id'],
-            userEmail: (string) $row['user_email'],
-            createdAt: (new \DateTimeImmutable((string) $row['created_at']))->format('c'),
-            lastMessage: $row['last_message_id'] !== null ? new ChatMessageDto(
-                id: (string) $row['last_message_id'],
-                roomId: (string) $row['id'],
-                senderId: (string) $row['last_message_sender_id'],
-                senderName: $row['last_message_sender_name'] !== null ? (string) $row['last_message_sender_name'] : 'Unknown',
-                isSupport: self::senderIsSupport($row['last_message_sender_roles']),
-                text: (string) $row['last_message_text'],
-                createdAt: (new \DateTimeImmutable((string) $row['last_message_created_at']))->format('c'),
-            ) : null,
-        ), $rows);
+        return array_map(static function (array $row): ChatRoomDto {
+            assert(is_string($row['id']));
+            assert(is_string($row['user_id']));
+            assert(is_string($row['user_email']));
+            assert(is_string($row['created_at']));
+            if ($row['last_message_id'] !== null) {
+                assert(is_string($row['last_message_id']));
+                assert(is_string($row['last_message_sender_id']));
+                assert(is_string($row['last_message_text']));
+                assert(is_string($row['last_message_created_at']));
+            }
+            if ($row['last_message_sender_name'] !== null) {
+                assert(is_string($row['last_message_sender_name']));
+            }
+
+            return new ChatRoomDto(
+                id: $row['id'],
+                userId: $row['user_id'],
+                userEmail: $row['user_email'],
+                createdAt: (new \DateTimeImmutable($row['created_at']))->format('c'),
+                lastMessage: $row['last_message_id'] !== null ? new ChatMessageDto(
+                    id: $row['last_message_id'],
+                    roomId: $row['id'],
+                    senderId: $row['last_message_sender_id'],
+                    senderName: $row['last_message_sender_name'] !== null ? $row['last_message_sender_name'] : 'Unknown',
+                    isSupport: self::senderIsSupport($row['last_message_sender_roles']),
+                    text: $row['last_message_text'],
+                    createdAt: (new \DateTimeImmutable($row['last_message_created_at']))->format('c'),
+                ) : null,
+            );
+        }, $rows);
     }
 
     private static function senderIsSupport(mixed $rolesJson): bool
     {
-        $roles = is_array($rolesJson) ? $rolesJson : json_decode((string) $rolesJson, true);
+        if (is_string($rolesJson)) {
+            $roles = json_decode($rolesJson, true);
+        } else {
+            $roles = is_array($rolesJson) ? $rolesJson : null;
+        }
 
-        return is_array($roles) && in_array('ROLE_ADMIN', $roles, true);
+        return \is_array($roles) && \in_array('ROLE_ADMIN', $roles, true);
     }
 
     public function save(ChatRoom $room): void

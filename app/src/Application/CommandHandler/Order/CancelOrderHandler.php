@@ -35,10 +35,9 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
     {
         $orderId = new OrderId($command->orderId);
         $userId = $command->userId !== null ? new UserId($command->userId) : null;
-
         $affectedEventIds = [];
 
-        $this->transactionManager->transactional(function () use ($orderId, $userId, &$affectedEventIds): array {
+        $this->transactionManager->transactional(function () use ($orderId, $userId, &$affectedEventIds): void {
             $order = $this->findOwnedOrder($orderId, $userId);
             $wasPaid = $order->status() === OrderStatus::Paid;
 
@@ -55,8 +54,6 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
             }
 
             $this->orders->save($order);
-
-            return $order->releaseEvents();
         });
 
         foreach (array_keys($affectedEventIds) as $eventId) {
@@ -67,27 +64,28 @@ final readonly class CancelOrderHandler implements CommandHandlerInterface
     private function findOwnedOrder(OrderId $orderId, ?UserId $userId): Order
     {
         $order = $this->orders->findById($orderId);
-        if (! $order) {
+        if (!$order) {
             throw new EntityNotFoundException('Order not found.');
         }
-
-        if ($userId !== null && ! $order->userId()->equals($userId)) {
+        if ($userId !== null && !$order->userId()->equals($userId)) {
             throw new AccessDeniedException('You do not own this order.');
         }
 
         return $order;
     }
 
+    /**
+     * @return array<int, string>
+     */
     private function releaseTickets(Order $order, bool $refund): array
     {
         $eventSeatIds = array_map(
             static fn ($ticket) => $ticket->eventSeatId(),
             $order->tickets(),
         );
-
         $eventSeats = $this->eventSeats->lockAndFindByIds($eventSeatIds);
-
         $affectedEvents = [];
+
         foreach ($eventSeats as $eventSeat) {
             $refund ? $eventSeat->unsell() : $eventSeat->release();
             $affectedEvents[] = $eventSeat->event()->id()->toString();

@@ -47,14 +47,14 @@ final class VenueFixtures extends Fixture
         foreach (self::VENUE_NAMES as $i => $name) {
             $venue = $this->findByName($name);
             if ($venue !== null) {
-                $this->addReference(sprintf('venue_%d', $i), $venue);
+                $this->addReference(\sprintf('venue_%d', $i), $venue);
 
                 continue;
             }
 
             $venue = Venue::create(
                 new VenueName($name),
-                new VenueAddress(sprintf('%s, %s', $this->faker->streetName(), $this->faker->buildingNumber())),
+                new VenueAddress(\sprintf('%s, %s', $this->faker->streetName(), $this->faker->buildingNumber())),
                 new VenueCity($this->faker->randomElement(['Minsk', 'Grodno', 'Brest', 'Vitebsk', 'Gomel'])),
                 $this->ids,
                 $this->faker->latitude(53.8, 54.0),
@@ -69,7 +69,7 @@ final class VenueFixtures extends Fixture
             $this->seats->saveAll($seats);
             $manager->flush();
 
-            $this->addReference(sprintf('venue_%d', $i), $venue);
+            $this->addReference(\sprintf('venue_%d', $i), $venue);
         }
     }
 

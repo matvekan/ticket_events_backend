@@ -11,6 +11,9 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 final readonly class AdminLoginSubscriber implements EventSubscriberInterface
 {
+    private const string ADMIN_LOGIN_PATH = '/api/admin/login';
+    private const string USER_LOGIN_PATH = '/api/auth/login';
+
     public function __construct(
         private RequestStack $requestStack,
     ) {
@@ -26,19 +29,20 @@ final readonly class AdminLoginSubscriber implements EventSubscriberInterface
     public function onAuthenticationSuccess(AuthenticationSuccessEvent $event): void
     {
         $request = $this->requestStack->getCurrentRequest();
+
         if ($request === null) {
             return;
         }
 
         $user = $event->getUser();
-        $isAdmin = in_array('ROLE_ADMIN', $user->getRoles(), true);
+        $isAdmin = \in_array('ROLE_ADMIN', $user->getRoles(), true);
         $path = $request->getPathInfo();
 
-        if ($path === '/api/admin/login' && ! $isAdmin) {
+        if ($path === self::ADMIN_LOGIN_PATH && !$isAdmin) {
             throw new AccessDeniedException('Access denied. Admin role required.');
         }
 
-        if ($path === '/api/auth/login' && $isAdmin) {
+        if ($path === self::USER_LOGIN_PATH && $isAdmin) {
             throw new AccessDeniedException('Admins must use the admin login page.');
         }
     }

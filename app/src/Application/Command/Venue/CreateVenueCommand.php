@@ -13,18 +13,14 @@ final class CreateVenueCommand implements CommandInterface
         #[Assert\NotBlank]
         #[Assert\Length(min: 2, max: 255)]
         public readonly string $name,
-
         #[Assert\NotBlank]
         #[Assert\Length(min: 5, max: 255)]
         public readonly string $address,
-
         #[Assert\NotBlank]
         #[Assert\Length(min: 2, max: 100)]
         public readonly string $city,
-
         #[Assert\Range(min: -90, max: 90)]
         public readonly ?float $latitude = null,
-
         #[Assert\Range(min: -180, max: 180)]
         public readonly ?float $longitude = null,
     ) {

@@ -10,166 +10,227 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/**
- * Presentation layer: пользовательский флоу бронирования POST /api/orders.
- * Stripe-направление /pay здесь не вызывается (внешний API мокается/избегается).
- */
 final class OrderFlowTest extends WebTestCase
 {
     private KernelBrowser $client;
-    private string $token;
     private string $eventSeatId;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
         $this->client->setServerParameter('CONTENT_TYPE', 'application/json');
-
-        $suffix = uniqid();
-        $email = sprintf('order_%s@example.com', $suffix);
-        $this->registerAndLogin($email);
-        $this->makeAdmin($email);
-        $venueId = $this->createVenue(sprintf('Order Hall %s', $suffix));
-        $this->addSeats($venueId);
-        $this->createAndPublishEvent($venueId, sprintf('Order Concert %s', $suffix));
+        $this->prepareAuthenticatedEventContext();
     }
 
-    public function testReserveSeatsReturns201(): void
+    public function testReserveSeatsReturns201WhenPayloadIsValid(): void
     {
-        // Arrange — свободное место подготовлено в setUp
-        // Act
-        $this->client->request('POST', '/api/orders', [], [], [], json_encode([
-            'seatIds' => [$this->eventSeatId],
-        ]));
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => [$this->eventSeatId]]));
 
-        // Assert
         self::assertResponseStatusCodeSame(201);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame('Seats reserved.', $data['message']);
+        self::assertSame('Seats reserved.', $this->decodeJson()['message']);
     }
 
-    public function testMyOrdersReturnsReservedOrder(): void
+    public function testReserveSeatsReturns401WhenNoAuthenticationTokenProvided(): void
     {
-        // Arrange
-        $this->client->request('POST', '/api/orders', [], [], [], json_encode([
-            'seatIds' => [$this->eventSeatId],
-        ]));
+        $anonymous = $this->createAnonymousClient();
+
+        $anonymous->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => [$this->eventSeatId]]));
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testReserveSeatsReturns422WhenSeatListIsEmpty(): void
+    {
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => []]));
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertArrayHasKey('error', $this->decodeJson());
+    }
+
+    public function testReserveSeatsReturns422WhenSeatIdIsNotValidUuid(): void
+    {
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => ['not-a-uuid']]));
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testReserveSeatsReturns404WhenSeatDoesNotExist(): void
+    {
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => ['00000000-0000-4000-8000-000000000000']]));
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testGetMyOrdersReturns200WithPendingOrderAfterReservation(): void
+    {
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => [$this->eventSeatId]]));
         self::assertResponseStatusCodeSame(201);
 
-        // Act
         $this->client->request('GET', '/api/orders/my');
 
-        // Assert
         self::assertResponseIsSuccessful();
-        $orders = json_decode($this->client->getResponse()->getContent(), true);
+        $orders = $this->decodeJson();
         self::assertNotEmpty($orders);
         self::assertSame('pending', $orders[0]['status']);
     }
 
-    public function testReserveSeatsReturns422OnEmptyList(): void
+    public function testGetMyOrdersReturns401WhenNoAuthenticationTokenProvided(): void
     {
-        // Arrange — пустой список мест
-        // Act
-        $this->client->request('POST', '/api/orders', [], [], [], json_encode(['seatIds' => []]));
+        $anonymous = $this->createAnonymousClient();
 
-        // Assert (валидация команды → ApiExceptionListener → 422)
-        self::assertResponseStatusCodeSame(422);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('error', $data);
-    }
+        $anonymous->request('GET', '/api/orders/my');
 
-    public function testReserveSeatsReturns422OnInvalidUuid(): void
-    {
-        // Arrange — невалидный UUID
-        // Act
-        $this->client->request('POST', '/api/orders', [], [], [], json_encode(['seatIds' => ['not-a-uuid']]));
-
-        // Assert
-        self::assertResponseStatusCodeSame(422);
-    }
-
-    public function testGetUnknownOrderReturns404(): void
-    {
-        // Arrange — несуществующий заказ
-        // Act
-        $this->client->request('GET', '/api/orders/00000000-0000-4000-8000-000000000000');
-
-        // Assert
-        self::assertResponseStatusCodeSame(404);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('error', $data);
-    }
-
-    public function testOrdersRequireAuthentication(): void
-    {
-        // Arrange — клиент без токена (перезапускаем kernel для второго клиента)
-        static::ensureKernelShutdown();
-        $anonymous = static::createClient();
-        $anonymous->setServerParameter('CONTENT_TYPE', 'application/json');
-
-        // Act
-        $anonymous->request('POST', '/api/orders', [], [], [], json_encode(['seatIds' => [$this->eventSeatId]]));
-
-        // Assert
         self::assertResponseStatusCodeSame(401);
     }
 
-    private function registerAndLogin(string $email): void
+    public function testGetOrderReturns200ForOwnedOrder(): void
     {
-        $this->client->request('POST', '/api/auth/register', [], [], [], json_encode([
-            'name' => 'Test User', 'email' => $email, 'password' => 'password123',
-        ]));
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => [$this->eventSeatId]]));
         self::assertResponseStatusCodeSame(201);
 
-        $this->client->request('POST', '/api/auth/login', [], [], [], json_encode([
-            'email' => $email, 'password' => 'password123',
-        ]));
+        $this->client->request('GET', '/api/orders/my');
+        $orderId = $this->decodeJson()[0]['id'];
+
+        $this->client->request('GET', sprintf('/api/orders/%s', $orderId));
+
         self::assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        $this->token = $data['token'];
-        $this->client->setServerParameter('HTTP_Authorization', sprintf('Bearer %s', $this->token));
+        self::assertSame($orderId, $this->decodeJson()['id']);
     }
 
-    private function makeAdmin(string $email): void
+    public function testGetOrderReturns404WhenOrderDoesNotExist(): void
     {
+        $this->client->request('GET', '/api/orders/00000000-0000-4000-8000-000000000000');
+
+        self::assertResponseStatusCodeSame(404);
+        self::assertArrayHasKey('error', $this->decodeJson());
+    }
+
+    public function testGetOrderReturns404WhenAuthenticatedAsDifferentUser(): void
+    {
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => [$this->eventSeatId]]));
+        self::assertResponseStatusCodeSame(201);
+
+        $this->client->request('GET', '/api/orders/my');
+        $orderId = $this->decodeJson()[0]['id'];
+
+        $otherClient = $this->createAuthenticatedClient($this->uniqueEmail('other_order_user'));
+
+        $otherClient->request('GET', sprintf('/api/orders/%s', $orderId));
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testCancelOrderReturns200ForOwnedPendingOrder(): void
+    {
+        $this->client->request('POST', '/api/orders', [], [], [], $this->encodeJson(['seatIds' => [$this->eventSeatId]]));
+        self::assertResponseStatusCodeSame(201);
+
+        $this->client->request('GET', '/api/orders/my');
+        $orderId = $this->decodeJson()[0]['id'];
+
+        $this->client->request('POST', sprintf('/api/orders/%s/cancel', $orderId), [], [], [], '{}');
+
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testCancelOrderReturns404WhenOrderDoesNotExist(): void
+    {
+        $this->client->request('POST', '/api/orders/00000000-0000-4000-8000-000000000000/cancel', [], [], [], '{}');
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testCancelOrderReturns401WhenNoAuthenticationTokenProvided(): void
+    {
+        $anonymous = $this->createAnonymousClient();
+
+        $anonymous->request('POST', '/api/orders/00000000-0000-4000-8000-000000000000/cancel', [], [], [], '{}');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    private function prepareAuthenticatedEventContext(): void
+    {
+        $email = $this->uniqueEmail('order');
+        $this->registerLoginAndPromoteToManager($email);
+
+        $venueId = $this->createVenue('Order Hall ' . uniqid());
+        $this->addSeats($venueId);
+        $this->createAndPublishEvent($venueId, 'Order Concert ' . uniqid());
+    }
+
+    private function registerLoginAndPromoteToManager(string $email): void
+    {
+        $this->client->request('POST', '/api/auth/register', [], [], [], $this->encodeJson(['name' => 'Test User', 'email' => $email, 'password' => 'password123']));
+        self::assertResponseStatusCodeSame(201);
+
         $users = static::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class);
         $user = $users->findByEmail(new Email($email));
         $user->changeRoles(['ROLE_ADMIN']);
         static::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        $this->client->request('POST', '/api/admin/login', [], [], [], $this->encodeJson(['email' => $email, 'password' => 'password123']));
+        self::assertResponseIsSuccessful();
+
+        $token = $this->decodeJson()['token'];
+        $this->client->setServerParameter('HTTP_Authorization', sprintf('Bearer %s', $token));
+    }
+
+    private function createAuthenticatedClient(string $email): KernelBrowser
+    {
+        static::ensureKernelShutdown();
+        $client = static::createClient();
+        $client->setServerParameter('CONTENT_TYPE', 'application/json');
+        $client->request('POST', '/api/auth/register', [], [], [], $this->encodeJson(['name' => 'Test User', 'email' => $email, 'password' => 'password123']));
+        self::assertResponseStatusCodeSame(201);
+
+        $client->request('POST', '/api/auth/login', [], [], [], $this->encodeJson(['email' => $email, 'password' => 'password123']));
+        $token = json_decode($client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR)['token'];
+        $client->setServerParameter('HTTP_Authorization', sprintf('Bearer %s', $token));
+
+        return $client;
+    }
+
+    private function createAnonymousClient(): KernelBrowser
+    {
+        static::ensureKernelShutdown();
+        $client = static::createClient();
+        $client->setServerParameter('CONTENT_TYPE', 'application/json');
+
+        return $client;
     }
 
     private function createVenue(string $name): string
     {
-        $this->client->request('POST', '/api/venues', [], [], [], json_encode([
-            'name' => $name, 'address' => '123 Test Street', 'city' => 'Moscow',
-        ]));
+        $this->client->request('POST', '/api/venues', [], [], [], $this->encodeJson(['name' => $name, 'address' => '123 Test Street', 'city' => 'Moscow']));
         self::assertResponseStatusCodeSame(201);
 
         $this->client->request('GET', '/api/venues');
-        $venues = json_decode($this->client->getResponse()->getContent(), true);
+        $venues = $this->decodeJson();
+
         foreach ($venues as $venue) {
             if ($venue['name'] === $name) {
                 return $venue['id'];
             }
         }
 
-        self::fail('Venue not found after creation');
+        self::fail('Venue not found');
+
+        return '';
     }
 
     private function addSeats(string $venueId): void
     {
-        $this->client->request('POST', sprintf('/api/venues/%s/seats', $venueId), [], [], [], json_encode([
-            'seats' => [['row' => 'A', 'number' => 1, 'type' => 'standard', 'sector' => 'Orchestra']],
-        ]));
+        $this->client->request('POST', sprintf('/api/venues/%s/seats', $venueId), [], [], [], $this->encodeJson(['seats' => [['row' => 'A', 'number' => 1, 'type' => 'standard']]]));
         self::assertResponseStatusCodeSame(201);
     }
 
     private function createAndPublishEvent(string $venueId, string $title): void
     {
         $this->client->request('GET', sprintf('/api/venues/%s/seats', $venueId));
-        $seatId = json_decode($this->client->getResponse()->getContent(), true)[0]['id'];
+        $seatId = $this->decodeJson()[0]['id'];
 
-        $this->client->request('POST', '/api/events', [], [], [], json_encode([
+        $this->client->request('POST', '/api/events', [], [], [], $this->encodeJson([
             'title' => $title,
             'description' => 'An amazing test concert event for functional test',
             'date' => '2026-12-01T20:00:00Z',
@@ -179,16 +240,28 @@ final class OrderFlowTest extends WebTestCase
         self::assertResponseStatusCodeSame(201);
 
         $em = static::getContainer()->get(EntityManagerInterface::class);
-        /** @var Event $event */
-        $event = $em->createQueryBuilder()
-            ->select('e')->from(Event::class, 'e')->where('e.title = :title')->setParameter('title', $title)
-            ->getQuery()->getOneOrNullResult();
+        $event = $em->createQueryBuilder()->select('e')->from(Event::class, 'e')->where('e.title = :title')->setParameter('title', $title)->getQuery()->getOneOrNullResult();
         $eventId = $event->id()->toString();
 
         $this->client->request('POST', sprintf('/api/events/%s/publish', $eventId), [], [], [], '{}');
         self::assertResponseIsSuccessful();
 
         $this->client->request('GET', sprintf('/api/events/%s/seats', $eventId));
-        $this->eventSeatId = json_decode($this->client->getResponse()->getContent(), true)[0]['id'];
+        $this->eventSeatId = $this->decodeJson()[0]['id'];
+    }
+
+    private function uniqueEmail(string $prefix): string
+    {
+        return sprintf('%s_%s@example.com', $prefix, uniqid());
+    }
+
+    private function encodeJson(array $data): string
+    {
+        return json_encode($data, JSON_THROW_ON_ERROR);
+    }
+
+    private function decodeJson(): array
+    {
+        return json_decode($this->client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
     }
 }

@@ -20,7 +20,7 @@ final readonly class MessageText implements StringValueObjectInterface
             throw new BusinessRuleViolationException('Message text cannot be empty.');
         }
         if (mb_strlen($trimmed) > self::MAX_LENGTH) {
-            throw new BusinessRuleViolationException(sprintf('Message text is too long (max %d characters).', self::MAX_LENGTH));
+            throw new BusinessRuleViolationException(\sprintf('Message text is too long (max %d characters).', self::MAX_LENGTH));
         }
         $this->value = $trimmed;
     }
@@ -47,7 +47,7 @@ final readonly class MessageText implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (! $other instanceof self) {
+        if (!$other instanceof self) {
             return false;
         }
 

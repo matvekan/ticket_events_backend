@@ -20,7 +20,7 @@ final class ValidationExceptionHandler implements ExceptionHandlerInterface
     {
         $violations = [];
 
-        assert(
+        \assert(
             $throwable instanceof ValidationFailedException
             || $throwable instanceof MessengerValidationFailedException
         );

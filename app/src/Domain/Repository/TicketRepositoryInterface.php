@@ -11,6 +11,9 @@ use App\Domain\ValueObject\TicketCode;
 
 interface TicketRepositoryInterface
 {
+    /**
+     * @return array<int, \App\Domain\Entity\Ticket>
+     */
     public function findByOrderId(OrderId $orderId): array;
 
     public function findByCode(TicketCode $code): ?Ticket;

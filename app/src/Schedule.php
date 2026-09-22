@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App;
 
 use App\Application\Message\ExpirePendingOrders;
@@ -26,7 +28,7 @@ class Schedule implements ScheduleProviderInterface
             ->processOnlyLastMissedRun(true)
             ->add(RecurringMessage::every('1 minute', new ExpirePendingOrders()))
             ->add(RecurringMessage::every(
-                sprintf('%d seconds', $this->outboxRelayIntervalSeconds),
+                \sprintf('%d seconds', $this->outboxRelayIntervalSeconds),
                 new PublishOutboxMessages(),
             ))
         ;

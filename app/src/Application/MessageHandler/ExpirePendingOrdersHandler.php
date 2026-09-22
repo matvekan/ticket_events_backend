@@ -25,7 +25,7 @@ final readonly class ExpirePendingOrdersHandler
 
     public function __invoke(ExpirePendingOrders $message): void
     {
-        $cutoff = $this->clock->now()->modify(sprintf('-%d minutes', $this->pendingOrderTtlMinutes));
+        $cutoff = $this->clock->now()->modify(\sprintf('-%d minutes', $this->pendingOrderTtlMinutes));
 
         foreach ($this->orders->findPendingExpired($cutoff) as $order) {
             try {

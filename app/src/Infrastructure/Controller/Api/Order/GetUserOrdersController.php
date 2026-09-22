@@ -6,10 +6,12 @@ namespace App\Infrastructure\Controller\Api\Order;
 
 use App\Application\Query\Order\GetUserOrdersQuery;
 use App\Application\Query\QueryBusInterface;
+use App\Infrastructure\Security\DomainUserAdapter;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 #[Route('/api/orders/my', name: 'order.my', methods: ['GET'])]
 #[OA\Tag(name: 'Orders')]
@@ -34,8 +36,13 @@ final class GetUserOrdersController
 
     public function __invoke(): JsonResponse
     {
+        $user = $this->security->getUser();
+        if (!$user instanceof DomainUserAdapter) {
+            throw new AccessDeniedException('Access denied.');
+        }
+
         return new JsonResponse($this->queryBus->dispatch(new GetUserOrdersQuery(
-            $this->security->getUser()->id()->toString(),
+            $user->id()->toString(),
         )));
     }
 }

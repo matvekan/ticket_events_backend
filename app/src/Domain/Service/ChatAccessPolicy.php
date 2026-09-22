@@ -18,6 +18,6 @@ final class ChatAccessPolicy
 
     public function isSupport(User $user): bool
     {
-        return in_array(Role::Admin->value, $user->roles(), true);
+        return \in_array(Role::Admin->value, $user->roles(), true);
     }
 }

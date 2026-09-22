@@ -25,7 +25,8 @@ final class ApiExceptionListener implements EventSubscriberInterface
     public function onKernelException(ExceptionEvent $event): void
     {
         $path = $event->getRequest()->getPathInfo();
-        if (! str_starts_with($path, '/api') && ! str_starts_with($path, '/mock-bank')) {
+
+        if (!str_starts_with($path, '/api')) {
             return;
         }
 

@@ -9,6 +9,9 @@ use Elastic\Elasticsearch\ClientBuilder;
 
 final class ClientFactory
 {
+    /**
+     * @param array<int, string> $hosts
+     */
     public function __construct(
         private readonly array $hosts,
     ) {

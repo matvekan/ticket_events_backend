@@ -14,8 +14,14 @@ interface ChatRoomRepositoryInterface
 
     public function findByUserId(UserId $userId): ?ChatRoom;
 
+    /**
+     * @return array<int, \App\Domain\Entity\ChatRoom>
+     */
     public function findAll(): array;
 
+    /**
+     * @return array<int, ChatRoom>
+     */
     public function findSupportRooms(): array;
 
     public function save(ChatRoom $room): void;

@@ -12,11 +12,13 @@ use App\Domain\ValueObject\UserId;
 
 class User
 {
+    /**
+     * @param array<int, string> $roles
+     */
     private function __construct(
         private UserId $id,
         private Name $name,
         private Email $email,
-
         private array $roles = [],
         private ?string $password = null,
         private ?string $resetPasswordTokenHash = null,
@@ -50,16 +52,22 @@ class User
         return $this->email;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function roles(): array
     {
         return $this->roles;
     }
 
+    /**
+     * @param array<int, string> $roles
+     */
     public function changeRoles(array $roles): void
     {
         foreach ($roles as $role) {
-            if (! is_string($role) || Role::tryFrom($role) === null) {
-                throw new BusinessRuleViolationException(sprintf('Invalid role "%s".', is_scalar($role) ? (string) $role : get_debug_type($role)));
+            if (!\is_string($role) || Role::tryFrom($role) === null) {
+                throw new BusinessRuleViolationException(\sprintf('Invalid role "%s".', \is_scalar($role) ? (string) $role : get_debug_type($role)));
             }
         }
 

@@ -11,6 +11,9 @@ interface VenueRepositoryInterface
 {
     public function findById(VenueId $id): ?Venue;
 
+    /**
+     * @return array<int, \App\Domain\Entity\Venue>
+     */
     public function findAll(): array;
 
     public function save(Venue $venue): void;

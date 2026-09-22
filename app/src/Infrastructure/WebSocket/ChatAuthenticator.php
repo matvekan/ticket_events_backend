@@ -22,7 +22,7 @@ final class ChatAuthenticator
     {
         $token = $this->extractToken($request);
 
-        if (! is_string($token) || $token === '') {
+        if (!\is_string($token) || $token === '') {
             return null;
         }
 
@@ -32,7 +32,7 @@ final class ChatAuthenticator
             return null;
         }
 
-        if (! is_array($payload) || ! isset($payload['username']) || ! is_string($payload['username'])) {
+        if (!isset($payload['username']) || !\is_string($payload['username'])) {
             return null;
         }
 
@@ -42,13 +42,13 @@ final class ChatAuthenticator
     private function extractToken(Request $request): ?string
     {
         $protocolHeader = $request->getHeader('sec-websocket-protocol');
-        if (is_string($protocolHeader) && $protocolHeader !== '' && ! str_contains($protocolHeader, ',')) {
+        if (\is_string($protocolHeader) && $protocolHeader !== '' && !str_contains($protocolHeader, ',')) {
             return trim($protocolHeader);
         }
 
         parse_str($request->getUri()->getQuery(), $query);
         $token = $query['token'] ?? null;
 
-        return is_string($token) ? $token : null;
+        return \is_string($token) ? $token : null;
     }
 }

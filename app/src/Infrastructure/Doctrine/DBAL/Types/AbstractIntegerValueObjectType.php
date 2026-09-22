@@ -22,6 +22,7 @@ abstract class AbstractIntegerValueObjectType extends Type
         if ($value === null || $value === '') {
             return null;
         }
+        assert(is_int($value) || is_string($value));
 
         $class = $this->getValueObjectClass();
 
@@ -37,6 +38,7 @@ abstract class AbstractIntegerValueObjectType extends Type
         if ($value instanceof IntegerValueObjectInterface) {
             return $value->toInt();
         }
+        assert(is_int($value) || is_string($value));
 
         return (int) $value;
     }

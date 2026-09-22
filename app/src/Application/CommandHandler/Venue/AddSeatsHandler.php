@@ -51,13 +51,16 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
     private function findVenue(AddSeatsToVenueCommand $command): Venue
     {
         $venue = $this->venues->findById(new VenueId($command->venueId));
-        if (! $venue) {
+        if (!$venue) {
             throw new EntityNotFoundException('Venue not found.');
         }
 
         return $venue;
     }
 
+    /**
+     * @return array<string, bool>
+     */
     private function existingPositions(Venue $venue): array
     {
         $positions = [];
@@ -68,6 +71,9 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
         return $positions;
     }
 
+    /**
+     * @param array<string, bool> $occupied
+     */
     private function createSeat(Venue $venue, SeatData $data, array &$occupied): Seat
     {
         $key = $this->positionKey($data->row, $data->number);
@@ -88,6 +94,6 @@ final readonly class AddSeatsHandler implements CommandHandlerInterface
 
     private function positionKey(string $row, string|int $number): string
     {
-        return sprintf('%s/%s', $row, $number);
+        return \sprintf('%s/%s', $row, $number);
     }
 }

@@ -28,7 +28,6 @@ final class FixedIdGenerator implements IdGeneratorInterface
 
     public static function uuid(int $seed): string
     {
-        // Deterministic valid UUID v4-like string for tests.
         return sprintf('11111111-1111-4111-8111-%012d', $seed);
     }
 }

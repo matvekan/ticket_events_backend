@@ -10,8 +10,8 @@ final readonly class ChatMessageId implements StringValueObjectInterface
 {
     public function __construct(private string $value)
     {
-        if (! preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
-            throw new \InvalidArgumentException(sprintf('Invalid ChatMessageId UUID: %s', $value));
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+            throw new \InvalidArgumentException(\sprintf('Invalid ChatMessageId UUID: %s', $value));
         }
     }
 
@@ -32,7 +32,7 @@ final readonly class ChatMessageId implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (! $other instanceof self) {
+        if (!$other instanceof self) {
             return false;
         }
 

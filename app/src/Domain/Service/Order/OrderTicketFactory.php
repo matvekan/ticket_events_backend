@@ -18,7 +18,10 @@ final readonly class OrderTicketFactory implements OrderTicketFactoryInterface
     ) {
     }
 
-    public function create(
+    /**
+     * @param array<int, \App\Domain\Entity\EventSeat> $seats
+     */
+        public function create(
         UserId $userId,
         array $seats,
         ClockInterface $clock,

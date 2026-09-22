@@ -10,7 +10,10 @@ use App\Domain\Shared\ClockInterface;
 
 final readonly class SeatSelectionValidator implements SeatSelectionValidatorInterface
 {
-    public function validate(array $seats, ClockInterface $clock): void
+    /**
+     * @param array<int, \App\Domain\Entity\EventSeat> $seats
+     */
+        public function validate(array $seats, ClockInterface $clock): void
     {
         if ($seats === []) {
             throw new BusinessRuleViolationException('No seats selected.');
@@ -34,7 +37,7 @@ final readonly class SeatSelectionValidator implements SeatSelectionValidatorInt
                 throw new BusinessRuleViolationException('All seats must belong to the same event.');
             }
 
-            if (! $seat->isAvailable()) {
+            if (!$seat->isAvailable()) {
                 throw new BusinessRuleViolationException('Some seats are not available.');
             }
         }

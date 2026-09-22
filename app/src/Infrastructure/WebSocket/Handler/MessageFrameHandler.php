@@ -30,20 +30,20 @@ final class MessageFrameHandler
     public function handle(WebsocketClient $client, User $user, MessageFrame $frame): void
     {
         $room = $this->rooms->findById(new ChatRoomId($frame->roomId()));
-        if (! $room) {
+        if (!$room) {
             $this->sendError($client, 'Chat room not found.');
 
             return;
         }
 
         $sender = $this->users->findById($user->id());
-        if (! $sender) {
+        if (!$sender) {
             $this->sendError($client, 'User not found.');
 
             return;
         }
 
-        if (! $this->accessPolicy->canParticipate($room, $sender)) {
+        if (!$this->accessPolicy->canParticipate($room, $sender)) {
             $this->sendError($client, 'You do not have access to this chat room.');
 
             return;
@@ -52,7 +52,7 @@ final class MessageFrameHandler
         try {
             $message = $this->chatService->createMessage($room, $sender, $frame->text());
         } catch (\Throwable $exception) {
-            $this->logger->warning(sprintf('Chat message rejected for %s: %s', $user->id(), $exception->getMessage()));
+            $this->logger->warning(\sprintf('Chat message rejected for %s: %s', $user->id(), $exception->getMessage()));
             $this->sendError($client, 'Message rejected.');
 
             return;
@@ -61,14 +61,14 @@ final class MessageFrameHandler
         $payload = json_encode([
             'type' => 'message',
             'message' => $message,
-        ], JSON_UNESCAPED_UNICODE);
+        ], \JSON_UNESCAPED_UNICODE);
 
         $this->subscriptions->broadcast($frame->roomId(), $payload);
     }
 
     private function sendError(WebsocketClient $client, string $message): void
     {
-        $payload = json_encode(['type' => 'error', 'message' => $message], JSON_UNESCAPED_UNICODE);
+        $payload = json_encode(['type' => 'error', 'message' => $message], \JSON_UNESCAPED_UNICODE);
         $client->sendText($payload);
     }
 }

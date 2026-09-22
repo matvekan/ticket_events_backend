@@ -16,6 +16,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineSeatRepository implements SeatRepositoryInterface
 {
+    /** @var EntityRepository<Seat> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -29,21 +30,31 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
         return $this->entityManager->find(Seat::class, $id->toString());
     }
 
+    /**
+     * @return array<int, Seat>
+     */
     public function findByVenueId(VenueId $venueId): array
     {
         return $this->repository->findBy(['venueId' => $venueId->toString()]);
     }
 
+    /**
+     * @param array<int, SeatId> $ids
+     * @return array<int, Seat>
+     */
     public function findByIds(array $ids): array
     {
-        $stringIds = array_map(fn (SeatId $id) => $id->toString(), $ids);
+        $stringIds = array_map(static fn (SeatId $id) => $id->toString(), $ids);
 
         return $this->repository->findBy(['id' => $stringIds]);
     }
 
+    /**
+     * @return array<int, Seat>
+     */
     public function findAvailableByEventId(EventId $eventId): array
     {
-        return $this->entityManager->createQueryBuilder()
+        $result = $this->entityManager->createQueryBuilder()
             ->select('s')
             ->from(Seat::class, 's')
             ->innerJoin(EventSeat::class, 'es', 'WITH', 'es.seat = s')
@@ -53,8 +64,14 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
             ->setParameter('status', SeatStatus::Free)
             ->getQuery()
             ->getResult();
+        assert(is_array($result));
+
+        return $result;
     }
 
+    /**
+     * @param array<int, Seat> $seats
+     */
     public function saveAll(array $seats): void
     {
         foreach ($seats as $seat) {

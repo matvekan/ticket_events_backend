@@ -20,7 +20,7 @@ final class SubscribeFrameHandler
 
     public function handle(WebsocketClient $client, User $user, SubscribeFrame $frame): void
     {
-        if (! $this->chatService->canAccess($frame->roomId(), $user)) {
+        if (!$this->chatService->canAccess($frame->roomId(), $user)) {
             $this->sendError($client, 'Access denied to chat room.');
 
             return;
@@ -32,7 +32,7 @@ final class SubscribeFrameHandler
 
     private function sendJson(WebsocketClient $client, array $data): void
     {
-        $client->sendText(json_encode($data, JSON_UNESCAPED_UNICODE));
+        $client->sendText(json_encode($data, \JSON_UNESCAPED_UNICODE));
     }
 
     private function sendError(WebsocketClient $client, string $message): void

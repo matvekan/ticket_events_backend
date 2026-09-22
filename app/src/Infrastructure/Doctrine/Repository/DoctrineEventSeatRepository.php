@@ -15,6 +15,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 {
+    /** @var EntityRepository<EventSeat> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -28,16 +29,24 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
         return $this->entityManager->find(EventSeat::class, $id->toString());
     }
 
+    /**
+     * @param array<int, EventSeatId> $ids
+     * @return array<int, EventSeat>
+     */
     public function findByIds(array $ids): array
     {
-        $stringIds = array_map(fn (EventSeatId $id) => $id->toString(), $ids);
+        $stringIds = array_map(static fn (EventSeatId $id) => $id->toString(), $ids);
 
         return $this->repository->findBy(['id' => $stringIds]);
     }
 
+    /**
+     * @param array<int, EventSeatId> $ids
+     * @return array<int, EventSeat>
+     */
     public function lockAndFindByIds(array $ids): array
     {
-        $stringIds = array_map(fn (EventSeatId $id) => $id->toString(), $ids);
+        $stringIds = array_map(static fn (EventSeatId $id) => $id->toString(), $ids);
         $qb = $this->entityManager->createQueryBuilder();
         $qb->select('es')
             ->from(EventSeat::class, 'es')
@@ -47,14 +56,23 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
         $query = $qb->getQuery();
         $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
 
-        return $query->getResult();
+        $result = $query->getResult();
+        assert(is_array($result));
+
+        return $result;
     }
 
+    /**
+     * @return array<int, EventSeat>
+     */
     public function findAvailableByEventId(EventId $eventId): array
     {
         return $this->repository->findBy(['event' => $eventId->toString(), 'status' => SeatStatus::Free]);
     }
 
+    /**
+     * @return array<int, EventSeat>
+     */
     public function findByEventId(EventId $eventId): array
     {
         return $this->repository->findBy(['event' => $eventId->toString()]);

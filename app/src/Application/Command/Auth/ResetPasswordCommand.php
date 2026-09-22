@@ -12,7 +12,6 @@ final class ResetPasswordCommand implements CommandInterface
     public function __construct(
         #[Assert\NotBlank]
         public readonly string $token,
-
         #[Assert\NotBlank]
         #[Assert\Length(min: 6)]
         public readonly string $password,

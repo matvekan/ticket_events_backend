@@ -13,8 +13,6 @@ use App\Domain\ValueObject\UserId;
 
 class ChatMessage
 {
-    public const MAX_TEXT_LENGTH = MessageText::MAX_LENGTH;
-
     private function __construct(
         private ChatMessageId $id,
         private ChatRoomId $roomId,

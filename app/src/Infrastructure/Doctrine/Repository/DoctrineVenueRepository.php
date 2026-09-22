@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineVenueRepository implements VenueRepositoryInterface
 {
+    /** @var EntityRepository<Venue> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -25,6 +26,9 @@ final class DoctrineVenueRepository implements VenueRepositoryInterface
         return $this->entityManager->find(Venue::class, $id->toString());
     }
 
+    /**
+     * @return array<int, Venue>
+     */
     public function findAll(): array
     {
         return $this->repository->findAll();

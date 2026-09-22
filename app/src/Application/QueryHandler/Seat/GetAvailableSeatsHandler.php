@@ -23,10 +23,15 @@ final class GetAvailableSeatsHandler implements QueryHandlerInterface
     ) {
     }
 
+    /**
+     * @return array<int, \App\Application\Dto\SeatDto>
+     */
     public function __invoke(GetAvailableSeatsQuery $query): array
     {
         $cached = $this->cache->get($query->eventId);
         if ($cached !== null) {
+            assert(is_array($cached));
+
             return $cached;
         }
 

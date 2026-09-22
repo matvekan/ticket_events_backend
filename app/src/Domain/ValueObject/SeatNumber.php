@@ -36,7 +36,7 @@ final class SeatNumber implements IntegerValueObjectInterface
 
     public function equals(IntegerValueObjectInterface $other): bool
     {
-        if (! $other instanceof self) {
+        if (!$other instanceof self) {
             return false;
         }
 

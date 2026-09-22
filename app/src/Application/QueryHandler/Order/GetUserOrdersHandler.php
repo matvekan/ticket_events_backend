@@ -17,6 +17,9 @@ final class GetUserOrdersHandler implements QueryHandlerInterface
     ) {
     }
 
+    /**
+     * @return array<int, \App\Application\Dto\OrderDto>
+     */
     public function __invoke(GetUserOrdersQuery $query): array
     {
         return $this->orders->findOrderByUserId($query->userId);

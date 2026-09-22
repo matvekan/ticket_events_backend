@@ -7,9 +7,6 @@ namespace App\Tests\Functional\Auth;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/**
- * Presentation layer: AuthController — регистрация и выдача JWT.
- */
 final class AuthControllerTest extends WebTestCase
 {
     private KernelBrowser $client;
@@ -20,79 +17,95 @@ final class AuthControllerTest extends WebTestCase
         $this->client->setServerParameter('CONTENT_TYPE', 'application/json');
     }
 
-    public function testRegisterReturns201(): void
+    public function testRegisterReturns201WhenPayloadIsValid(): void
     {
-        // Arrange
-        $email = sprintf('reg_%s@example.com', uniqid());
+        $response = $this->registerUser($this->uniqueEmail('reg'), 'Test User', 'password123');
 
-        // Act
-        $this->client->request('POST', '/api/auth/register', [], [], [], json_encode([
-            'name' => 'Test User',
-            'email' => $email,
-            'password' => 'password123',
-        ]));
-
-        // Assert
         self::assertResponseStatusCodeSame(201);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertSame('User registered successfully.', $data['message']);
+        self::assertSame('User registered successfully.', $this->decodeJson($response)['message']);
     }
 
-    public function testRegisterReturns422OnValidationError(): void
+    public function testRegisterReturns422WhenEmailIsInvalidAndNameIsTooShort(): void
     {
-        // Arrange (невалидный email + короткий пароль)
-        $payload = json_encode(['name' => 'A', 'email' => 'not-an-email', 'password' => '123']);
+        $this->client->request('POST', '/api/auth/register', [], [], [], $this->encodeJson(['name' => 'A', 'email' => 'not-an-email', 'password' => '123']));
 
-        // Act
-        $this->client->request('POST', '/api/auth/register', [], [], [], $payload);
-
-        // Assert (ApiExceptionListener → JSON 422)
         self::assertResponseStatusCodeSame(422);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('error', $data);
+        self::assertArrayHasKey('error', $this->decodeJson($this->client->getResponse()));
     }
 
-    public function testLoginReturnsJwtToken(): void
+    public function testRegisterReturns422WhenRequiredFieldsAreMissing(): void
     {
-        // Arrange
-        $email = sprintf('login_%s@example.com', uniqid());
-        $this->client->request('POST', '/api/auth/register', [], [], [], json_encode([
-            'name' => 'Test User',
-            'email' => $email,
-            'password' => 'password123',
-        ]));
-        self::assertResponseStatusCodeSame(201);
+        $this->client->request('POST', '/api/auth/register', [], [], [], $this->encodeJson(['email' => 'test@example.com']));
 
-        // Act
-        $this->client->request('POST', '/api/auth/login', [], [], [], json_encode([
-            'email' => $email,
-            'password' => 'password123',
-        ]));
+        self::assertResponseStatusCodeSame(422);
+    }
 
-        // Assert
+    public function testLoginReturns200AndJwtTokenAfterSuccessfulRegistration(): void
+    {
+        $email = $this->uniqueEmail('login');
+        $this->registerUser($email, 'Test User', 'password123');
+
+        $this->client->request('POST', '/api/auth/login', [], [], [], $this->encodeJson(['email' => $email, 'password' => 'password123']));
+
         self::assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
+        $data = $this->decodeJson($this->client->getResponse());
         self::assertArrayHasKey('token', $data);
         self::assertNotEmpty($data['token']);
     }
 
-    public function testLoginReturns401OnBadCredentials(): void
+    public function testLoginReturns401WhenPasswordIsIncorrect(): void
     {
-        // Arrange
-        $email = sprintf('bad_%s@example.com', uniqid());
-        $this->client->request('POST', '/api/auth/register', [], [], [], json_encode([
-            'name' => 'Test User',
-            'email' => $email,
-            'password' => 'password123',
-        ]));
+        $email = $this->uniqueEmail('bad');
+        $this->registerUser($email, 'Test User', 'password123');
 
-        // Act
-        $this->client->request('POST', '/api/auth/login', [], [], [], json_encode([
-            'email' => $email,
-            'password' => 'wrong-password',
-        ]));
+        $this->client->request('POST', '/api/auth/login', [], [], [], $this->encodeJson(['email' => $email, 'password' => 'wrong-password']));
 
-        // Assert
         self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testLoginReturns401WhenUserDoesNotExist(): void
+    {
+        $this->client->request('POST', '/api/auth/login', [], [], [], $this->encodeJson(['email' => 'unknown@example.com', 'password' => 'password123']));
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testForgotPasswordReturns200ForExistingEmail(): void
+    {
+        $email = $this->uniqueEmail('forgot');
+        $this->registerUser($email, 'Test User', 'password123');
+
+        $this->client->request('POST', '/api/auth/forgot-password', [], [], [], $this->encodeJson(['email' => $email]));
+
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testForgotPasswordReturns422WhenEmailIsInvalid(): void
+    {
+        $this->client->request('POST', '/api/auth/forgot-password', [], [], [], $this->encodeJson(['email' => 'not-an-email']));
+
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    private function registerUser(string $email, string $name, string $password): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->client->request('POST', '/api/auth/register', [], [], [], $this->encodeJson(['name' => $name, 'email' => $email, 'password' => $password]));
+
+        return $this->client->getResponse();
+    }
+
+    private function uniqueEmail(string $prefix): string
+    {
+        return sprintf('%s_%s@example.com', $prefix, uniqid());
+    }
+
+    private function encodeJson(array $data): string
+    {
+        return json_encode($data, JSON_THROW_ON_ERROR);
+    }
+
+    private function decodeJson(\Symfony\Component\HttpFoundation\Response $response): array
+    {
+        return json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
     }
 }

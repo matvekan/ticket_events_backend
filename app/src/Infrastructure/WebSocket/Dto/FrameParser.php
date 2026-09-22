@@ -9,17 +9,17 @@ final class FrameParser
     public function parse(string $payload): ?IncomingFrame
     {
         try {
-            $data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+            $data = json_decode($payload, true, 512, \JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
             return null;
         }
 
-        if (! is_array($data)) {
+        if (!\is_array($data)) {
             return null;
         }
 
         $roomId = $data['roomId'] ?? null;
-        if (! is_string($roomId) || $roomId === '' || ! preg_match('/^[0-9a-f-]{36}$/i', $roomId)) {
+        if (!\is_string($roomId) || $roomId === '' || !preg_match('/^[0-9a-f-]{36}$/i', $roomId)) {
             return null;
         }
 
@@ -33,7 +33,7 @@ final class FrameParser
 
     private function messageFrame(string $roomId, mixed $text): ?MessageFrame
     {
-        if (! is_string($text) || trim($text) === '') {
+        if (!\is_string($text) || trim($text) === '') {
             return null;
         }
 

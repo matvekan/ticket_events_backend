@@ -13,7 +13,6 @@ final readonly class GetPaymentForOrderQuery implements QueryInterface
         #[Assert\NotBlank]
         #[Assert\Uuid]
         public string $orderId,
-
         #[Assert\Uuid]
         public ?string $userId = null,
     ) {

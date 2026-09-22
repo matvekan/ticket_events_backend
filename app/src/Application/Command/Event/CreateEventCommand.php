@@ -9,6 +9,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class CreateEventCommand implements CommandInterface
 {
+    /**
+     * @param array<int, array{seatId: string, priceAmount: int}> $seats
+     */
     public function __construct(
         #[Assert\NotBlank]
         #[Assert\Length(min: 3, max: 100)]

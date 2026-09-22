@@ -6,6 +6,9 @@ namespace App\Domain\Event;
 
 final class OrderRefundedEvent
 {
+    /**
+     * @param array<int, string> $eventSeatIds
+     */
     public function __construct(
         private readonly string $orderId,
         private readonly string $userId,
@@ -29,6 +32,9 @@ final class OrderRefundedEvent
         return $this->totalAmount;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function eventSeatIds(): array
     {
         return $this->eventSeatIds;

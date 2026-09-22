@@ -12,6 +12,10 @@ interface UserRepositoryInterface
 {
     public function findById(UserId $id): ?User;
 
+    /**
+     * @param array<int, \App\Domain\ValueObject\UserId> $ids
+     * @return array<string, \App\Domain\Entity\User>
+     */
     public function findByIds(array $ids): array;
 
     public function findByEmail(Email $email): ?User;

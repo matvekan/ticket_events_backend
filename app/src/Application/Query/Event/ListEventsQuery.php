@@ -7,14 +7,12 @@ namespace App\Application\Query\Event;
 use App\Application\Query\QueryInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
-final class ListEventsQuery implements QueryInterface
+final readonly class ListEventsQuery implements QueryInterface
 {
     public function __construct(
-        #[Assert\Positive]
-        public readonly int $page = 1,
-
+        public ?string $cursor = null,
         #[Assert\Range(min: 1, max: 100)]
-        public readonly int $limit = 20,
+        public int $limit = 20,
     ) {
     }
 }

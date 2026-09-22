@@ -39,7 +39,7 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
         $userIdVo = $command->userId !== null ? new UserId($command->userId) : null;
         $affectedEventIds = [];
 
-        $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo, &$affectedEventIds): array {
+        $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo, &$affectedEventIds): void {
             $order = $this->findOwnedOrder($orderIdVo, $userIdVo);
             $payment = $this->payments->findByOrderId($orderIdVo);
 
@@ -48,7 +48,7 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
             }
 
             if ($order->status() === OrderStatus::Paid) {
-                return [];
+                return;
             }
 
             $eventSeatIds = array_map(
@@ -63,12 +63,10 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
             }
 
             $order->pay($this->clock);
-
             $this->orders->save($order);
+
             $payment->markPaid($this->clock);
             $this->payments->save($payment);
-
-            return $order->releaseEvents();
         });
 
         foreach (array_keys($affectedEventIds) as $eventId) {
@@ -79,10 +77,10 @@ final readonly class ConfirmPaymentHandler implements CommandHandlerInterface
     private function findOwnedOrder(OrderId $orderId, ?UserId $userId): Order
     {
         $order = $this->orders->findById($orderId);
-        if (! $order) {
+        if (!$order) {
             throw new EntityNotFoundException('Order not found.');
         }
-        if ($userId !== null && ! $order->userId()->equals($userId)) {
+        if ($userId !== null && !$order->userId()->equals($userId)) {
             throw new AccessDeniedException('You do not own this order.');
         }
 

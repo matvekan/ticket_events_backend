@@ -13,7 +13,6 @@ final class FailPaymentCommand implements CommandInterface
         #[Assert\NotBlank]
         #[Assert\Uuid]
         public readonly string $orderId,
-
         #[Assert\Uuid]
         public readonly ?string $userId = null,
     ) {

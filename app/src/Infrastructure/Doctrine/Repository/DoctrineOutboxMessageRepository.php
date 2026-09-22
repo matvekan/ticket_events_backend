@@ -17,6 +17,9 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
     ) {
     }
 
+    /**
+     * @return array<int, OutboxMessage>
+     */
     public function findPending(int $limit): array
     {
         $qb = $this->connection->createQueryBuilder()
@@ -26,20 +29,23 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
             ->orderBy('created_at', 'ASC')
             ->setMaxResults($limit);
 
-        $sql = $qb->getSQL() . ' FOR UPDATE SKIP LOCKED';
+        $sql = $qb->getSQL().' FOR UPDATE SKIP LOCKED';
         $ids = $this->connection->fetchFirstColumn($sql);
 
         if ($ids === []) {
             return [];
         }
 
-        return $this->entityManager->createQueryBuilder()
+        $result = $this->entityManager->createQueryBuilder()
             ->select('m')
             ->from(OutboxMessage::class, 'm')
             ->where('m.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getQuery()
             ->getResult();
+        assert(is_array($result));
+
+        return $result;
     }
 
     public function save(OutboxMessage $message): void

@@ -22,7 +22,7 @@ final class SendPaymentConfirmation
     public function __invoke(OrderPaidEvent $event): void
     {
         $user = $this->users->findById(new UserId($event->userId()));
-        if (! $user) {
+        if (!$user) {
             return;
         }
 

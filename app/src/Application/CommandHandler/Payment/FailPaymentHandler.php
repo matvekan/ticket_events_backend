@@ -36,10 +36,10 @@ final readonly class FailPaymentHandler implements CommandHandlerInterface
 
         $this->transactionManager->transactional(function () use ($orderIdVo, $userIdVo): void {
             $order = $this->orders->findById($orderIdVo);
-            if (! $order) {
+            if (!$order) {
                 throw new EntityNotFoundException('Order not found.');
             }
-            if ($userIdVo !== null && ! $order->userId()->equals($userIdVo)) {
+            if ($userIdVo !== null && !$order->userId()->equals($userIdVo)) {
                 throw new AccessDeniedException('You do not own this order.');
             }
 

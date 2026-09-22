@@ -11,13 +11,17 @@ use App\Application\Dto\SeatDto;
 use App\Domain\Entity\Event;
 use App\Domain\Entity\EventSeat;
 
-final class EventDtoFactory
+final readonly class EventDtoFactory
 {
     public function __construct(
-        private readonly SeatDtoFactory $seatDtoFactory,
+        private SeatDtoFactory $seatDtoFactory,
     ) {
     }
 
+    /**
+     * @param array<int, Event> $events
+     * @return array<int, EventDto>
+     */
     public function fromEventList(array $events): array
     {
         return array_map(fn (Event $event): EventDto => $this->fromEvent($event), $events);
@@ -71,7 +75,7 @@ final class EventDtoFactory
     private function getPriceRange(Event $event): PriceRangeDto
     {
         $prices = array_map(
-            fn (EventSeat $eventSeat): int => $eventSeat->price()->amount(),
+            static fn (EventSeat $eventSeat): int => $eventSeat->price()->amount(),
             $event->eventSeats(),
         );
 
@@ -82,5 +86,53 @@ final class EventDtoFactory
             max: $prices !== [] ? max($prices) : 0,
             currency: $seats !== [] ? $seats[0]->price()->currency() : 'BYN',
         );
+    }
+
+    /**
+     * @param array<int, Event> $events
+     * @return array{items: array<int, EventDto>, nextCursor: ?string}
+     */
+    public function createCursorPaginatedResponse(array $events, int $limit): array
+    {
+        $hasNextPage = \count($events) > $limit;
+        if ($hasNextPage) {
+            array_pop($events);
+        }
+
+        $nextCursor = null;
+        if ($hasNextPage && \count($events) > 0) {
+            $lastEvent = end($events);
+            $rawCursor = $lastEvent->date()->format('Y-m-d H:i:s.u').'|'.$lastEvent->id()->toString();
+            $nextCursor = base64_encode($rawCursor);
+        }
+
+        return [
+            'items' => $this->fromEventList($events),
+            'nextCursor' => $nextCursor,
+        ];
+    }
+
+    /**
+     * @param array<int, EventDto> $dtos
+     * @return array{items: array<int, EventDto>, nextCursor: ?string}
+     */
+    public function createCursorPaginatedResponseFromDtos(array $dtos, int $limit): array
+    {
+        $hasNextPage = \count($dtos) > $limit;
+        if ($hasNextPage) {
+            array_pop($dtos);
+        }
+
+        $nextCursor = null;
+        if ($hasNextPage && \count($dtos) > 0) {
+            $lastDto = end($dtos);
+            $rawCursor = $lastDto->date.'|'.$lastDto->id;
+            $nextCursor = base64_encode($rawCursor);
+        }
+
+        return [
+            'items' => $dtos,
+            'nextCursor' => $nextCursor,
+        ];
     }
 }

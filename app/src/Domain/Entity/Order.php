@@ -10,6 +10,7 @@ use App\Domain\Event\OrderPaidEvent;
 use App\Domain\Event\OrderRefundedEvent;
 use App\Domain\Event\SeatsReservedEvent;
 use App\Domain\Exception\BusinessRuleViolationException;
+use App\Domain\Shared\AggregateRootInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\OrderId;
@@ -18,17 +19,22 @@ use App\Domain\ValueObject\Price;
 use App\Domain\ValueObject\TicketStatus;
 use App\Domain\ValueObject\UserId;
 
-class Order
+class Order implements AggregateRootInterface
 {
     use EventRecordingCapability;
 
+    /**
+     * @param iterable<int, \App\Domain\Entity\Ticket> $tickets
+     */
     private function __construct(
         private OrderId $id,
         private UserId $userId,
         private Price $totalPrice,
         private OrderStatus $status,
         private \DateTimeImmutable $createdAt,
+        /** @phpstan-ignore property.onlyWritten */
         private ?\DateTimeImmutable $updatedAt = null,
+        /** @phpstan-ignore property.onlyWritten */
         private int $version = 1,
         private iterable $tickets = [],
     ) {
@@ -49,7 +55,7 @@ class Order
 
     public function markSeatsAsReserved(): void
     {
-        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
+        $eventSeatIds = array_map(static fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
         $this->recordThat(new SeatsReservedEvent($this->id->toString(), $this->userId->toString(), $eventSeatIds));
     }
 
@@ -83,6 +89,9 @@ class Order
         return $this->createdAt;
     }
 
+    /**
+     * @return array<int, \App\Domain\Entity\Ticket>
+     */
     public function tickets(): array
     {
         return $this->ticketList();
@@ -110,7 +119,9 @@ class Order
     {
         $total = 0;
         foreach ($this->ticketList() as $ticket) {
-            $total += $ticket->price()->amount();
+            if ($ticket->status() !== TicketStatus::Refunded && $ticket->status() !== TicketStatus::Cancelled) {
+                $total += $ticket->price()->amount();
+            }
         }
         $this->totalPrice = Price::fromAmount($total, $this->totalPrice->currency());
     }
@@ -156,7 +167,7 @@ class Order
             }
         }
 
-        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
+        $eventSeatIds = array_map(static fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
         $this->recordThat(new OrderCancelledEvent($this->id->toString(), $this->userId->toString(), $eventSeatIds));
     }
 
@@ -180,7 +191,7 @@ class Order
             }
         }
 
-        $eventSeatIds = array_map(fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
+        $eventSeatIds = array_map(static fn (Ticket $ticket) => $ticket->eventSeatId()->toString(), $this->ticketList());
         $this->recordThat(new OrderRefundedEvent(
             $this->id->toString(),
             $this->userId->toString(),
@@ -189,14 +200,56 @@ class Order
         ));
     }
 
+    /**
+     * @return array<int, \App\Domain\Entity\Ticket>
+     */
     private function ticketList(): array
     {
-        if (is_array($this->tickets)) {
+        if (\is_array($this->tickets)) {
             return $this->tickets;
         }
         $tickets = iterator_to_array($this->tickets);
         $this->tickets = $tickets;
 
         return $tickets;
+    }
+
+    /**
+     * @param array<int, string> $ticketIdsToRefund
+     */
+    public function refundSpecificTickets(array $ticketIdsToRefund, ClockInterface $clock): void
+    {
+        if ($this->status !== OrderStatus::Paid) {
+            throw new BusinessRuleViolationException('Only paid orders can be refunded');
+        }
+
+        $refundedCount = 0;
+        $totalTickets = \count($this->ticketList());
+
+        $idsToRefundMap = array_flip($ticketIdsToRefund);
+
+        foreach ($this->ticketList() as $ticket) {
+            if (isset($idsToRefundMap[$ticket->id()->toString()])) {
+                if ($ticket->status() === TicketStatus::Active || $ticket->status() === TicketStatus::Used) {
+                    $ticket->refund();
+                }
+            }
+
+            if ($ticket->status() === TicketStatus::Refunded) {
+                ++$refundedCount;
+            }
+        }
+
+        if ($refundedCount === 0) {
+            throw new BusinessRuleViolationException('No tickets to refund');
+        }
+
+        $this->updatedAt = $clock->now();
+
+        if ($refundedCount === $totalTickets) {
+            $this->status = OrderStatus::Refunded;
+        }
+
+        $this->recalculateTotalPrice();
     }
 }

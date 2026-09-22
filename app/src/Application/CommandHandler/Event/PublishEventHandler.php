@@ -25,16 +25,14 @@ final readonly class PublishEventHandler implements CommandHandlerInterface
 
     public function __invoke(PublishEventCommand $command): void
     {
-        $this->transactionManager->transactional(function () use ($command): array {
+        $this->transactionManager->transactional(function () use ($command): void {
             $event = $this->events->findById(new EventId($command->eventId));
-            if (! $event) {
+            if (!$event) {
                 throw new EntityNotFoundException('Event not found.');
             }
 
             $event->publish($this->clock);
             $this->events->save($event);
-
-            return $event->releaseEvents();
         });
     }
 }

@@ -21,6 +21,10 @@ final class SeatDtoFactory
         );
     }
 
+    /**
+     * @param array<int, Seat> $seats
+     * @return array<int, SeatDto>
+     */
     public function fromSeatList(array $seats): array
     {
         return array_map(fn (Seat $seat): SeatDto => $this->fromSeat($seat), $seats);

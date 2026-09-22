@@ -14,6 +14,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineTicketRepository implements TicketRepositoryInterface
 {
+    /** @var EntityRepository<Ticket> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -22,6 +23,9 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
         $this->repository = $entityManager->getRepository(Ticket::class);
     }
 
+    /**
+     * @return array<int, Ticket>
+     */
     public function findByOrderId(OrderId $orderId): array
     {
         return $this->repository->findBy(['order' => $orderId->toString()]);
@@ -38,6 +42,7 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
 
         $qb->select(
             't.code',
+            't.status AS ticket_status',
             'o.status AS order_status',
             'e.status AS event_status',
             'e.title AS event_title',
@@ -62,19 +67,29 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
             return null;
         }
 
+        assert(is_string($row['code']));
+        assert(is_string($row['order_status']));
+        assert(is_string($row['event_status']));
+        assert(is_string($row['event_title']));
+        assert(is_string($row['venue_name']));
+        assert(is_string($row['seat_row']));
+        assert(is_string($row['ticket_status']));
+        assert(is_string($row['event_date']) || $row['event_date'] instanceof \DateTimeImmutable);
+        assert(is_string($row['seat_number']) || is_int($row['seat_number']));
         $eventDate = $row['event_date'] instanceof \DateTimeImmutable
             ? $row['event_date']
-            : new \DateTimeImmutable((string) $row['event_date']);
+            : new \DateTimeImmutable($row['event_date']);
 
         return new TicketVerificationData(
-            code: (string) $row['code'],
-            orderStatus: (string) $row['order_status'],
-            eventStatus: (string) $row['event_status'],
-            eventTitle: (string) $row['event_title'],
+            code: $row['code'],
+            orderStatus: $row['order_status'],
+            eventStatus: $row['event_status'],
+            eventTitle: $row['event_title'],
             eventDate: $eventDate->format('Y-m-d H:i:s'),
-            venueName: (string) $row['venue_name'],
-            seatRow: (string) $row['seat_row'],
+            venueName: $row['venue_name'],
+            seatRow: $row['seat_row'],
             seatNumber: (int) $row['seat_number'],
+            ticketStatus: $row['ticket_status'],
         );
     }
 

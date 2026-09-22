@@ -9,6 +9,7 @@ use App\Domain\Event\EventCreatedEvent;
 use App\Domain\Event\EventRecordingCapability;
 use App\Domain\Event\EventStatusChangedEvent;
 use App\Domain\Exception\BusinessRuleViolationException;
+use App\Domain\Shared\AggregateRootInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\EventDescription;
@@ -16,10 +17,13 @@ use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\EventStatus;
 use App\Domain\ValueObject\EventTitle;
 
-class Event
+class Event implements AggregateRootInterface
 {
     use EventRecordingCapability;
 
+    /**
+     * @param iterable<int, \App\Domain\Entity\EventSeat> $eventSeats
+     */
     private function __construct(
         private EventId $id,
         private EventTitle $title,
@@ -27,7 +31,9 @@ class Event
         private \DateTimeImmutable $date,
         private Venue $venue,
         private EventStatus $status,
+        /** @phpstan-ignore property.onlyWritten */
         private \DateTimeImmutable $createdAt,
+        /** @phpstan-ignore property.onlyWritten */
         private ?\DateTimeImmutable $updatedAt = null,
         private iterable $eventSeats = [],
     ) {
@@ -150,14 +156,20 @@ class Event
         ));
     }
 
+    /**
+     * @return array<int, \App\Domain\Entity\EventSeat>
+     */
     public function eventSeats(): array
     {
         return $this->eventSeatList();
     }
 
+    /**
+     * @return array<int, \App\Domain\Entity\EventSeat>
+     */
     private function eventSeatList(): array
     {
-        if (is_array($this->eventSeats)) {
+        if (\is_array($this->eventSeats)) {
             return $this->eventSeats;
         }
 

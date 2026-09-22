@@ -13,47 +13,58 @@ use App\Tests\Integration\Support\IntegrationFixture;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/**
- * Infrastructure layer: DoctrineOrderRepository::findOrderByUserId (joins orders+tickets+event_seats+events+venues).
- */
 final class OrderRepositoryTest extends KernelTestCase
 {
-    public function testFindOrderByUserIdReturnsHydratedDtos(): void
+    public function testFindOrderByUserIdReturnsHydratedDtoWithTicketsForExistingUser(): void
     {
-        // Arrange
-        self::bootKernel();
-        $container = static::getContainer();
-        $em = $container->get(EntityManagerInterface::class);
-        $suffix = uniqid();
-        $data = IntegrationFixture::createPublishedEventWithSeat(
-            $em,
-            $container->get(ClockInterface::class),
-            $container->get(IdGeneratorInterface::class),
-            $suffix,
-        );
-        $container->get(ReserveSeatsHandler::class)(
-            new ReserveSeatsCommand($data['user']->rawId(), [$data['eventSeat']->rawId()])
-        );
+        $context = $this->createReservedOrderContext();
 
-        // Act
-        $dtos = $container->get(OrderRepositoryInterface::class)->findOrderByUserId($data['user']->rawId());
+        $dtos = $this->getOrderRepository()->findOrderByUserId($context['userId']);
 
-        // Assert
         self::assertNotEmpty($dtos);
         self::assertSame('pending', $dtos[0]->status);
         self::assertNotEmpty($dtos[0]->tickets);
     }
 
-    public function testFindOrderByUserIdReturnsEmptyForUnknownUser(): void
+    public function testFindOrderByUserIdReturnsEmptyArrayWhenUserHasNoOrders(): void
     {
-        // Arrange
+        self::bootKernel();
+
+        $dtos = $this->getOrderRepository()->findOrderByUserId('00000000-0000-4000-8000-000000000000');
+
+        self::assertSame([], $dtos);
+    }
+
+    public function testFindByUserIdReturnsOrdersWithTicketsEagerlyLoaded(): void
+    {
+        $context = $this->createReservedOrderContext();
+
+        $orders = $this->getOrderRepository()->findByUserId(new \App\Domain\ValueObject\UserId($context['userId']));
+
+        self::assertCount(1, $orders);
+        self::assertCount(1, $orders[0]->tickets());
+    }
+
+    private function createReservedOrderContext(): array
+    {
         self::bootKernel();
         $container = static::getContainer();
+        $em = $container->get(EntityManagerInterface::class);
 
-        // Act
-        $dtos = $container->get(OrderRepositoryInterface::class)->findOrderByUserId('00000000-0000-4000-8000-000000000000');
+        $data = IntegrationFixture::createPublishedEventWithSeat(
+            $em,
+            $container->get(ClockInterface::class),
+            $container->get(IdGeneratorInterface::class),
+            uniqid()
+        );
 
-        // Assert
-        self::assertSame([], $dtos);
+        $container->get(ReserveSeatsHandler::class)->__invoke(new ReserveSeatsCommand($data['user']->rawId(), [$data['eventSeat']->rawId()]));
+
+        return ['userId' => $data['user']->rawId()];
+    }
+
+    private function getOrderRepository(): OrderRepositoryInterface
+    {
+        return static::getContainer()->get(OrderRepositoryInterface::class);
     }
 }

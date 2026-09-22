@@ -6,6 +6,9 @@ namespace App\Domain\Event;
 
 final class OrderCancelledEvent
 {
+    /**
+     * @param array<int, string> $eventSeatIds
+     */
     public function __construct(
         private readonly string $orderId,
         private readonly string $userId,
@@ -23,6 +26,9 @@ final class OrderCancelledEvent
         return $this->userId;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function eventSeatIds(): array
     {
         return $this->eventSeatIds;

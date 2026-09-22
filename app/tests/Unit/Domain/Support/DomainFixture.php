@@ -92,7 +92,6 @@ final class DomainFixture
 
     public static function orderWithTickets(User $user, FixedClock $clock, FixedIdGenerator $ids, int $ticketCount = 1, int $price = 5000): Order
     {
-        // Arrange helper: creates order with N tickets (prices in BYN).
         $order = Order::create($user->id(), $clock, $ids);
         for ($i = 0; $i < $ticketCount; ++$i) {
             $ticket = Ticket::create(

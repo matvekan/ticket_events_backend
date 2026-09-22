@@ -10,11 +10,13 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class AddSeatsToVenueCommand implements CommandInterface
 {
+    /**
+     * @param array<int, SeatData> $seats
+     */
     public function __construct(
         #[Assert\NotBlank]
         #[Assert\Uuid]
         public readonly string $venueId,
-
         #[Assert\NotBlank]
         #[Assert\Count(min: 1)]
         #[Assert\All([

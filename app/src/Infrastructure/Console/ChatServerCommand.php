@@ -41,12 +41,13 @@ final class ChatServerCommand extends Command
         $logger->pushHandler($handler);
 
         $server = SocketHttpServer::createForDirectAccess($logger);
+        assert($this->chatWsPort >= 0 && $this->chatWsPort <= 65535);
         $server->expose(new InternetAddress($this->chatWsBind, $this->chatWsPort));
 
         $websocket = new Websocket($server, $logger, new Rfc6455Acceptor(), $this->handler);
 
         $server->start($websocket, new DefaultErrorHandler());
-        $output->writeln(sprintf('Chat WebSocket server listening on %s:%d', $this->chatWsBind, $this->chatWsPort));
+        $output->writeln(\sprintf('Chat WebSocket server listening on %s:%d', $this->chatWsBind, $this->chatWsPort));
 
         EventLoop::run();
 

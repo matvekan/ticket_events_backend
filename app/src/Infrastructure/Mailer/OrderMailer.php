@@ -21,7 +21,7 @@ final class OrderMailer
             ->from($this->mailerFrom)
             ->to($userEmail)
             ->subject('Payment Confirmed')
-            ->text(sprintf('Your order %s has been paid successfully.', $orderId));
+            ->text(\sprintf('Your order %s has been paid successfully.', $orderId));
 
         $this->mailer->send($email);
     }

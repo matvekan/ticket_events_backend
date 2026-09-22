@@ -36,7 +36,7 @@ final readonly class ChatService
     {
         $this->transactionManager->transactional(function () use ($userId): void {
             $user = $this->users->findById(new UserId($userId));
-            if (! $user) {
+            if (!$user) {
                 throw new EntityNotFoundException('User not found.');
             }
 
@@ -49,7 +49,7 @@ final readonly class ChatService
 
     public function createMessage(ChatRoom $room, User $sender, string $text): ChatMessageDto
     {
-        return $this->transactionManager->transactional(function () use ($room, $sender, $text): ChatMessageDto {
+        $result = $this->transactionManager->transactional(function () use ($room, $sender, $text): ChatMessageDto {
             $message = ChatMessage::create(
                 $room->id(),
                 $sender->id(),
@@ -61,6 +61,9 @@ final readonly class ChatService
 
             return $this->toDto($message, $sender);
         });
+        assert($result instanceof ChatMessageDto);
+
+        return $result;
     }
 
     private function toDto(ChatMessage $message, User $sender): ChatMessageDto
@@ -79,7 +82,7 @@ final readonly class ChatService
     public function canAccess(string $roomId, User $viewer): bool
     {
         $room = $this->rooms->findById(new ChatRoomId($roomId));
-        if (! $room) {
+        if (!$room) {
             return false;
         }
 

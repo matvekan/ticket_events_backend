@@ -15,6 +15,7 @@ readonly class TicketVerificationData
         public string $venueName,
         public string $seatRow,
         public int $seatNumber,
+        public string $ticketStatus,
     ) {
     }
 }

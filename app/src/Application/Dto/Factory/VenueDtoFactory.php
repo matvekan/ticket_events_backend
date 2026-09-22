@@ -21,6 +21,10 @@ final class VenueDtoFactory
         );
     }
 
+    /**
+     * @param array<int, Venue> $venues
+     * @return array<int, VenueDto>
+     */
     public function fromVenueList(array $venues): array
     {
         return array_map(fn (Venue $venue): VenueDto => $this->fromVenue($venue), $venues);

@@ -22,10 +22,11 @@ abstract class AbstractValueObjectType extends Type
         if ($value === null || $value === '') {
             return null;
         }
+        assert(is_string($value));
 
         $class = $this->getValueObjectClass();
 
-        return $class::fromValue((string) $value);
+        return $class::fromValue($value);
     }
 
     public function convertToDatabaseValue(mixed $value, AbstractPlatform $platform): mixed
@@ -37,8 +38,9 @@ abstract class AbstractValueObjectType extends Type
         if ($value instanceof StringValueObjectInterface) {
             return $value->toString();
         }
+        assert(is_string($value));
 
-        return (string) $value;
+        return $value;
     }
 
     public function requiresSQLCommentHint(AbstractPlatform $platform): bool

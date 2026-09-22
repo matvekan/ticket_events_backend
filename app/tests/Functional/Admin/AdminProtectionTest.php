@@ -9,9 +9,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/**
- * Presentation layer: защита /api/admin/... (403 для обычных пользователей, 401 без токена).
- */
 final class AdminProtectionTest extends WebTestCase
 {
     private KernelBrowser $client;
@@ -22,81 +19,115 @@ final class AdminProtectionTest extends WebTestCase
         $this->client->setServerParameter('CONTENT_TYPE', 'application/json');
     }
 
-    public function testAdminRefundRequiresAdminRole(): void
+    public function testAdminRefundReturns403WhenAuthenticatedUserHasNoAdminRole(): void
     {
-        // Arrange — обычный пользователь без ROLE_ADMIN
-        $email = sprintf('plain_%s@example.com', uniqid());
-        $this->loginAs($email, false);
+        $this->loginAsRegularUser($this->uniqueEmail('plain'));
 
-        // Act
         $this->client->request('POST', '/api/admin/orders/00000000-0000-4000-8000-000000000000/refund');
 
-        // Assert
         self::assertResponseStatusCodeSame(403);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('error', $data);
+        self::assertArrayHasKey('error', $this->decodeJson());
     }
 
-    public function testAdminRoutesRequireAuthentication(): void
+    public function testAdminChatRoomsReturns401WhenNoAuthenticationTokenProvided(): void
     {
-        // Arrange — анонимный клиент
-        // Act
         $this->client->request('GET', '/api/admin/chat/rooms');
 
-        // Assert
         self::assertResponseStatusCodeSame(401);
     }
 
-    public function testAdminChatRoomsListIsAccessibleForAdmin(): void
+    public function testAdminChatRoomsReturns200WhenAuthenticatedAsAdmin(): void
     {
-        // Arrange — админ
-        $email = sprintf('admin_%s@example.com', uniqid());
-        $this->loginAs($email, true);
+        $this->loginAsAdmin($this->uniqueEmail('admin'));
 
-        // Act
         $this->client->request('GET', '/api/admin/chat/rooms');
 
-        // Assert
         self::assertResponseIsSuccessful();
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertIsArray($data);
+        self::assertIsArray($this->decodeJson());
     }
 
-    public function testAdminRefundUnknownOrderReturns404(): void
+    public function testAdminRefundReturns404WhenOrderDoesNotExist(): void
     {
-        // Arrange — админ
-        $email = sprintf('admin2_%s@example.com', uniqid());
-        $this->loginAs($email, true);
+        $this->loginAsAdmin($this->uniqueEmail('admin2'));
 
-        // Act
         $this->client->request('POST', '/api/admin/orders/00000000-0000-4000-8000-000000000000/refund');
 
-        // Assert (ApiExceptionListener маппит EntityNotFound → 404 JSON)
         self::assertResponseStatusCodeSame(404);
-        $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('error', $data);
+        self::assertArrayHasKey('error', $this->decodeJson());
     }
 
-    private function loginAs(string $email, bool $admin): void
+    public function testAdminAnalyticsReturns401WhenNoAuthenticationTokenProvided(): void
     {
-        $this->client->request('POST', '/api/auth/register', [], [], [], json_encode([
-            'name' => 'Test User', 'email' => $email, 'password' => 'password123',
-        ]));
+        $this->client->request('GET', '/api/admin/analytics');
+
+        self::assertResponseStatusCodeSame(401);
+    }
+
+    public function testAdminVerifyTicketReturns403WhenUserIsNotAdmin(): void
+    {
+        $this->loginAsRegularUser($this->uniqueEmail('plain2'));
+
+        $this->client->request('GET', '/api/admin/tickets/00000000-0000-4000-8000-000000000000');
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testAdminSupportChatRoomsReturns403WhenUserIsNotAdmin(): void
+    {
+        $this->loginAsRegularUser($this->uniqueEmail('plain3'));
+
+        $this->client->request('GET', '/api/admin/chat/rooms');
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    private function loginAsRegularUser(string $email): void
+    {
+        $this->registerAndLogin($email, false);
+    }
+
+    private function loginAsAdmin(string $email): void
+    {
+        $this->registerAndLogin($email, true);
+    }
+
+    private function registerAndLogin(string $email, bool $admin): void
+    {
+        $this->client->request('POST', '/api/auth/register', [], [], [], $this->encodeJson(['name' => 'Test User', 'email' => $email, 'password' => 'password123']));
         self::assertResponseStatusCodeSame(201);
 
         if ($admin) {
-            $users = static::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class);
-            $user = $users->findByEmail(new Email($email));
-            $user->changeRoles(['ROLE_ADMIN']);
-            static::getContainer()->get(EntityManagerInterface::class)->flush();
+            $this->promoteToAdmin($email);
         }
 
-        $loginPath = $admin ? '/api/admin/login' : '/api/auth/login';
-        $this->client->request('POST', $loginPath, [], [], [], json_encode([
-            'email' => $email, 'password' => 'password123',
-        ]));
+        $path = $admin ? '/api/admin/login' : '/api/auth/login';
+        $this->client->request('POST', $path, [], [], [], $this->encodeJson(['email' => $email, 'password' => 'password123']));
         self::assertResponseIsSuccessful();
-        $token = json_decode($this->client->getResponse()->getContent(), true)['token'];
+
+        $token = $this->decodeJson()['token'];
         $this->client->setServerParameter('HTTP_Authorization', sprintf('Bearer %s', $token));
+    }
+
+    private function promoteToAdmin(string $email): void
+    {
+        $repo = static::getContainer()->get(\App\Domain\Repository\UserRepositoryInterface::class);
+        $user = $repo->findByEmail(new Email($email));
+        $user->changeRoles(['ROLE_ADMIN']);
+        static::getContainer()->get(EntityManagerInterface::class)->flush();
+    }
+
+    private function uniqueEmail(string $prefix): string
+    {
+        return sprintf('%s_%s@example.com', $prefix, uniqid());
+    }
+
+    private function encodeJson(array $data): string
+    {
+        return json_encode($data, JSON_THROW_ON_ERROR);
+    }
+
+    private function decodeJson(): array
+    {
+        return json_decode($this->client->getResponse()->getContent(), true, 512, JSON_THROW_ON_ERROR);
     }
 }

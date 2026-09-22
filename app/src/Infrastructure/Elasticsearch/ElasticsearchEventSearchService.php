@@ -23,25 +23,29 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
     ) {
     }
 
+    /**
+     * @return array<int, EventDto>
+     */
     public function search(
         ?string $query,
         ?string $city,
         ?\DateTimeImmutable $dateFrom,
         ?\DateTimeImmutable $dateTo,
         int $limit,
-        int $offset,
+        ?string $cursor,
     ): array {
         try {
-            $results = $this->elasticsearch
+            $response = $this->elasticsearch
                 ->search([
                     'index' => self::INDEX,
-                    'body' => $this->buildQueryBody($query, $city, $dateFrom, $dateTo, $limit, $offset),
-                ])
-                ->asArray();
+                    'body' => $this->buildQueryBody($query, $city, $dateFrom, $dateTo, $limit, $cursor),
+                ]);
+            assert(method_exists($response, 'asArray'));
+            /** @var array<string, mixed> $results */
+            $results = $response->asArray();
         } catch (\Throwable $e) {
             $this->logger->warning('Elasticsearch search failed, falling back to DB: {error}', ['error' => $e->getMessage()]);
-
-            $events = $this->events->searchPublished($query, $city, $dateFrom, $dateTo, $limit, $offset);
+            $events = $this->events->searchPublished($query, $city, $dateFrom, $dateTo, $limit, $cursor);
 
             return $this->eventDtoFactory->fromEventList($events);
         }
@@ -49,9 +53,13 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
         return $this->mapHits($results);
     }
 
-    private function buildQueryBody(?string $query, ?string $city, ?\DateTimeImmutable $dateFrom, ?\DateTimeImmutable $dateTo, int $limit, int $offset): array
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildQueryBody(?string $query, ?string $city, ?\DateTimeImmutable $dateFrom, ?\DateTimeImmutable $dateTo, int $limit, ?string $cursor): array
     {
         $must = [];
+
         if ($query) {
             $must[] = [
                 'multi_match' => [
@@ -62,34 +70,58 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
         }
 
         $filter = [['term' => ['status' => 'published']]];
+
         if ($city) {
             $filter[] = ['match' => ['venue_city' => $city]];
         }
+
         if ($dateFrom) {
             $filter[] = ['range' => ['date' => ['gte' => $dateFrom->format('c')]]];
         }
+
         if ($dateTo) {
             $filter[] = ['range' => ['date' => ['lte' => $dateTo->format('c')]]];
         }
 
-        return [
+        $body = [
             'query' => [
                 'bool' => [
                     'must' => $must !== [] ? $must : ['match_all' => new \stdClass()],
                     'filter' => $filter,
                 ],
             ],
-            'from' => $offset,
             'size' => $limit,
+            'sort' => [
+                ['date' => 'desc'],
+                ['id' => 'desc'],
+            ],
         ];
+
+        if ($cursor) {
+            $decoded = base64_decode($cursor, true);
+            if ($decoded === false) {
+                return $body;
+            }
+            $parts = explode('|', $decoded);
+            if (\count($parts) === 2) {
+                $body['search_after'] = [$parts[0], $parts[1]];
+            }
+        }
+
+        return $body;
     }
 
+    /**
+     * @param array<string, mixed> $results
+     * @return array<int, EventDto>
+     */
     private function mapHits(array $results): array
     {
         $events = [];
 
         foreach ($results['hits']['hits'] ?? [] as $hit) {
             $source = $hit['_source'];
+
             $events[] = new EventDto(
                 id: $hit['_id'],
                 title: $source['title'],

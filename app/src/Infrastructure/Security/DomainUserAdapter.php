@@ -37,19 +37,25 @@ final class DomainUserAdapter implements UserInterface, PasswordAuthenticatedUse
 
     public function getUserIdentifier(): string
     {
-        return $this->user->identifier();
+        $id = $this->user->identifier();
+        assert($id !== '');
+
+        return $id;
     }
 
     public function eraseCredentials(): void
     {
     }
 
+    /**
+     * @param array<int, mixed> $args
+     */
     public function __call(string $name, array $args): mixed
     {
         if (method_exists($this->user, $name)) {
             return $this->user->$name(...$args);
         }
 
-        throw new \BadMethodCallException(sprintf('Method %s not found on DomainUserAdapter.', $name));
+        throw new \BadMethodCallException(\sprintf('Method %s not found on DomainUserAdapter.', $name));
     }
 }

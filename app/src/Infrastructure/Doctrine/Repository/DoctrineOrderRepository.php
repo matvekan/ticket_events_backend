@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineOrderRepository implements OrderRepositoryInterface
 {
+    /** @var EntityRepository<Order> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -30,14 +31,20 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         return $this->entityManager->find(Order::class, $id->toString());
     }
 
+    /**
+     * @return array<int, Order>
+     */
     public function findByUserId(UserId $userId): array
     {
         return $this->repository->findBy(['userId' => $userId->toString()], ['createdAt' => 'DESC']);
     }
 
+    /**
+     * @return array<int, Order>
+     */
     public function findPendingExpired(\DateTimeImmutable $cutoff): array
     {
-        return $this->repository
+        $result = $this->repository
             ->createQueryBuilder('o')
             ->where('o.status = :status')
             ->andWhere('o.createdAt < :cutoff')
@@ -45,8 +52,14 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
             ->setParameter('cutoff', $cutoff)
             ->getQuery()
             ->getResult();
+        assert(is_array($result));
+
+        return $result;
     }
 
+    /**
+     * @return array<int, Order>
+     */
     public function findByEventId(EventId $eventId): array
     {
         $conn = $this->entityManager->getConnection();
@@ -64,11 +77,14 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
             return [];
         }
 
-        return $this->repository->createQueryBuilder('o')
+        $result = $this->repository->createQueryBuilder('o')
             ->where('o.id IN (:ids)')
             ->setParameter('ids', $rows)
             ->getQuery()
             ->getResult();
+        assert(is_array($result));
+
+        return $result;
     }
 
     public function findByIdAndUser(string $orderId, ?string $userId): ?OrderDto
@@ -81,6 +97,9 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         return $this->hydrate($rows);
     }
 
+    /**
+     * @return array<int, OrderDto>
+     */
     public function findOrderByUserId(string $userId): array
     {
         $rows = $this->getOrderRowsForUser($userId);
@@ -88,14 +107,19 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
             return [];
         }
 
+        /** @var array<string, array<int, array<string, mixed>>> $ordersById */
         $ordersById = [];
         foreach ($rows as $row) {
+            assert(is_string($row['id']));
             $ordersById[$row['id']][] = $row;
         }
 
         return array_map(fn (array $orderRows) => $this->hydrate($orderRows), array_values($ordersById));
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function getOrderRows(string $orderId, ?string $userId): array
     {
         $qb = $this->entityManager->getConnection()->createQueryBuilder();
@@ -121,6 +145,9 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         return $qb->executeQuery()->fetchAllAssociative();
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     private function getOrderRowsForUser(string $userId): array
     {
         $qb = $this->entityManager->getConnection()->createQueryBuilder();
@@ -142,15 +169,21 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         return $qb->executeQuery()->fetchAllAssociative();
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
     private function hydrate(array $rows): OrderDto
     {
         $first = $rows[0];
+        assert(is_string($first['id']));
+        assert(is_string($first['status']));
+        assert(is_string($first['total_currency']));
 
         return new OrderDto(
-            id: (string) $first['id'],
-            status: (string) $first['status'],
+            id: $first['id'],
+            status: $first['status'],
             total: (int) $first['total_amount'],
-            totalCurrency: (string) $first['total_currency'],
+            totalCurrency: $first['total_currency'],
             createdAt: $this->formatDate($first['created_at']),
             tickets: array_values(array_filter(array_map(
                 fn (array $row): ?TicketDto => $row['ticket_id'] !== null ? $this->hydrateTicket($row) : null,
@@ -159,27 +192,46 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         );
     }
 
+    /**
+     * @param array<string, mixed> $row
+     */
     private function hydrateTicket(array $row): TicketDto
     {
+        assert(is_string($row['ticket_id']));
+        assert(is_string($row['ticket_code']));
+        assert(is_string($row['event_seat_id']));
+        assert(is_string($row['price_currency']));
+        assert(is_string($row['ticket_status']));
+        if ($row['event_title'] !== null) {
+            assert(is_string($row['event_title']));
+        }
+        if ($row['venue_name'] !== null) {
+            assert(is_string($row['venue_name']));
+        }
+
         return new TicketDto(
-            id: (string) $row['ticket_id'],
-            code: (string) $row['ticket_code'],
-            eventSeatId: (string) $row['event_seat_id'],
-            eventTitle: $row['event_title'] !== null ? (string) $row['event_title'] : '',
+            id: $row['ticket_id'],
+            code: $row['ticket_code'],
+            eventSeatId: $row['event_seat_id'],
+            eventTitle: $row['event_title'] !== null ? $row['event_title'] : '',
             eventDate: isset($row['event_date'])
                 ? $this->formatDate($row['event_date'])
                 : '',
-            venueName: $row['venue_name'] !== null ? (string) $row['venue_name'] : '',
+            venueName: $row['venue_name'] !== null ? $row['venue_name'] : '',
             priceAmount: (int) $row['price_amount'],
-            priceCurrency: (string) $row['price_currency'],
+            priceCurrency: $row['price_currency'],
+            status: $row['ticket_status'],
         );
     }
 
     private function formatDate(mixed $value): string
     {
-        return $value instanceof \DateTimeImmutable
-            ? $value->format('c')
-            : (new \DateTimeImmutable((string) $value))->format('c');
+        if ($value instanceof \DateTimeImmutable) {
+            return $value->format('c');
+        }
+        assert(is_string($value));
+
+        return (new \DateTimeImmutable($value))->format('c');
     }
 
     public function save(Order $order): void

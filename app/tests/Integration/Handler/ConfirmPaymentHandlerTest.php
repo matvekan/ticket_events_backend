@@ -13,105 +13,167 @@ use App\Application\CommandHandler\Payment\StartPaymentHandler;
 use App\Domain\Entity\OutboxMessage;
 use App\Domain\Event\OrderPaidEvent;
 use App\Domain\Repository\OrderRepositoryInterface;
+use App\Domain\Repository\PaymentRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\PaymentStatus;
-use App\Domain\Repository\PaymentRepositoryInterface;
+use App\Domain\ValueObject\UserId;
 use App\Tests\Integration\Support\IntegrationFixture;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/**
- * Application layer: ConfirmPaymentHandler writes OrderPaidEvent to messenger_outbox
- * inside the same DB transaction (TransactionManagerInterface).
- */
 final class ConfirmPaymentHandlerTest extends KernelTestCase
 {
-    public function testConfirmPaymentMarksOrderPaidAndWritesOutbox(): void
+    public function testConfirmPaymentMarksOrderAndPaymentAsPaidAndWritesOutboxEvent(): void
     {
-        // Arrange
+        $context = $this->createReservedOrderContext();
+        $beforeIds = $this->collectExistingOrderPaidOutboxIds();
+
+        $this->getConfirmPaymentHandler()->__invoke(new ConfirmPaymentCommand($context['orderId'], $context['userId']));
+
+        $this->assertOrderIsPaid($context['orderId']);
+        $this->assertPaymentIsPaid($context['orderId']);
+        $this->assertOrderPaidEventWasWrittenForOrder($context['orderId'], $beforeIds);
+    }
+
+    public function testConfirmPaymentIsIdempotentWhenOrderIsAlreadyPaid(): void
+    {
+        $context = $this->createReservedOrderContext();
+        $handler = $this->getConfirmPaymentHandler();
+        $handler(new ConfirmPaymentCommand($context['orderId'], $context['userId']));
+
+        $handler(new ConfirmPaymentCommand($context['orderId'], $context['userId']));
+
+        $this->assertOrderIsPaid($context['orderId']);
+    }
+
+    public function testConfirmPaymentThrowsEntityNotFoundWhenPaymentDoesNotExist(): void
+    {
+        $context = $this->createReservedOrderWithoutPaymentContext();
+
+        $this->expectException(\App\Domain\Exception\EntityNotFoundException::class);
+
+        $this->getConfirmPaymentHandler()->__invoke(new ConfirmPaymentCommand($context['orderId'], $context['userId']));
+    }
+
+    private function createReservedOrderContext(): array
+    {
+        $eventContext = $this->createPublishedEventContextWithoutPayment();
+        $container = static::getContainer();
+
+        $container->get(ReserveSeatsHandler::class)->__invoke(new ReserveSeatsCommand($eventContext['userId'], [$eventContext['eventSeatId']]));
+        $this->clearEntityManager();
+
+        $order = $this->findLatestOrderForUser($eventContext['userId']);
+        $container->get(StartPaymentHandler::class)->__invoke(new StartPaymentCommand($order->rawId(), $eventContext['userId']));
+
+        return [
+            'userId' => $eventContext['userId'],
+            'orderId' => $order->rawId(),
+        ];
+    }
+
+    private function createPublishedEventContextWithoutPayment(): array
+    {
         self::bootKernel();
         $container = static::getContainer();
         $em = $container->get(EntityManagerInterface::class);
-        $suffix = uniqid();
+
         $data = IntegrationFixture::createPublishedEventWithSeat(
             $em,
             $container->get(ClockInterface::class),
             $container->get(IdGeneratorInterface::class),
-            $suffix,
+            uniqid()
         );
-        $userId = $data['user']->rawId();
-        $seatId = $data['eventSeat']->rawId();
 
-        $container->get(ReserveSeatsHandler::class)(new ReserveSeatsCommand($userId, [$seatId]));
-        $em->clear();
-        $order = $container->get(OrderRepositoryInterface::class)->findByUserId(new \App\Domain\ValueObject\UserId($userId))[0];
-        $orderId = $order->rawId();
-        $container->get(StartPaymentHandler::class)(new StartPaymentCommand($orderId, $userId));
-        $beforeIds = array_map(
+        return [
+            'userId' => $data['user']->rawId(),
+            'eventSeatId' => $data['eventSeat']->rawId(),
+            'orderId' => null,
+        ];
+    }
+
+    private function createReservedOrderWithoutPaymentContext(): array
+    {
+        $eventContext = $this->createPublishedEventContextWithoutPayment();
+        $container = static::getContainer();
+
+        $container->get(ReserveSeatsHandler::class)->__invoke(new ReserveSeatsCommand($eventContext['userId'], [$eventContext['eventSeatId']]));
+        $this->clearEntityManager();
+
+        $order = $this->findLatestOrderForUser($eventContext['userId']);
+
+        return ['userId' => $eventContext['userId'], 'orderId' => $order->rawId()];
+    }
+
+    private function findLatestOrderForUser(string $userId): \App\Domain\Entity\Order
+    {
+        $orders = static::getContainer()->get(OrderRepositoryInterface::class)->findByUserId(new UserId($userId));
+
+        return $orders[0];
+    }
+
+    private function getConfirmPaymentHandler(): ConfirmPaymentHandler
+    {
+        return static::getContainer()->get(ConfirmPaymentHandler::class);
+    }
+
+    private function collectExistingOrderPaidOutboxIds(): array
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+
+        return array_map(
             static fn (OutboxMessage $m): string => $m->id(),
             $em->getRepository(OutboxMessage::class)->findBy(['messageClass' => OrderPaidEvent::class])
         );
+    }
 
-        // Act
-        $container->get(ConfirmPaymentHandler::class)(new ConfirmPaymentCommand($orderId, $userId));
+    private function assertOrderIsPaid(string $orderId): void
+    {
+        $this->clearEntityManager();
+        $order = static::getContainer()->get(OrderRepositoryInterface::class)->findById(new OrderId($orderId));
 
-        // Assert: order paid
-        $em->clear();
-        $paid = $container->get(OrderRepositoryInterface::class)->findById(new OrderId($orderId));
-        self::assertSame(OrderStatus::Paid, $paid->status());
+        self::assertSame(OrderStatus::Paid, $order->status());
+    }
 
-        // Assert: payment paid
-        $payment = $container->get(PaymentRepositoryInterface::class)->findByOrderId(new OrderId($orderId));
+    private function assertPaymentIsPaid(string $orderId): void
+    {
+        $payment = static::getContainer()->get(PaymentRepositoryInterface::class)->findByOrderId(new OrderId($orderId));
+
         self::assertSame(PaymentStatus::Paid, $payment->status());
+    }
 
-        // Assert: outbox contains OrderPaidEvent for this order (only rows created by this test)
+    private function assertOrderPaidEventWasWrittenForOrder(string $orderId, array $beforeIds): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
         $outbox = $em->getRepository(OutboxMessage::class)->findBy(['messageClass' => OrderPaidEvent::class]);
-        $found = false;
+
+        $found = $this->containsOrderPaidEventForOrder($outbox, $orderId, $beforeIds);
+
+        self::assertTrue($found);
+    }
+
+    private function containsOrderPaidEventForOrder(array $outbox, string $orderId, array $beforeIds): bool
+    {
         foreach ($outbox as $message) {
             if (\in_array($message->id(), $beforeIds, true)) {
                 continue;
             }
-            /** @var OrderPaidEvent $event */
-            $event = unserialize(base64_decode($message->body()));
-            if ($event->orderId() === $orderId) {
-                $found = true;
 
-                break;
+            $event = unserialize(base64_decode($message->body()));
+
+            if ($event instanceof OrderPaidEvent && $event->orderId() === $orderId) {
+                return true;
             }
         }
-        self::assertTrue($found, 'OrderPaidEvent should be written to messenger_outbox');
+
+        return false;
     }
 
-    public function testConfirmPaymentIsIdempotentWhenAlreadyPaid(): void
+    private function clearEntityManager(): void
     {
-        // Arrange
-        self::bootKernel();
-        $container = static::getContainer();
-        $em = $container->get(EntityManagerInterface::class);
-        $suffix = uniqid();
-        $data = IntegrationFixture::createPublishedEventWithSeat(
-            $em,
-            $container->get(ClockInterface::class),
-            $container->get(IdGeneratorInterface::class),
-            $suffix,
-        );
-        $userId = $data['user']->rawId();
-        $container->get(ReserveSeatsHandler::class)(new ReserveSeatsCommand($userId, [$data['eventSeat']->rawId()]));
-        $em->clear();
-        $order = $container->get(OrderRepositoryInterface::class)->findByUserId(new \App\Domain\ValueObject\UserId($userId))[0];
-        $container->get(StartPaymentHandler::class)(new StartPaymentCommand($order->rawId(), $userId));
-        $handler = $container->get(ConfirmPaymentHandler::class);
-        $handler(new ConfirmPaymentCommand($order->rawId(), $userId));
-
-        // Act (second confirm must not fail)
-        $handler(new ConfirmPaymentCommand($order->rawId(), $userId));
-
-        // Assert
-        $em->clear();
-        $paid = $container->get(OrderRepositoryInterface::class)->findById(new OrderId($order->rawId()));
-        self::assertSame(OrderStatus::Paid, $paid->status());
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
     }
 }

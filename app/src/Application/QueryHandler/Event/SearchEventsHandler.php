@@ -4,28 +4,35 @@ declare(strict_types=1);
 
 namespace App\Application\QueryHandler\Event;
 
+use App\Application\Dto\Factory\EventDtoFactory;
 use App\Application\Query\Event\SearchEventsQuery;
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\Repository\EventSearchInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
-final class SearchEventsHandler implements QueryHandlerInterface
+final readonly class SearchEventsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly EventSearchInterface $eventSearch,
+        private EventSearchInterface $eventSearch,
+        private EventDtoFactory $eventDtoFactory,
     ) {
     }
 
+    /**
+     * @return array{items: array<int, \App\Application\Dto\EventDto>, nextCursor: ?string}
+     */
     public function __invoke(SearchEventsQuery $query): array
     {
-        return $this->eventSearch->search(
+        $dtos = $this->eventSearch->search(
             $query->query,
             $query->city,
             $query->dateFrom,
             $query->dateTo,
-            $query->limit,
-            max(0, ($query->page - 1) * $query->limit),
+            $query->limit + 1,
+            $query->cursor,
         );
+
+        return $this->eventDtoFactory->createCursorPaginatedResponseFromDtos($dtos, $query->limit);
     }
 }

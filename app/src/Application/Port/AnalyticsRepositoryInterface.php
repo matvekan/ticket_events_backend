@@ -13,10 +13,19 @@ interface AnalyticsRepositoryInterface
 
     public function countRows(string $table): int;
 
+    /**
+     * @return array<int, \App\Application\Dto\Analytics\AnalyticsByDayDto>
+     */
     public function byDay(): array;
 
+    /**
+     * @return array<int, \App\Application\Dto\Analytics\TopUserDto>
+     */
     public function topUsers(): array;
 
+    /**
+     * @return array<int, \App\Application\Dto\Analytics\RecentPaymentDto>
+     */
     public function recentPayments(): array;
 
     public function totals(): AnalyticsTotalsDto;

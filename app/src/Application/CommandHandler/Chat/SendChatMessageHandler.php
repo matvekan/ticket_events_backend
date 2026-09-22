@@ -30,16 +30,16 @@ final readonly class SendChatMessageHandler implements CommandHandlerInterface
     public function __invoke(SendChatMessageCommand $command): void
     {
         $room = $this->rooms->findById(new ChatRoomId($command->roomId));
-        if (! $room) {
+        if (!$room) {
             throw new EntityNotFoundException('Chat room not found.');
         }
 
         $sender = $this->users->findById(new UserId($command->senderId));
-        if (! $sender) {
+        if (!$sender) {
             throw new EntityNotFoundException('User not found.');
         }
 
-        if (! $this->accessPolicy->canParticipate($room, $sender)) {
+        if (!$this->accessPolicy->canParticipate($room, $sender)) {
             throw new AccessDeniedException('You do not have access to this chat room.');
         }
 

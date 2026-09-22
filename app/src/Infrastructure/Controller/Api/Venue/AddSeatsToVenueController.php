@@ -53,10 +53,11 @@ final class AddSeatsToVenueController
 
     public function __invoke(
         string $id,
-        #[MapRequestPayload] AddSeatsRequest $payload,
+        #[MapRequestPayload]
+        AddSeatsRequest $payload,
     ): JsonResponse {
         $seats = array_map(
-            fn (array $seat): SeatData => new SeatData(
+            static fn (array $seat): SeatData => new SeatData(
                 row: $seat['row'],
                 number: (int) $seat['number'],
                 type: $seat['type'],

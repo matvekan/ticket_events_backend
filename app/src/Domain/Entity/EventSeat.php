@@ -20,7 +20,7 @@ class EventSeat
         private Seat $seat,
         private Price $price,
     ) {
-        if (! $seat->venueId()->equals($event->venue()->id())) {
+        if (!$seat->venueId()->equals($event->venue()->id())) {
             throw new BusinessRuleViolationException('Seat does not belong to the event venue.');
         }
 

@@ -10,7 +10,7 @@ interface IntegerValueObjectInterface
 
     public function toValue(): int;
 
-    public function equals(IntegerValueObjectInterface $other): bool;
+    public function equals(self $other): bool;
 
     public static function fromValue(int $value): static;
 

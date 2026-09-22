@@ -1,37 +1,41 @@
-# Ticket Events Backend
+# Ticket Events Platform
 
-Educational project: online ticket sales for events (Minsk venues) with Symfony 7 / PHP 8.5 backend, React (Vite) frontend, and infrastructure services.
+A comprehensive platform for managing venues, creating events, and selling electronic tickets. Designed with a focus on reliability, scalability, and clean code using modern architectural patterns.
 
-## Stack
+## 🚀 Key Innovations & Architecture
+
+* **Domain-Driven Design (DDD) & CQRS:** Strict separation into Domain, Application, and Infrastructure layers. Utilizes Command and Query buses for request handling.
+* **Transactional Outbox:** Guaranteed delivery of domain events (order creation, payment, refund) to the message broker without the risk of database desynchronization.
+* **Real-Time Analytics:** Asynchronous event logging via RabbitMQ into ClickHouse (columnar DBMS) for instant reporting.
+* **Full-Text Search:** Integration with Elasticsearch 8 for fast and relevant event discovery.
+* **Interactive UI/UX:** Yandex Maps integration for venue coordinates, bulk ticket pricing management (Standard, VIP, Premium), and visual "aging" (grayscale) for past events.
+* **Real-Time Support Chat:** Built-in WebSocket server based on Amphp for seamless client-admin communication.
+* **Payment Gateway:** Integration with Stripe Checkout and webhook processing for payment confirmation (replacing the legacy Mock Bank).
+* **Clean Architecture Tests:** Comprehensive code coverage (Unit, Integration, Functional) adhering to strict Clean Code standards (zero visual clutter, DataProviders, isolated test databases).
+
+## 🛠 Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Backend | Symfony 7, PHP 8.5 (fpm), Doctrine ORM + migrations, Messenger (RabbitMQ), JWT (Lexik) |
-| Frontend | React 18 + Vite, TanStack Query, react-hook-form + zod, Tailwind, `qrcode.react` |
-| Database | PostgreSQL 16 |
-| Analytics | ClickHouse (event tables) |
-| Search | Elasticsearch 8 |
-| Queues | RabbitMQ |
-| Cache | Redis |
-| Web Server | Nginx (port 80) |
+| **Backend** | Symfony 7, PHP 8.5 (fpm), Doctrine ORM, Symfony Messenger |
+| **Frontend** | React 18 + Vite, TypeScript, TanStack Query, react-hook-form + zod, Tailwind CSS, `@pbe/react-yandex-maps` |
+| **Databases** | PostgreSQL 16 (Primary), ClickHouse (Analytics) |
+| **Infrastructure** | Elasticsearch 8, RabbitMQ, Redis, Nginx, Docker |
+| **WebSockets** | Amphp (Amp) |
 
-## Structure
+## 📁 Project Structure
 
-```
-app/                  # Symfony application
-  src/
-    Domain/           # entities, value objects, repository interfaces
-    Application/      # commands/handlers, services, queries/query handlers
-    Infrastructure/   # API controllers, Doctrine repositories, ClickHouse, console
-  migrations/         # DB migrations
-  tests/              # integration tests (PHPUnit)
-frontend/             # React application
-docker/               # PHP Dockerfile, nginx config, ClickHouse init.sql
-scripts/              # E2E checks (PowerShell, Windows)
-docker-compose.yaml   # infrastructure orchestration
-```
+    app/                  # Backend application (Symfony)
+      src/
+        Domain/           # Entities, Value Objects, repository interfaces
+        Application/      # CQRS commands/queries, DTOs, services, Transactional Outbox
+        Infrastructure/   # API controllers, Doctrine/ClickHouse implementations, WebSocket server
+    frontend/             # Frontend application (React)
+    docker/               # Docker configurations (PHP, Nginx, ClickHouse init)
 
-## Demo Accounts (after seeding)
+## 👥 Demo Accounts
+
+After running the database seeders, the following accounts will be available:
 
 | Role | Email | Password |
 |---|---|---|
@@ -39,63 +43,48 @@ docker-compose.yaml   # infrastructure orchestration
 | Customer | `demo@tickets.by` | `demo1234` |
 | Customer | `anna@tickets.by` | `anna1234` |
 
-## Cold Start
+## 🚀 Quick Start (Docker)
 
-Requirements: Docker Desktop, Node.js 18+, PowerShell (for E2E scripts).
+Requirements: Docker Desktop and Node.js 18+.
 
-```powershell
-# 1. Infrastructure (nginx, php-fpm, postgres, redis, rabbitmq, elasticsearch, clickhouse, worker)
-docker compose up -d --build
+1. **Launch infrastructure** (nginx, php-fpm, postgres, redis, rabbitmq, elasticsearch, clickhouse, worker):
+   ```bash
+   docker compose up -d --build
+   ```
 
-# 2. DB schema + demo data (vendor is baked into the image via multi-stage build)
-docker exec tick_php php bin/console doctrine:migrations:migrate --no-interaction
-docker exec tick_php php bin/console app:seed-demo-data
+2. **Apply migrations and seed demo data**:
+   ```bash
+   docker exec tick_php php bin/console doctrine:migrations:migrate --no-interaction
+   docker exec tick_php php bin/console app:seed-demo-data
+   ```
 
-# 3. Frontend
-cd frontend
-npm install
-npm run dev        # http://localhost:5173
+3. **Start the WebSocket server** (for the support chat):
+   ```bash
+   docker exec -d tick_php php bin/console app:chat-server
+   ```
 
-# 4. Backend available at http://localhost (nginx, port 80)
-```
+4. **Launch the Frontend application**:
+   ```bash
+   cd frontend
+   npm install
+   # Ensure FRONTEND_URL and keys for Stripe/Yandex Maps are set in your .env file
+   npm run dev
+   ```
 
-Seeds create 6 real Minsk venues (Minsk-Arena, Sports Palace, Prime Hall, Chizhovka-Arena, MAZ Palace, Belarusian State Philharmonic) with 64 seats, 8 events for Aug–Dec 2026 (7 published, 1 draft), and demo orders in various statuses. The command is idempotent — repeated runs do not duplicate data.
+The Frontend will be available at `http://localhost:5173`, and the Backend API at `http://localhost`.
 
-## Mock Bank Payment Flow
+## 🧪 Testing
 
-1. User reserves seats → order `pending`.
-2. Clicks "Pay" → `POST /api/orders/{id}/pay` returns `paymentUrl`.
-3. Frontend redirects to mock bank `GET /mock-bank/{paymentId}` (payment form with prefilled card `4242 4242 4242 4242`).
-4. `POST /mock-bank/{paymentId}/charge` — payment (≈1 sec, order becomes `paid`, tickets issued with QR codes).
-5. `POST /mock-bank/{paymentId}/decline` — decline: order stays `pending`, retry reuses same payment (restart).
+The project is fully covered by three levels of tests using PHPUnit. The test database `tickets_back_test` is created automatically and isolated from the main DB.
 
-After payment, tickets with QR codes are available on the order page. Ticket verification by code — in admin ("Ticket Verification", `GET /api/admin/tickets/{code}`), returns statuses/reasons in JSON (`valid`, `reason`, ticket data).
-
-## Events & Analytics
-
-Messenger worker (`tick_worker`) consumes RabbitMQ queue and processes domain events: reservation, payment, cancellation, refund. Each event is also written to ClickHouse tables `seat_reservations`, `order_payments`, `order_cancellations`, `order_refunds` (schemaless MergeTree: `order_id`, `user_id`, `amount`, `timestamp`).
-
-Admin "Analytics" (`GET /api/admin/analytics`) aggregates these tables: total revenue/refunds/cancellations/reservations, 14-day trend, top buyers, recent payments. Returns `503` with explanation if ClickHouse is unavailable.
-
-## Tests
-
-```powershell
-# PHPUnit (separate test DB tickets_back_test, created automatically from migrations)
+```bash
+# Run all test suites (Unit, Integration, Functional)
 docker exec tick_php php bin/phpunit
-
-# E2E scenario (register → venue → event → reserve → mock bank payment → refund)
-powershell -ExecutionPolicy Bypass -File scripts\e2e.ps1        # expect ALL_E2E_OK
-
-# Full payment scenario (checkout page, decline, payment restart, charge)
-powershell -ExecutionPolicy Bypass -File scripts\bank_flow.ps1  # expect BANK_FLOW_OK
 ```
 
-## Main API
+## 📜 Main API Endpoints
 
-Public: `GET /api/events`, `GET /api/events/{id}`, `GET /api/events/{id}/seats`, `GET /api/events/search?query=`, `POST /api/auth/register`, `POST /api/auth/login`.
-
-User (JWT): `GET/POST /api/orders/*` (reserve, my orders, pay, cancel), `GET /api/venues/*`.
-
-Admin (ROLE_ADMIN): `GET /api/admin/events`, `POST /api/admin/orders/{id}/refund`, `GET /api/admin/analytics`, `GET /api/admin/tickets/{code}`, plus shared venue/event creation endpoints.
-
-OpenAPI docs: `GET /api/doc`.
+* **Public:** `GET /api/events`, `GET /api/events/{id}`, `GET /api/events/search?query=`
+* **Auth (JWT):** `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/reset-password`
+* **Customer:** `POST /api/orders` (reserve), `POST /api/orders/{id}/pay` (Stripe checkout), `POST /api/chat/room`
+* **Admin (ROLE_ADMIN):** `GET /api/admin/analytics` (ClickHouse), `POST /api/venues`, `POST /api/events/{id}/publish`, `GET /api/admin/tickets/{code}`

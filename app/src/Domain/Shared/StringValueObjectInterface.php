@@ -8,7 +8,7 @@ interface StringValueObjectInterface
 {
     public function toString(): string;
 
-    public function equals(StringValueObjectInterface $other): bool;
+    public function equals(self $other): bool;
 
     public static function fromValue(string $value): static;
 

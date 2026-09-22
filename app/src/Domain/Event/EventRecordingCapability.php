@@ -6,6 +6,7 @@ namespace App\Domain\Event;
 
 trait EventRecordingCapability
 {
+    /** @var array<int, object> */
     private array $recordedEvents = [];
 
     protected function recordThat(object $event): void

@@ -6,72 +6,117 @@ namespace App\Tests\Integration\Handler;
 
 use App\Application\Command\Order\ReserveSeatsCommand;
 use App\Application\CommandHandler\Order\ReserveSeatsHandler;
+use App\Domain\Entity\EventSeat;
 use App\Domain\Entity\Order;
+use App\Domain\Entity\OutboxMessage;
+use App\Domain\Event\SeatsReservedEvent;
+use App\Domain\Exception\EntityNotFoundException;
 use App\Domain\Repository\OrderRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
-use App\Domain\ValueObject\SeatStatus;
 use App\Domain\ValueObject\UserId;
+use App\Domain\ValueObject\SeatStatus;
 use App\Tests\Integration\Support\IntegrationFixture;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
-/**
- * Application layer: ReserveSeatsHandler + real PostgreSQL (_test) + real TransactionManager.
- * External APIs (Stripe, Elasticsearch) are not touched by this flow.
- */
 final class ReserveSeatsHandlerTest extends KernelTestCase
 {
-    public function testReserveSeatsPersistsOrderAndReservesSeat(): void
+    public function testReserveSeatsPersistsOrderReservesSeatAndWritesOutboxEvent(): void
     {
-        // Arrange
+        $context = $this->createPublishedEventContext();
+        $handler = $context['container']->get(ReserveSeatsHandler::class);
+
+        $handler(new ReserveSeatsCommand($context['userId'], [$context['eventSeatId']]));
+
+        $this->assertOrderWasPersistedWithOneTicket($context['userId']);
+        $this->assertEventSeatIsReserved($context['eventSeatId']);
+        $this->assertSeatsReservedEventWasWrittenToOutbox($context['userId']);
+    }
+
+    public function testReserveSeatsThrowsEntityNotFoundWhenSeatIdDoesNotExist(): void
+    {
+        $context = $this->createPublishedEventContext();
+        $handler = $context['container']->get(ReserveSeatsHandler::class);
+
+        $this->expectException(EntityNotFoundException::class);
+
+        $handler(new ReserveSeatsCommand($context['userId'], ['00000000-0000-4000-8000-000000000000']));
+    }
+
+    public function testReserveSeatsThrowsBusinessRuleViolationWhenSeatIsAlreadyReserved(): void
+    {
+        $context = $this->createPublishedEventContext();
+        $handler = $context['container']->get(ReserveSeatsHandler::class);
+        $handler(new ReserveSeatsCommand($context['userId'], [$context['eventSeatId']]));
+
+        $this->expectException(\App\Domain\Exception\BusinessRuleViolationException::class);
+
+        $handler(new ReserveSeatsCommand($context['userId'], [$context['eventSeatId']]));
+    }
+
+    private function createPublishedEventContext(): array
+    {
         self::bootKernel();
         $container = static::getContainer();
         $em = $container->get(EntityManagerInterface::class);
-        $suffix = uniqid();
+
         $data = IntegrationFixture::createPublishedEventWithSeat(
             $em,
             $container->get(ClockInterface::class),
             $container->get(IdGeneratorInterface::class),
-            $suffix,
+            uniqid()
         );
-        /** @var \App\Domain\Entity\User $user */
-        $user = $data['user'];
-        /** @var \App\Domain\Entity\EventSeat $eventSeat */
-        $eventSeat = $data['eventSeat'];
-        $handler = $container->get(ReserveSeatsHandler::class);
 
-        // Act
-        $handler(new ReserveSeatsCommand($user->rawId(), [$eventSeat->rawId()]));
+        return [
+            'container' => $container,
+            'em' => $em,
+            'userId' => $data['user']->rawId(),
+            'eventSeatId' => $data['eventSeat']->rawId(),
+        ];
+    }
 
-        // Assert
+    private function assertOrderWasPersistedWithOneTicket(string $userId): void
+    {
+        $container = static::getContainer();
+        $em = $container->get(EntityManagerInterface::class);
         $em->clear();
-        $orders = $container->get(OrderRepositoryInterface::class)->findByUserId(new UserId($user->rawId()));
+
+        $orders = $container->get(OrderRepositoryInterface::class)->findByUserId(new UserId($userId));
+
         self::assertCount(1, $orders);
         self::assertInstanceOf(Order::class, $orders[0]);
         self::assertCount(1, $orders[0]->tickets());
+    }
 
-        $seat = $em->getRepository(\App\Domain\Entity\EventSeat::class)->find($eventSeat->rawId());
+    private function assertEventSeatIsReserved(string $eventSeatId): void
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $seat = $em->getRepository(EventSeat::class)->find($eventSeatId);
+
         self::assertSame(SeatStatus::Reserved, $seat->status());
     }
 
-    public function testReserveSeatsFailsForUnknownSeat(): void
+    private function assertSeatsReservedEventWasWrittenToOutbox(string $userId): void
     {
-        // Arrange
-        self::bootKernel();
-        $container = static::getContainer();
-        $em = $container->get(EntityManagerInterface::class);
-        $suffix = uniqid();
-        $data = IntegrationFixture::createPublishedEventWithSeat(
-            $em,
-            $container->get(ClockInterface::class),
-            $container->get(IdGeneratorInterface::class),
-            $suffix,
-        );
-        $handler = $container->get(ReserveSeatsHandler::class);
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $outbox = $em->getRepository(OutboxMessage::class)->findBy(['messageClass' => SeatsReservedEvent::class]);
 
-        // Act + Assert (one behavior: 404 for missing seats)
-        $this->expectException(\App\Domain\Exception\EntityNotFoundException::class);
-        $handler(new ReserveSeatsCommand($data['user']->rawId(), ['00000000-0000-4000-8000-000000000000']));
+        $found = $this->containsSeatsReservedEventForUser($outbox, $userId);
+
+        self::assertTrue($found);
+    }
+
+    private function containsSeatsReservedEventForUser(array $outbox, string $userId): bool
+    {
+        foreach ($outbox as $message) {
+            $event = unserialize(base64_decode($message->body()));
+
+            if ($event instanceof SeatsReservedEvent && $event->userId() === $userId) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

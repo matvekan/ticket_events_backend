@@ -10,6 +10,7 @@ use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 
+/** @implements UserProviderInterface<DomainUserAdapter> */
 class DoctrineUserProvider implements UserProviderInterface
 {
     public function __construct(
@@ -21,7 +22,7 @@ class DoctrineUserProvider implements UserProviderInterface
     {
         $user = $this->users->findByEmail(new Email($identifier));
 
-        if (! $user) {
+        if (!$user) {
             throw new UserNotFoundException(\sprintf('User with email "%s" not found.', $identifier));
         }
 

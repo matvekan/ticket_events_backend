@@ -22,5 +22,6 @@ final class AddSeatsRequest
             allowMissingFields: false,
         ),
     ])]
+    /** @var array<int, array{row: string, number: int|string, type: string, sector?: string|null}> */
     public array $seats = [];
 }

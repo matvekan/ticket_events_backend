@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Controller\Api\Admin;
 
+use App\Application\Dto\TicketVerificationDto;
 use App\Application\Query\Admin\GetTicketVerificationQuery;
 use App\Application\Query\QueryBusInterface;
 use OpenApi\Attributes as OA;
@@ -41,6 +42,7 @@ final class VerifyTicketController
     public function __invoke(string $code): JsonResponse
     {
         $verification = $this->queryBus->dispatch(new GetTicketVerificationQuery($code));
+        assert($verification instanceof TicketVerificationDto);
 
         return new JsonResponse([
             'valid' => $verification->valid,

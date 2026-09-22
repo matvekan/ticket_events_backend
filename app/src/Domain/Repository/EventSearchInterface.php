@@ -6,12 +6,15 @@ namespace App\Domain\Repository;
 
 interface EventSearchInterface
 {
+    /**
+     * @return array<int, \App\Application\Dto\EventDto>
+     */
     public function search(
         ?string $query,
         ?string $city,
         ?\DateTimeImmutable $dateFrom,
         ?\DateTimeImmutable $dateTo,
         int $limit,
-        int $offset,
+        ?string $cursor,
     ): array;
 }

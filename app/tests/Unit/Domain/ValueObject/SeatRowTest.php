@@ -12,33 +12,25 @@ final class SeatRowTest extends TestCase
 {
     public function testAcceptsSingleCharacterRow(): void
     {
-        // Arrange
         $raw = 'A';
 
-        // Act
         $row = new SeatRow($raw);
 
-        // Assert
         self::assertSame('A', $row->toString());
     }
 
     public function testAcceptsMaxLengthRow(): void
     {
-        // Arrange
         $raw = str_repeat('A', 10);
 
-        // Act
         $row = new SeatRow($raw);
 
-        // Assert
         self::assertSame($raw, $row->toString());
     }
 
     #[DataProvider('invalidRows')]
     public function testRejectsInvalidRow(string $raw): void
     {
-        // Arrange — invalid row from provider
-        // Act + Assert
         $this->expectException(\InvalidArgumentException::class);
         new SeatRow($raw);
     }

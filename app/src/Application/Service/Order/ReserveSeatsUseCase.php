@@ -33,6 +33,9 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
     ) {
     }
 
+    /**
+     * @param array<int, string> $seatIds
+     */
     public function execute(UserId $userId, array $seatIds): void
     {
         $affectedEventIds = [];
@@ -41,12 +44,12 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
             $this->transactionManager->transactional(
                 function () use ($userId, $seatIds, &$affectedEventIds): void {
                     $user = $this->users->findById($userId);
-                    if (! $user) {
+                    if (!$user) {
                         throw new EntityNotFoundException('User not found.');
                     }
 
                     $seats = $this->eventSeats->lockAndFindByIds($seatIds);
-                    if (count($seats) !== count($seatIds)) {
+                    if (\count($seats) !== \count($seatIds)) {
                         throw new EntityNotFoundException('Some of the selected seats do not exist.');
                     }
 

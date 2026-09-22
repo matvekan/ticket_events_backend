@@ -12,13 +12,10 @@ final class TicketCodeTest extends TestCase
 {
     public function testAcceptsValidCode(): void
     {
-        // Arrange
         $raw = 'TKT-ABC12345';
 
-        // Act
         $code = new TicketCode($raw);
 
-        // Assert
         self::assertSame($raw, $code->toString());
         self::assertTrue($code->equals(new TicketCode($raw)));
     }
@@ -26,8 +23,6 @@ final class TicketCodeTest extends TestCase
     #[DataProvider('invalidCodes')]
     public function testRejectsInvalidCode(string $raw): void
     {
-        // Arrange — invalid code from provider
-        // Act + Assert
         $this->expectException(\InvalidArgumentException::class);
         new TicketCode($raw);
     }

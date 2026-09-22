@@ -38,7 +38,7 @@ final class ChatConnectionManager implements WebsocketClientHandler
             return;
         }
 
-        $this->logger->info(sprintf('Chat client connected: %s (%s)', $user->email(), $user->id()));
+        $this->logger->info(\sprintf('Chat client connected: %s (%s)', $user->email(), $user->id()));
 
         try {
             foreach ($client as $message) {
@@ -50,7 +50,7 @@ final class ChatConnectionManager implements WebsocketClientHandler
                 $this->entityManager->clear();
             }
         } catch (\Throwable $exception) {
-            $this->logger->error(sprintf(
+            $this->logger->error(\sprintf(
                 'Chat handler error: %s @ %s:%d',
                 $exception->getMessage(),
                 $exception->getFile(),
@@ -60,7 +60,7 @@ final class ChatConnectionManager implements WebsocketClientHandler
             throw $exception;
         } finally {
             $this->subscriptions->detach($client);
-            $this->logger->info(sprintf('Chat client disconnected: %s', $user->email()));
+            $this->logger->info(\sprintf('Chat client disconnected: %s', $user->email()));
         }
     }
 
@@ -79,7 +79,8 @@ final class ChatConnectionManager implements WebsocketClientHandler
 
     private function sendError(WebsocketClient $client, string $message): void
     {
-        $payload = json_encode(['type' => 'error', 'message' => $message], JSON_UNESCAPED_UNICODE);
+        $payload = json_encode(['type' => 'error', 'message' => $message], \JSON_UNESCAPED_UNICODE);
+        assert(is_string($payload));
         $client->sendText($payload);
     }
 }

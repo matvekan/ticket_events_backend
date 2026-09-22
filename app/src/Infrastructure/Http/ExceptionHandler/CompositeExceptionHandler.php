@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 final class CompositeExceptionHandler implements ExceptionHandlerInterface
 {
+    /** @var array<int, ExceptionHandlerInterface> */
     private array $handlers = [];
 
     public function addHandler(ExceptionHandlerInterface $handler): void
@@ -34,6 +35,6 @@ final class CompositeExceptionHandler implements ExceptionHandlerInterface
             }
         }
 
-        throw new \LogicException('No handler found for exception: ' . $throwable::class);
+        throw new \LogicException('No handler found for exception: '.$throwable::class);
     }
 }

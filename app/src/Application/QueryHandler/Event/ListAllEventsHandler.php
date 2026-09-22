@@ -11,16 +11,21 @@ use App\Domain\Repository\EventRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
-final class ListAllEventsHandler implements QueryHandlerInterface
+final readonly class ListAllEventsHandler implements QueryHandlerInterface
 {
     public function __construct(
-        private readonly EventRepositoryInterface $events,
-        private readonly EventDtoFactory $eventDtoFactory,
+        private EventRepositoryInterface $events,
+        private EventDtoFactory $eventDtoFactory,
     ) {
     }
 
+    /**
+     * @return array{items: array<int, \App\Application\Dto\EventDto>, nextCursor: ?string}
+     */
     public function __invoke(ListAllEventsQuery $query): array
     {
-        return $this->eventDtoFactory->fromEventList($this->events->findAll());
+        $events = $this->events->findAllCursor($query->limit + 1, $query->cursor);
+
+        return $this->eventDtoFactory->createCursorPaginatedResponse($events, $query->limit);
     }
 }

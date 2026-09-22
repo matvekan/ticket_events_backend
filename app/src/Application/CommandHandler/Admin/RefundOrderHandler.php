@@ -36,9 +36,9 @@ final readonly class RefundOrderHandler implements CommandHandlerInterface
         $orderIdVo = new OrderId($command->orderId);
         $affectedEventIds = [];
 
-        $this->transactionManager->transactional(function () use ($orderIdVo, &$affectedEventIds): array {
+        $this->transactionManager->transactional(function () use ($orderIdVo, &$affectedEventIds): void {
             $order = $this->orders->findById($orderIdVo);
-            if (! $order) {
+            if (!$order) {
                 throw new EntityNotFoundException('Order not found.');
             }
 
@@ -51,8 +51,6 @@ final readonly class RefundOrderHandler implements CommandHandlerInterface
 
             $this->refundPayments($order);
             $this->orders->save($order);
-
-            return $order->releaseEvents();
         });
 
         foreach (array_keys($affectedEventIds) as $eventId) {
@@ -60,6 +58,9 @@ final readonly class RefundOrderHandler implements CommandHandlerInterface
         }
     }
 
+    /**
+     * @return array<int, \App\Domain\ValueObject\EventSeatId>
+     */
     private function eventSeatIds(Order $order): array
     {
         return array_map(

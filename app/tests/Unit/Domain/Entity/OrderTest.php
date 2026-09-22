@@ -9,199 +9,294 @@ use App\Domain\Entity\Ticket;
 use App\Domain\Event\OrderCancelledEvent;
 use App\Domain\Event\OrderPaidEvent;
 use App\Domain\Event\OrderRefundedEvent;
+use App\Domain\Event\SeatsReservedEvent;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\ValueObject\EventSeatId;
 use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\Price;
 use App\Domain\ValueObject\TicketCode;
+use App\Domain\ValueObject\TicketStatus;
 use App\Tests\Unit\Domain\Support\DomainFixture;
+use App\Tests\Unit\Domain\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
 final class OrderTest extends TestCase
 {
-    public function testPayTransitionsPendingToPaid(): void
+    public function testPayTransitionsPendingOrderToPaidAndActivatesTickets(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
+        $order = $this->createPendingOrderWithSingleTicket($clock);
 
-        // Act
         $order->pay($clock);
 
-        // Assert
         self::assertSame(OrderStatus::Paid, $order->status());
-        self::assertSame(5000, $order->totalPrice()->amount());
-        $events = $order->releaseEvents();
-        self::assertInstanceOf(OrderPaidEvent::class, $events[0]);
+        self::assertSame(TicketStatus::Active, $order->tickets()[0]->status());
+        self::assertInstanceOf(OrderPaidEvent::class, $order->releaseEvents()[0]);
     }
 
-    public function testPayFailsWhenAlreadyPaid(): void
+    public function testPayThrowsBusinessRuleViolationWhenOrderIsAlreadyPaid(): void
     {
-        // Arrange
-        $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $order->pay($clock);
+        $order = $this->createPaidOrder();
 
-        // Act + Assert
         $this->expectException(BusinessRuleViolationException::class);
-        $order->pay($clock);
+
+        $order->pay(DomainFixture::clock());
     }
 
-    public function testPayFailsWithoutTickets(): void
+    public function testPayThrowsBusinessRuleViolationWhenOrderHasNoTickets(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = Order::create($user->id(), $clock, $ids);
+        $order = $this->createEmptyPendingOrder($clock);
 
-        // Act + Assert
         $this->expectException(BusinessRuleViolationException::class);
+
         $order->pay($clock);
     }
 
-    public function testCancelTransitionsPendingToCancelled(): void
+    public function testPayThrowsBusinessRuleViolationWhenOrderIsCancelled(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
+        $order = $this->createCancelledOrder($clock);
 
-        // Act
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $order->pay($clock);
+    }
+
+    public function testCancelTransitionsPendingOrderToCancelledAndCancelsTickets(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createPendingOrderWithSingleTicket($clock);
+
         $order->cancel($clock);
 
-        // Assert
         self::assertSame(OrderStatus::Cancelled, $order->status());
-        $events = $order->releaseEvents();
-        self::assertInstanceOf(OrderCancelledEvent::class, $events[0]);
+        self::assertSame(TicketStatus::Cancelled, $order->tickets()[0]->status());
+        self::assertInstanceOf(OrderCancelledEvent::class, $order->releaseEvents()[0]);
     }
 
-    public function testCancelFailsWhenPaid(): void
+    public function testCancelThrowsBusinessRuleViolationWhenOrderIsPaid(): void
     {
-        // Arrange
-        $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $order->pay($clock);
+        $order = $this->createPaidOrder();
 
-        // Act + Assert
         $this->expectException(BusinessRuleViolationException::class);
+
+        $order->cancel(DomainFixture::clock());
+    }
+
+    public function testCancelThrowsBusinessRuleViolationWhenOrderHasNoTickets(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createEmptyPendingOrder($clock);
+
+        $this->expectException(BusinessRuleViolationException::class);
+
         $order->cancel($clock);
     }
 
-    public function testRefundTransitionsPaidToRefunded(): void
+    public function testRefundTransitionsPaidOrderToRefundedAndRefundsActiveTickets(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $order->pay($clock);
+        $order = $this->createPaidOrder($clock);
 
-        // Act
         $order->refund($clock);
 
-        // Assert
         self::assertSame(OrderStatus::Refunded, $order->status());
+        self::assertSame(TicketStatus::Refunded, $order->tickets()[0]->status());
+    }
+
+    public function testRefundEmitsOrderRefundedEventWithCorrectPayload(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createPaidOrder($clock);
+
+        $order->refund($clock);
+
         $events = $order->releaseEvents();
-        // pay + refund events recorded
         self::assertInstanceOf(OrderRefundedEvent::class, $events[1]);
     }
 
-    public function testRefundFailsWhenPending(): void
+    public function testRefundThrowsBusinessRuleViolationWhenOrderIsPending(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
+        $order = $this->createPendingOrderWithSingleTicket($clock);
 
-        // Act + Assert
         $this->expectException(BusinessRuleViolationException::class);
+
         $order->refund($clock);
     }
 
-    public function testAddTicketIgnoresDuplicateId(): void
+    public function testRefundThrowsBusinessRuleViolationWhenOrderIsAlreadyRefunded(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = Order::create($user->id(), $clock, $ids);
-        $ticket = Ticket::create(
-            $order,
-            new EventSeatId($ids->generate()),
-            Price::fromAmount(1000),
-            new TicketCode('TKT-ABC12345'),
-            $ids
-        );
+        $order = $this->createRefundedOrder($clock);
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $order->refund($clock);
+    }
+
+    public function testAddTicketIgnoresDuplicateTicketIdWithoutRecalculatingTotal(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createEmptyPendingOrder($clock);
+        $ticket = $this->createTicketForOrder($order, 1000, 'TKT-ABC12345');
+
+        $order->addTicket($ticket);
         $order->addTicket($ticket);
 
-        // Act (same ticket id added twice — second add is a no-op)
-        $order->addTicket($ticket);
-
-        // Assert
         self::assertCount(1, $order->tickets());
         self::assertSame(1000, $order->totalPrice()->amount());
     }
 
-    public function testAddTicketRejectsMixedCurrencies(): void
+    public function testAddTicketThrowsBusinessRuleViolationWhenCurrenciesAreMixed(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
         $ids = DomainFixture::ids();
         $user = DomainFixture::user($ids);
         $order = Order::create($user->id(), $clock, $ids);
-        $order->addTicket(Ticket::create(
-            $order,
-            new EventSeatId($ids->generate()),
-            Price::fromAmount(1000, 'BYN'),
-            new TicketCode('TKT-ABC12345'),
-            $ids
-        ));
+        $order->addTicket($this->createTicketWithIds($order, $ids, 1000, 'TKT-ABC12345', 'BYN'));
 
-        // Act + Assert
         $this->expectException(BusinessRuleViolationException::class);
-        $order->addTicket(Ticket::create(
-            $order,
-            new EventSeatId($ids->generate()),
-            Price::fromAmount(1000, 'USD'),
-            new TicketCode('TKT-DEF67890'),
-            $ids
-        ));
+
+        $order->addTicket($this->createTicketWithIds($order, $ids, 1000, 'TKT-DEF67890', 'USD'));
     }
 
-    public function testAddTicketRecalculatesTotal(): void
+    public function testAddTicketRecalculatesTotalPriceExcludingRefundedTickets(): void
     {
-        // Arrange
         $clock = DomainFixture::clock();
         $ids = DomainFixture::ids();
         $user = DomainFixture::user($ids);
         $order = Order::create($user->id(), $clock, $ids);
 
-        // Act
-        $order->addTicket(Ticket::create(
-            $order,
-            new EventSeatId($ids->generate()),
-            Price::fromAmount(2000),
-            new TicketCode('TKT-ABC12345'),
-            $ids
-        ));
-        $order->addTicket(Ticket::create(
-            $order,
-            new EventSeatId($ids->generate()),
-            Price::fromAmount(3000),
-            new TicketCode('TKT-DEF67890'),
-            $ids
-        ));
+        $order->addTicket($this->createTicketWithIds($order, $ids, 2000, 'TKT-ABC12345'));
+        $order->addTicket($this->createTicketWithIds($order, $ids, 3000, 'TKT-DEF67890'));
 
-        // Assert
         self::assertSame(5000, $order->totalPrice()->amount());
+    }
+
+    public function testMarkSeatsAsReservedRecordsSeatsReservedEventWithEventSeatIds(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createPendingOrderWithSingleTicket($clock);
+
+        $order->markSeatsAsReserved();
+
+        self::assertInstanceOf(SeatsReservedEvent::class, $order->releaseEvents()[0]);
+    }
+
+    public function testRefundSpecificTicketsRefundsOnlyRequestedTicketsAndKeepsOrderPaidWhenPartial(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createPaidOrderWithTwoTickets($clock);
+        $firstTicketId = $order->tickets()[0]->id()->toString();
+
+        $order->refundSpecificTickets([$firstTicketId], $clock);
+
+        self::assertSame(OrderStatus::Paid, $order->status());
+        self::assertSame(TicketStatus::Refunded, $order->tickets()[0]->status());
+        self::assertSame(TicketStatus::Active, $order->tickets()[1]->status());
+    }
+
+    public function testRefundSpecificTicketsTransitionsToRefundedWhenAllTicketsAreRefunded(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createPaidOrderWithTwoTickets($clock);
+        $ids = array_map(fn (Ticket $t) => $t->id()->toString(), $order->tickets());
+
+        $order->refundSpecificTickets($ids, $clock);
+
+        self::assertSame(OrderStatus::Refunded, $order->status());
+    }
+
+    public function testRefundSpecificTicketsThrowsBusinessRuleViolationWhenNoTicketsMatchRequestedIds(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createPaidOrder($clock);
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $order->refundSpecificTickets(['00000000-0000-4000-8000-000000000999'], $clock);
+    }
+
+    public function testRefundSpecificTicketsThrowsBusinessRuleViolationWhenOrderIsNotPaid(): void
+    {
+        $clock = DomainFixture::clock();
+        $order = $this->createPendingOrderWithSingleTicket($clock);
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $order->refundSpecificTickets([$order->tickets()[0]->id()->toString()], $clock);
+    }
+
+    private function createPendingOrderWithSingleTicket(?FixedClock $clock = null): Order
+    {
+        $clock ??= DomainFixture::clock();
+        $ids = DomainFixture::ids();
+        $user = DomainFixture::user($ids);
+
+        return DomainFixture::orderWithTickets($user, $clock, $ids, 1, 5000);
+    }
+
+    private function createPaidOrderWithTwoTickets(?FixedClock $clock = null): Order
+    {
+        $clock ??= DomainFixture::clock();
+        $ids = DomainFixture::ids();
+        $user = DomainFixture::user($ids);
+        $order = DomainFixture::orderWithTickets($user, $clock, $ids, 2, 5000);
+        $order->pay($clock);
+
+        return $order;
+    }
+
+    private function createEmptyPendingOrder(FixedClock $clock): Order
+    {
+        $ids = DomainFixture::ids();
+        $user = DomainFixture::user($ids);
+
+        return Order::create($user->id(), $clock, $ids);
+    }
+
+    private function createPaidOrder(?FixedClock $clock = null): Order
+    {
+        $clock ??= DomainFixture::clock();
+        $order = $this->createPendingOrderWithSingleTicket($clock);
+        $order->pay($clock);
+
+        return $order;
+    }
+
+    private function createCancelledOrder(FixedClock $clock): Order
+    {
+        $order = $this->createPendingOrderWithSingleTicket($clock);
+        $order->cancel($clock);
+
+        return $order;
+    }
+
+    private function createRefundedOrder(FixedClock $clock): Order
+    {
+        $order = $this->createPaidOrder($clock);
+        $order->refund($clock);
+
+        return $order;
+    }
+
+    private function createTicketForOrder(Order $order, int $price, string $code, string $currency = 'BYN'): Ticket
+    {
+        $ids = DomainFixture::ids();
+
+        return $this->createTicketWithIds($order, $ids, $price, $code, $currency);
+    }
+
+    private function createTicketWithIds(Order $order, mixed $ids, int $price, string $code, string $currency = 'BYN'): Ticket
+    {
+        return Ticket::create(
+            $order,
+            new EventSeatId($ids->generate()),
+            Price::fromAmount($price, $currency),
+            new TicketCode($code),
+            $ids
+        );
     }
 }

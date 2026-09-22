@@ -59,7 +59,7 @@ services:
         class: App\Infrastructure\Doctrine\DoctrineTransactionManager
 
     App\Domain\Entity\Service\PasswordHasherInterface:
-        class: App\Infrastructure\Security\SymfonyPasswordHasher
+        class: App\Infrastructure\Security\PasswordHasher
 
     App\Domain\Shared\ClockInterface:
         class: App\Infrastructure\Shared\SystemClock

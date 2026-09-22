@@ -13,6 +13,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineUserRepository implements UserRepositoryInterface
 {
+    /** @var EntityRepository<User> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -26,6 +27,10 @@ final class DoctrineUserRepository implements UserRepositoryInterface
         return $this->entityManager->find(User::class, $id->toString());
     }
 
+    /**
+     * @param array<int, UserId> $ids
+     * @return array<string, User>
+     */
     public function findByIds(array $ids): array
     {
         if ($ids === []) {
@@ -34,15 +39,19 @@ final class DoctrineUserRepository implements UserRepositoryInterface
 
         $stringIds = array_map(static fn (UserId $id): string => $id->toString(), $ids);
 
-        $users = $this->repository
+        $result = $this->repository
             ->createQueryBuilder('u')
             ->where('u.id IN (:ids)')
             ->setParameter('ids', array_values(array_unique($stringIds)))
             ->getQuery()
             ->getResult();
+        assert(is_array($result));
+        $users = $result;
 
+        /** @var array<string, User> $byId */
         $byId = [];
         foreach ($users as $user) {
+            assert($user instanceof User);
             $byId[$user->rawId()] = $user;
         }
 

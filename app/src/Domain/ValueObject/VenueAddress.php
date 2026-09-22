@@ -44,7 +44,7 @@ final class VenueAddress implements StringValueObjectInterface
 
     public function equals(StringValueObjectInterface $other): bool
     {
-        if (! $other instanceof self) {
+        if (!$other instanceof self) {
             return false;
         }
 

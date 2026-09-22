@@ -9,8 +9,8 @@ use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Throwable;
 
-#[Route('/api/admin/analytics', name: 'admin.analytics', methods: ['GET'])]
 #[OA\Tag(name: 'Admin')]
 #[OA\Get(
     path: '/api/admin/analytics',
@@ -36,6 +36,7 @@ use Symfony\Component\Routing\Attribute\Route;
         new OA\Response(response: 503, description: 'Analytics unavailable'),
     ]
 )]
+#[Route('/api/admin/analytics', name: 'admin.analytics', methods: ['GET'])]
 final class AnalyticsController
 {
     public function __construct(
@@ -52,9 +53,9 @@ final class AnalyticsController
                 'topUsers' => $this->analytics->topUsers(),
                 'recentPayments' => $this->analytics->recentPayments(),
             ]);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             return new JsonResponse(
-                ['message' => 'Analytics unavailable: ' . $exception->getMessage()],
+                ['message' => 'Analytics unavailable: '.$exception->getMessage()],
                 Response::HTTP_SERVICE_UNAVAILABLE,
             );
         }

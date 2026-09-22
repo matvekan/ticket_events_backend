@@ -18,20 +18,20 @@ final class RedisSeatAvailabilityCache implements CacheInterface
 
     public function get(string $key): mixed
     {
-        $item = $this->cache->getItem(self::PREFIX . strtolower(trim($key)));
+        $item = $this->cache->getItem(self::PREFIX.strtolower(trim($key)));
 
-        if (! $item->isHit()) {
+        if (!$item->isHit()) {
             return null;
         }
 
         $value = $item->get();
 
-        return is_array($value) ? $value : null;
+        return \is_array($value) ? $value : null;
     }
 
     public function set(string $key, mixed $value, int $ttl): void
     {
-        $item = $this->cache->getItem(self::PREFIX . strtolower(trim($key)));
+        $item = $this->cache->getItem(self::PREFIX.strtolower(trim($key)));
         $item->set($value);
         $item->expiresAfter($ttl);
         $this->cache->save($item);
@@ -39,12 +39,12 @@ final class RedisSeatAvailabilityCache implements CacheInterface
 
     public function delete(string $key): void
     {
-        $this->cache->deleteItem(self::PREFIX . strtolower(trim($key)));
+        $this->cache->deleteItem(self::PREFIX.strtolower(trim($key)));
     }
 
     public function has(string $key): bool
     {
-        $item = $this->cache->getItem(self::PREFIX . strtolower(trim($key)));
+        $item = $this->cache->getItem(self::PREFIX.strtolower(trim($key)));
 
         return $item->isHit();
     }

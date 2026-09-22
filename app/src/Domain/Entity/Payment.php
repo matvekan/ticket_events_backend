@@ -18,8 +18,11 @@ class Payment
         private OrderId $orderId,
         private int $amount,
         private PaymentStatus $status,
+        /** @phpstan-ignore property.onlyWritten */
         private \DateTimeImmutable $createdAt,
+        /** @phpstan-ignore property.onlyWritten */
         private ?\DateTimeImmutable $paidAt = null,
+        /** @phpstan-ignore property.onlyWritten */
         private ?\DateTimeImmutable $failedAt = null,
     ) {
         $this->status = PaymentStatus::Pending;

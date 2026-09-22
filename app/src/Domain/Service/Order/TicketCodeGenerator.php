@@ -10,6 +10,6 @@ final readonly class TicketCodeGenerator
 {
     public function generate(): TicketCode
     {
-        return new TicketCode(sprintf('TKT-%s', strtoupper(substr(bin2hex(random_bytes(4)), 0, 8))));
+        return new TicketCode(\sprintf('TKT-%s', strtoupper(substr(bin2hex(random_bytes(4)), 0, 8))));
     }
 }

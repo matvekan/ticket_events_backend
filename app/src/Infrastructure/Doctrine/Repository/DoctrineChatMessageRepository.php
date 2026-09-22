@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrineChatMessageRepository implements ChatMessageRepositoryInterface
 {
+    /** @var EntityRepository<ChatMessage> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -20,6 +21,9 @@ final class DoctrineChatMessageRepository implements ChatMessageRepositoryInterf
         $this->repository = $entityManager->getRepository(ChatMessage::class);
     }
 
+    /**
+     * @return array<int, ChatMessage>
+     */
     public function findByRoomId(ChatRoomId $roomId): array
     {
         return $this->repository->findBy(['roomId' => $roomId->toString()], ['createdAt' => 'ASC']);

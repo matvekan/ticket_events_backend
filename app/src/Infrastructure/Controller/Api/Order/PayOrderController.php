@@ -6,13 +6,15 @@ namespace App\Infrastructure\Controller\Api\Order;
 
 use App\Application\Command\CommandBusInterface;
 use App\Application\Command\Payment\StartPaymentCommand;
+use App\Application\Dto\PaymentDto;
 use App\Application\Query\Order\GetPaymentForOrderQuery;
 use App\Application\Query\QueryBusInterface;
-use Stripe\Checkout\Session;
-use Stripe\Stripe;
+use App\Application\Service\Payment\StripePaymentService;
+use App\Infrastructure\Security\DomainUserAdapter;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 #[Route('/api/orders/{id}/pay', name: 'order.pay', methods: ['POST'])]
 final class PayOrderController
@@ -21,12 +23,19 @@ final class PayOrderController
         private readonly CommandBusInterface $commandBus,
         private readonly QueryBusInterface $queryBus,
         private readonly Security $security,
+        private readonly StripePaymentService $stripeService,
     ) {
     }
 
     public function __invoke(string $id): JsonResponse
     {
-        $userId = $this->security->getUser()?->id()?->toString();
+        $user = $this->security->getUser();
+        $userId = null;
+        if ($user instanceof DomainUserAdapter) {
+            $userId = $user->id()->toString();
+        } elseif ($user !== null) {
+            throw new AccessDeniedException('Access denied.');
+        }
 
         $this->commandBus->dispatch(new StartPaymentCommand(
             orderId: $id,
@@ -34,27 +43,9 @@ final class PayOrderController
         ));
 
         $payment = $this->queryBus->dispatch(new GetPaymentForOrderQuery($id, $userId));
+        assert($payment instanceof PaymentDto);
 
-        Stripe::setApiKey($_ENV['STRIPE_SECRET_KEY']);
-
-        $session = Session::create([
-            'payment_method_types' => ['card'],
-            'mode' => 'payment',
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'byn', // Валюта
-                    'product_data' => [
-                        'name' => 'Билеты на мероприятие (Заказ #' . substr($id, 0, 8) . ')',
-                    ],
-                    'unit_amount' => $payment->amount,
-                ],
-                'quantity' => 1,
-            ]],
-            'success_url' => 'http://localhost:5173/orders/' . $id . '?payment=success',
-            'cancel_url' => 'http://localhost:5173/orders/' . $id . '?payment=failed',
-
-            'client_reference_id' => $payment->id,
-        ]);
+        $session = $this->stripeService->createCheckoutSession($id, $payment->id, $payment->amount);
 
         return new JsonResponse([
             'paymentId' => $payment->id,

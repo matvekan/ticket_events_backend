@@ -26,7 +26,7 @@ final class MessengerQueryBus implements QueryBusInterface
         }
 
         $handledStamp = $envelope->last(HandledStamp::class);
-        if (! $handledStamp instanceof HandledStamp) {
+        if (!$handledStamp instanceof HandledStamp) {
             throw new \RuntimeException('Query was not handled.');
         }
 

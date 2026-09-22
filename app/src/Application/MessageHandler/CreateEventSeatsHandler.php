@@ -31,12 +31,12 @@ final readonly class CreateEventSeatsHandler
     {
         $this->transactionManager->transactional(function () use ($message): void {
             $event = $this->events->findById(new EventId($message->eventId));
-            if (! $event) {
+            if (!$event) {
                 return;
             }
 
             $seatIds = array_map(
-                static fn ($seatData) => new SeatId(is_array($seatData) ? $seatData['seatId'] : $seatData->seatId),
+                static fn ($seatData) => new SeatId(\is_array($seatData) ? $seatData['seatId'] : $seatData->seatId),
                 $message->seatsData
             );
 
@@ -48,12 +48,12 @@ final readonly class CreateEventSeatsHandler
             }
 
             foreach ($message->seatsData as $seatData) {
-                $seatIdStr = is_array($seatData) ? $seatData['seatId'] : $seatData->seatId;
-                $priceAmount = is_array($seatData) ? $seatData['priceAmount'] : $seatData->priceAmount;
+                $seatIdStr = \is_array($seatData) ? $seatData['seatId'] : $seatData->seatId;
+                $priceAmount = \is_array($seatData) ? $seatData['priceAmount'] : $seatData->priceAmount;
 
                 $seat = $seatById[$seatIdStr] ?? null;
 
-                if (! $seat || $seat->venueId()->toString() !== $message->venueId) {
+                if (!$seat || $seat->venueId()->toString() !== $message->venueId) {
                     continue;
                 }
 

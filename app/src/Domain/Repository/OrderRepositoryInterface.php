@@ -14,14 +14,26 @@ interface OrderRepositoryInterface
 {
     public function findById(OrderId $id): ?Order;
 
+    /**
+     * @return array<int, \App\Domain\Entity\Order>
+     */
     public function findByUserId(UserId $userId): array;
 
+    /**
+     * @return array<int, Order>
+     */
     public function findPendingExpired(\DateTimeImmutable $cutoff): array;
 
+    /**
+     * @return array<int, Order>
+     */
     public function findByEventId(EventId $eventId): array;
 
     public function findByIdAndUser(string $orderId, ?string $userId): ?OrderDto;
 
+    /**
+     * @return array<int, \App\Application\Dto\OrderDto>
+     */
     public function findOrderByUserId(string $userId): array;
 
     public function save(Order $order): void;

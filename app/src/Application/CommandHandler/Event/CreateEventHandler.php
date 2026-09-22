@@ -35,9 +35,9 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
 
     public function __invoke(CreateEventCommand $command): void
     {
-        $this->transactionManager->transactional(function () use ($command): array {
+        $this->transactionManager->transactional(function () use ($command): void {
             $venue = $this->venues->findById(new VenueId($command->venueId));
-            if (! $venue) {
+            if (!$venue) {
                 throw new EntityNotFoundException('Venue not found.');
             }
 
@@ -57,8 +57,6 @@ final readonly class CreateEventHandler implements CommandHandlerInterface
                 $venue->id()->toString(),
                 $command->seats,
             ));
-
-            return $event->releaseEvents();
         });
     }
 }

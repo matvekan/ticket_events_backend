@@ -6,6 +6,9 @@ namespace App\Application\Dto;
 
 readonly class OrderDto
 {
+    /**
+     * @param array<int, TicketDto> $tickets
+     */
     public function __construct(
         public string $id,
         public string $status,

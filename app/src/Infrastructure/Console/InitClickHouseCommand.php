@@ -17,14 +17,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 final class InitClickHouseCommand extends Command
 {
     private const TABLE_SCHEMA = <<<'SQL'
-CREATE TABLE IF NOT EXISTS {database}.{table} (
-    order_id String,
-    user_id String,
-    amount Int64,
-    timestamp DateTime
-) ENGINE = MergeTree()
-ORDER BY timestamp
-SQL;
+        CREATE TABLE IF NOT EXISTS {database}.{table} (
+            order_id String,
+            user_id String,
+            amount Int64,
+            timestamp DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY timestamp
+        SQL;
 
     private const TABLES = [
         'seat_reservations',
@@ -42,6 +42,7 @@ SQL;
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $database = $this->clickhouse->settings()->getDatabase();
+        assert(is_string($database));
 
         foreach (self::TABLES as $table) {
             $sql = str_replace(
@@ -51,7 +52,7 @@ SQL;
             );
 
             $this->clickhouse->write($sql);
-            $output->writeln(sprintf('Table %s.%s is ready.', $database, $table));
+            $output->writeln(\sprintf('Table %s.%s is ready.', $database, $table));
         }
 
         return Command::SUCCESS;

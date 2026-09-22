@@ -32,7 +32,7 @@ final class SeedDemoDataCommand extends Command
         $io->title('Demo data');
 
         $fixtures = $this->fixturesLoader->getFixtures();
-        if (count($fixtures) === 0) {
+        if (\count($fixtures) === 0) {
             $io->warning('No fixtures found.');
 
             return Command::FAILURE;
@@ -41,9 +41,9 @@ final class SeedDemoDataCommand extends Command
         $executor = new ORMExecutor($this->entityManager);
         $executor->execute($fixtures, append: true);
 
-        $io->success(sprintf(
+        $io->success(\sprintf(
             'Seeding finished (%d fixtures). Demo accounts: admin@tickets.by / admin1234 (admin), demo@tickets.by / demo1234.',
-            count($fixtures),
+            \count($fixtures),
         ));
 
         return Command::SUCCESS;

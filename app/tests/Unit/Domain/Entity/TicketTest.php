@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Domain\Entity;
 
+use App\Domain\Entity\Order;
 use App\Domain\Entity\Ticket;
 use App\Domain\Exception\BusinessRuleViolationException;
 use App\Domain\ValueObject\EventSeatId;
@@ -15,105 +16,194 @@ use PHPUnit\Framework\TestCase;
 
 final class TicketTest extends TestCase
 {
-    public function testActivateTransitionsReservedToActive(): void
+    public function testCreateInitializesTicketAsReservedWithCorrectPriceAndCode(): void
     {
-        // Arrange
-        $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $ticket = $order->tickets()[0];
+        $ticket = $this->createReservedTicket();
 
-        // Act
+        self::assertSame(TicketStatus::Reserved, $ticket->status());
+        self::assertSame(1500, $ticket->price()->amount());
+    }
+
+    public function testActivateTransitionsReservedTicketToActive(): void
+    {
+        $ticket = $this->createReservedTicket();
+
         $ticket->activate();
 
-        // Assert
         self::assertSame(TicketStatus::Active, $ticket->status());
     }
 
-    public function testScanTransitionsActiveToUsed(): void
+    public function testActivateThrowsBusinessRuleViolationWhenTicketIsAlreadyActive(): void
     {
-        // Arrange
-        $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $ticket = $order->tickets()[0];
-        $ticket->activate();
+        $ticket = $this->createActiveTicket();
 
-        // Act
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->activate();
+    }
+
+    public function testActivateThrowsBusinessRuleViolationWhenTicketIsCancelled(): void
+    {
+        $ticket = $this->createCancelledTicket();
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->activate();
+    }
+
+    public function testScanTransitionsActiveTicketToUsed(): void
+    {
+        $ticket = $this->createActiveTicket();
+
         $ticket->scan();
 
-        // Assert
         self::assertSame(TicketStatus::Used, $ticket->status());
     }
 
-    public function testScanFailsWhenReserved(): void
+    public function testScanThrowsBusinessRuleViolationWhenTicketIsReserved(): void
     {
-        // Arrange
-        $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $ticket = $order->tickets()[0];
+        $ticket = $this->createReservedTicket();
 
-        // Act + Assert
         $this->expectException(BusinessRuleViolationException::class);
+
         $ticket->scan();
     }
 
-    public function testRefundTransitionsActiveToRefunded(): void
+    public function testScanThrowsBusinessRuleViolationWhenTicketIsAlreadyUsed(): void
     {
-        // Arrange
-        $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $ticket = $order->tickets()[0];
-        $ticket->activate();
+        $ticket = $this->createUsedTicket();
 
-        // Act
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->scan();
+    }
+
+    public function testScanThrowsBusinessRuleViolationWhenTicketIsRefunded(): void
+    {
+        $ticket = $this->createRefundedTicket();
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->scan();
+    }
+
+    public function testRefundTransitionsActiveTicketToRefunded(): void
+    {
+        $ticket = $this->createActiveTicket();
+
         $ticket->refund();
 
-        // Assert
         self::assertSame(TicketStatus::Refunded, $ticket->status());
     }
 
-    public function testCancelTransitionsReservedToCancelled(): void
+    public function testRefundTransitionsUsedTicketToRefunded(): void
     {
-        // Arrange
-        $clock = DomainFixture::clock();
-        $ids = DomainFixture::ids();
-        $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids);
-        $ticket = $order->tickets()[0];
+        $ticket = $this->createUsedTicket();
 
-        // Act
+        $ticket->refund();
+
+        self::assertSame(TicketStatus::Refunded, $ticket->status());
+    }
+
+    public function testRefundThrowsBusinessRuleViolationWhenTicketIsReserved(): void
+    {
+        $ticket = $this->createReservedTicket();
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->refund();
+    }
+
+    public function testRefundThrowsBusinessRuleViolationWhenTicketIsAlreadyRefunded(): void
+    {
+        $ticket = $this->createRefundedTicket();
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->refund();
+    }
+
+    public function testCancelTransitionsReservedTicketToCancelled(): void
+    {
+        $ticket = $this->createReservedTicket();
+
         $ticket->cancel();
 
-        // Assert
         self::assertSame(TicketStatus::Cancelled, $ticket->status());
     }
 
-    public function testCreateStartsAsReserved(): void
+    public function testCancelTransitionsActiveTicketToCancelled(): void
     {
-        // Arrange
+        $ticket = $this->createActiveTicket();
+
+        $ticket->cancel();
+
+        self::assertSame(TicketStatus::Cancelled, $ticket->status());
+    }
+
+    public function testCancelThrowsBusinessRuleViolationWhenTicketIsUsed(): void
+    {
+        $ticket = $this->createUsedTicket();
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->cancel();
+    }
+
+    public function testCancelThrowsBusinessRuleViolationWhenTicketIsAlreadyCancelled(): void
+    {
+        $ticket = $this->createCancelledTicket();
+
+        $this->expectException(BusinessRuleViolationException::class);
+
+        $ticket->cancel();
+    }
+
+    private function createReservedTicket(): Ticket
+    {
         $clock = DomainFixture::clock();
         $ids = DomainFixture::ids();
         $user = DomainFixture::user($ids);
-        $order = DomainFixture::orderWithTickets($user, $clock, $ids, 0);
-        self::assertCount(0, $order->tickets());
+        $order = Order::create($user->id(), $clock, $ids);
 
-        // Act
-        $ticket = Ticket::create(
+        return Ticket::create(
             $order,
             new EventSeatId($ids->generate()),
             Price::fromAmount(1500),
             new TicketCode('TKT-ZZZZ9999'),
             $ids
         );
+    }
 
-        // Assert
-        self::assertSame(TicketStatus::Reserved, $ticket->status());
+    private function createActiveTicket(): Ticket
+    {
+        $ticket = $this->createReservedTicket();
+        $ticket->activate();
+
+        return $ticket;
+    }
+
+    private function createUsedTicket(): Ticket
+    {
+        $ticket = $this->createActiveTicket();
+        $ticket->scan();
+
+        return $ticket;
+    }
+
+    private function createRefundedTicket(): Ticket
+    {
+        $ticket = $this->createActiveTicket();
+        $ticket->refund();
+
+        return $ticket;
+    }
+
+    private function createCancelledTicket(): Ticket
+    {
+        $ticket = $this->createReservedTicket();
+        $ticket->cancel();
+
+        return $ticket;
     }
 }

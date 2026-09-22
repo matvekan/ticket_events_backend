@@ -144,10 +144,10 @@ final class OrderFixtures extends Fixture implements DependentFixtureInterface
             static fn (EventSeat $eventSeat): bool => $eventSeat->isAvailable()
         );
 
-        if (count($availableSeats) < $count) {
+        if (\count($availableSeats) < $count) {
             return null;
         }
 
-        return array_slice(array_values($availableSeats), 0, $count);
+        return \array_slice(array_values($availableSeats), 0, $count);
     }
 }

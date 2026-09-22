@@ -17,9 +17,4 @@ final class FixedClock implements ClockInterface
     {
         return $this->now;
     }
-
-    public function withNow(\DateTimeImmutable $now): self
-    {
-        return new self($now);
-    }
 }

@@ -17,6 +17,9 @@ final readonly class GetSupportChatRoomsHandler implements QueryHandlerInterface
     ) {
     }
 
+    /**
+     * @return array<int, \App\Domain\Entity\ChatRoom>
+     */
     public function __invoke(GetSupportChatRoomsQuery $query): array
     {
         return $this->rooms->findSupportRooms();

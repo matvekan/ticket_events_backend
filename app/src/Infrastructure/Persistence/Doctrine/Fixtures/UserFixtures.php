@@ -32,25 +32,25 @@ final class UserFixtures extends Fixture
         $this->createDemoUser('Demo User', 'demo@tickets.by', 'demo1234', [], $manager);
 
         for ($i = 1; $i <= 5; ++$i) {
-            $email = sprintf('user%d@tickets.by', $i);
+            $email = \sprintf('user%d@tickets.by', $i);
             if ($this->users->findByEmail(new Email($email)) !== null) {
-                $this->addReference(sprintf('user_%d', $i), $this->users->findByEmail(new Email($email)));
+                $this->addReference(\sprintf('user_%d', $i), $this->users->findByEmail(new Email($email)));
 
                 continue;
             }
 
             $user = User::create(
                 new UserId($this->ids->generate()),
-                new Name(sprintf('%s %s', $this->faker->firstName(), $this->faker->lastName())),
+                new Name(\sprintf('%s %s', $this->faker->firstName(), $this->faker->lastName())),
                 new Email($email),
             );
-            $user->changePassword(password_hash($this->faker->password(8), PASSWORD_DEFAULT));
+            $user->changePassword(password_hash($this->faker->password(8), \PASSWORD_DEFAULT));
             $user->changeRoles(['ROLE_USER']);
 
             $this->users->save($user);
             $manager->flush();
 
-            $this->addReference(sprintf('user_%d', $i), $user);
+            $this->addReference(\sprintf('user_%d', $i), $user);
         }
     }
 
@@ -68,7 +68,7 @@ final class UserFixtures extends Fixture
             new Name($name),
             new Email($email),
         );
-        $user->changePassword(password_hash($password, PASSWORD_DEFAULT));
+        $user->changePassword(password_hash($password, \PASSWORD_DEFAULT));
         $user->changeRoles(array_merge(['ROLE_USER'], $roles));
 
         $this->users->save($user);

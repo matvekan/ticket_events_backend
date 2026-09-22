@@ -14,6 +14,7 @@ use Doctrine\ORM\EntityRepository;
 
 final class DoctrinePaymentRepository implements PaymentRepositoryInterface
 {
+    /** @var EntityRepository<Payment> */
     private readonly EntityRepository $repository;
 
     public function __construct(
@@ -51,10 +52,13 @@ final class DoctrinePaymentRepository implements PaymentRepositoryInterface
         if ($row === false) {
             return null;
         }
+        assert(is_string($row['id']));
+        assert(is_string($row['status']));
+        assert(is_int($row['amount']) || is_string($row['amount']));
 
         return new PaymentDto(
-            id: (string) $row['id'],
-            status: (string) $row['status'],
+            id: $row['id'],
+            status: $row['status'],
             amount: (int) $row['amount'],
         );
     }
