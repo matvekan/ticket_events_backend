@@ -36,6 +36,7 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
             return [];
         }
 
+        /** @var array<int, OutboxMessage> $result */
         $result = $this->entityManager->createQueryBuilder()
             ->select('m')
             ->from(OutboxMessage::class, 'm')
@@ -43,7 +44,6 @@ final class DoctrineOutboxMessageRepository implements OutboxMessageRepositoryIn
             ->setParameter('ids', $ids)
             ->getQuery()
             ->getResult();
-        assert(is_array($result));
 
         return $result;
     }

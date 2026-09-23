@@ -56,8 +56,8 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
         $query = $qb->getQuery();
         $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
 
+        /** @var array<int, EventSeat> $result */
         $result = $query->getResult();
-        assert(is_array($result));
 
         return $result;
     }

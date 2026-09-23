@@ -9,6 +9,7 @@ use App\Application\Service\Chat\ChatService;
 use App\Domain\Entity\User;
 use App\Infrastructure\WebSocket\ChatSubscriptions;
 use App\Infrastructure\WebSocket\Dto\SubscribeFrame;
+use JsonException;
 
 final class SubscribeFrameHandler
 {
@@ -30,9 +31,18 @@ final class SubscribeFrameHandler
         $this->sendJson($client, ['type' => 'subscribed', 'roomId' => $frame->roomId()]);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function sendJson(WebsocketClient $client, array $data): void
     {
-        $client->sendText(json_encode($data, \JSON_UNESCAPED_UNICODE));
+        try {
+            $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return;
+        }
+
+        $client->sendText($payload);
     }
 
     private function sendError(WebsocketClient $client, string $message): void

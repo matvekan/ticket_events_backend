@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Doctrine\Repository;
 
+use App\Application\Dto\EventDto;
 use App\Application\Dto\Factory\EventDtoFactory;
 use App\Domain\Entity\Event;
 use App\Domain\Repository\EventRepositoryInterface;
 use App\Domain\Repository\EventSearchInterface;
 use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\EventStatus;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
+use Throwable;
 
 final readonly class DoctrineEventRepository implements EventRepositoryInterface, EventSearchInterface
 {
@@ -91,8 +94,8 @@ final readonly class DoctrineEventRepository implements EventRepositoryInterface
 
         $this->applyCursor($qb, $cursor);
 
+        /** @var array<int, Event> $result */
         $result = $qb->getQuery()->getResult();
-        assert(is_array($result));
 
         return $result;
     }
@@ -116,8 +119,8 @@ final readonly class DoctrineEventRepository implements EventRepositoryInterface
 
         $this->applyCursor($qb, $cursor);
 
+        /** @var array<int, Event> $result */
         $result = $qb->getQuery()->getResult();
-        assert(is_array($result));
 
         return $result;
     }
@@ -136,14 +139,14 @@ final readonly class DoctrineEventRepository implements EventRepositoryInterface
 
         $this->applyCursor($qb, $cursor);
 
+        /** @var array<int, Event> $result */
         $result = $qb->getQuery()->getResult();
-        assert(is_array($result));
 
         return $result;
     }
 
     /**
-     * @return array<int, \App\Application\Dto\EventDto>
+     * @return array<int, EventDto>
      */
     public function search(
         ?string $query,
@@ -169,14 +172,14 @@ final readonly class DoctrineEventRepository implements EventRepositoryInterface
             return;
         }
         $parts = explode('|', $decoded);
-        if (\count($parts) === 2) {
+        if (count($parts) === 2) {
             try {
-                $date = new \DateTimeImmutable($parts[0]);
+                $date = new DateTimeImmutable($parts[0]);
 
                 $qb->andWhere('(e.date < :cDate) OR (e.date = :cDate AND e.id < :cId)')
                     ->setParameter('cDate', $date)
                     ->setParameter('cId', $parts[1]);
-            } catch (\Throwable) {
+            } catch (Throwable) {
             }
         }
     }

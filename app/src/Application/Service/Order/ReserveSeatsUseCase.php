@@ -6,6 +6,7 @@ namespace App\Application\Service\Order;
 
 use App\Application\Exception\PersistenceConstraintViolationException;
 use App\Application\Transaction\TransactionManagerInterface;
+use App\Domain\Entity\EventSeat;
 use App\Domain\Entity\Service\OrderTicketFactoryInterface;
 use App\Domain\Entity\Service\SeatSelectionValidatorInterface;
 use App\Domain\Exception\BusinessRuleViolationException;
@@ -16,6 +17,7 @@ use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\Shared\CacheInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
+use App\Domain\ValueObject\EventSeatId;
 use App\Domain\ValueObject\UserId;
 
 final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
@@ -34,10 +36,11 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
     }
 
     /**
-     * @param array<int, string> $seatIds
+     * @param array<int, EventSeatId> $seatIds
      */
     public function execute(UserId $userId, array $seatIds): void
     {
+        /** @var array<int, string> $affectedEventIds */
         $affectedEventIds = [];
 
         try {
@@ -53,6 +56,11 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
                         throw new EntityNotFoundException('Some of the selected seats do not exist.');
                     }
 
+                    $firstSeat = $seats[0] ?? null;
+                    if (!$firstSeat instanceof EventSeat) {
+                        throw new EntityNotFoundException('Some of the selected seats do not exist.');
+                    }
+
                     $this->seatValidator->validate($seats, $this->clock);
 
                     $order = $this->orderFactory->create(
@@ -64,7 +72,7 @@ final readonly class ReserveSeatsUseCase implements ReserveSeatsUseCaseInterface
 
                     $this->orders->save($order);
 
-                    $affectedEventIds[] = $seats[0]->event()->id()->toString();
+                    $affectedEventIds[] = $firstSeat->event()->id()->toString();
                 }
             );
         } catch (PersistenceConstraintViolationException) {

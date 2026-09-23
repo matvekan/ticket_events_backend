@@ -8,13 +8,12 @@ use App\Application\Command\Chat\OpenChatRoomCommand;
 use App\Application\Command\CommandBusInterface;
 use App\Application\Query\Chat\GetChatRoomQuery;
 use App\Application\Query\QueryBusInterface;
-use App\Infrastructure\Security\DomainUserAdapter;
+use App\Infrastructure\Controller\Api\Shared\RequiresDomainUserTrait;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 #[Route('/api/chat/room', name: 'chat.room', methods: ['POST'])]
 #[OA\Tag(name: 'Chat')]
@@ -31,6 +30,8 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 )]
 final class OpenChatRoomController
 {
+    use RequiresDomainUserTrait;
+
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly QueryBusInterface $queryBus,
@@ -40,11 +41,7 @@ final class OpenChatRoomController
 
     public function __invoke(): JsonResponse
     {
-        $user = $this->security->getUser();
-        if (!$user instanceof DomainUserAdapter) {
-            throw new AccessDeniedException('Access denied.');
-        }
-        $userId = $user->id()->toString();
+        $userId = $this->getDomainUser($this->security)->id()->toString();
 
         $this->commandBus->dispatch(new OpenChatRoomCommand($userId));
 

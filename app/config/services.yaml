@@ -1,6 +1,5 @@
 parameters:
     frontend_url: '%env(FRONTEND_URL)%'
-    mailer_from: '%env(MAILER_FROM)%'
     chat_ws_bind: '0.0.0.0'
     chat_ws_port: 8080
 
@@ -17,7 +16,7 @@ services:
             Symfony\Component\Messenger\MessageBusInterface $queryBus: '@query.bus'
             Symfony\Component\Messenger\MessageBusInterface $eventBus: '@event.bus'
             string $frontendUrl: '%frontend_url%'
-            string $mailerFrom: '%mailer_from%'
+            string $mailerFrom: '%env(GMAIL_FROM)%'
             string $chatWsBind: '%env(default:chat_ws_bind:string:CHAT_WS_BIND)%'
             int $chatWsPort: '%env(default:chat_ws_port:int:CHAT_WS_PORT)%'
             int $pendingOrderTtlMinutes: '%pending_order_ttl_minutes%'

@@ -9,6 +9,7 @@ use App\Domain\ValueObject\Email;
 use App\Domain\ValueObject\Name;
 use App\Domain\ValueObject\Role;
 use App\Domain\ValueObject\UserId;
+use DateTimeImmutable;
 
 class User
 {
@@ -22,9 +23,9 @@ class User
         private array $roles = [],
         private ?string $password = null,
         private ?string $resetPasswordTokenHash = null,
-        private ?\DateTimeImmutable $resetPasswordTokenExpiresAt = null,
+        private ?DateTimeImmutable $resetPasswordTokenExpiresAt = null,
     ) {
-        $this->roles = [Role::User];
+        $this->roles = [Role::User->value];
     }
 
     public static function create(UserId $id, Name $name, Email $email): self
@@ -66,8 +67,8 @@ class User
     public function changeRoles(array $roles): void
     {
         foreach ($roles as $role) {
-            if (!\is_string($role) || Role::tryFrom($role) === null) {
-                throw new BusinessRuleViolationException(\sprintf('Invalid role "%s".', \is_scalar($role) ? (string) $role : get_debug_type($role)));
+            if (Role::tryFrom($role) === null) {
+                throw new BusinessRuleViolationException(sprintf('Invalid role "%s".', $role));
             }
         }
 
@@ -89,12 +90,12 @@ class User
         return $this->resetPasswordTokenHash;
     }
 
-    public function resetTokenExpiresAt(): ?\DateTimeImmutable
+    public function resetTokenExpiresAt(): ?DateTimeImmutable
     {
         return $this->resetPasswordTokenExpiresAt;
     }
 
-    public function setPasswordResetToken(string $tokenHash, \DateTimeImmutable $expiresAt): void
+    public function setPasswordResetToken(string $tokenHash, DateTimeImmutable $expiresAt): void
     {
         $this->resetPasswordTokenHash = $tokenHash;
         $this->resetPasswordTokenExpiresAt = $expiresAt;
@@ -106,7 +107,7 @@ class User
         $this->resetPasswordTokenExpiresAt = null;
     }
 
-    public function isPasswordResetTokenValid(\DateTimeImmutable $now): bool
+    public function isPasswordResetTokenValid(DateTimeImmutable $now): bool
     {
         return $this->resetPasswordTokenHash !== null
             && $this->resetPasswordTokenExpiresAt !== null

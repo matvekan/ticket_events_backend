@@ -7,13 +7,12 @@ namespace App\Infrastructure\Controller\Api\Order;
 use App\Application\Dto\OrderDto;
 use App\Application\Query\Order\GetOrderDetailsQuery;
 use App\Application\Query\QueryBusInterface;
-use App\Infrastructure\Security\DomainUserAdapter;
+use App\Infrastructure\Controller\Api\Shared\RequiresDomainUserTrait;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 #[Route('/api/orders/{id}', name: 'order.get', methods: ['GET'], requirements: ['id' => '[0-9a-f-]+'])]
 #[OA\Tag(name: 'Orders')]
@@ -32,6 +31,8 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 )]
 final class GetOrderController
 {
+    use RequiresDomainUserTrait;
+
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly Security $security,
@@ -40,13 +41,7 @@ final class GetOrderController
 
     public function __invoke(string $id): JsonResponse
     {
-        $user = $this->security->getUser();
-        $userId = null;
-        if ($user instanceof DomainUserAdapter) {
-            $userId = $user->id()->toString();
-        } elseif ($user !== null) {
-            throw new AccessDeniedException('Access denied.');
-        }
+        $userId = $this->getDomainUser($this->security)->id()->toString();
         $order = $this->queryBus->dispatch(new GetOrderDetailsQuery(
             orderId: $id,
             userId: $userId,

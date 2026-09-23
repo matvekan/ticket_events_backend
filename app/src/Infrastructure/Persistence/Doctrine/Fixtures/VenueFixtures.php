@@ -20,6 +20,7 @@ use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Generator;
+use function sprintf;
 
 final class VenueFixtures extends Fixture
 {
@@ -47,15 +48,18 @@ final class VenueFixtures extends Fixture
         foreach (self::VENUE_NAMES as $i => $name) {
             $venue = $this->findByName($name);
             if ($venue !== null) {
-                $this->addReference(\sprintf('venue_%d', $i), $venue);
+                $this->addReference(sprintf('venue_%d', $i), $venue);
 
                 continue;
             }
 
+            $city = $this->faker->randomElement(['Minsk', 'Grodno', 'Brest', 'Vitebsk', 'Gomel']);
+            assert(is_string($city));
+
             $venue = Venue::create(
                 new VenueName($name),
-                new VenueAddress(\sprintf('%s, %s', $this->faker->streetName(), $this->faker->buildingNumber())),
-                new VenueCity($this->faker->randomElement(['Minsk', 'Grodno', 'Brest', 'Vitebsk', 'Gomel'])),
+                new VenueAddress(sprintf('%s, %s', $this->faker->streetName(), $this->faker->buildingNumber())),
+                new VenueCity($city),
                 $this->ids,
                 $this->faker->latitude(53.8, 54.0),
                 $this->faker->longitude(27.4, 27.7),
@@ -69,7 +73,7 @@ final class VenueFixtures extends Fixture
             $this->seats->saveAll($seats);
             $manager->flush();
 
-            $this->addReference(\sprintf('venue_%d', $i), $venue);
+            $this->addReference(sprintf('venue_%d', $i), $venue);
         }
     }
 
@@ -81,6 +85,9 @@ final class VenueFixtures extends Fixture
         );
     }
 
+    /**
+     * @return array<int, Seat>
+     */
     private function buildSeats(Venue $venue): array
     {
         $seats = [];

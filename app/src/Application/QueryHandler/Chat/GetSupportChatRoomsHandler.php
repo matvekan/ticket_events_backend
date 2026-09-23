@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\QueryHandler\Chat;
 
+use App\Application\Dto\ChatRoomDto;
 use App\Application\Query\Chat\GetSupportChatRoomsQuery;
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\Repository\ChatRoomRepositoryInterface;
@@ -18,7 +19,7 @@ final readonly class GetSupportChatRoomsHandler implements QueryHandlerInterface
     }
 
     /**
-     * @return array<int, \App\Domain\Entity\ChatRoom>
+     * @return array<int, ChatRoomDto>
      */
     public function __invoke(GetSupportChatRoomsQuery $query): array
     {

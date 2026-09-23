@@ -54,6 +54,7 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
      */
     public function findAvailableByEventId(EventId $eventId): array
     {
+        /** @var array<int, Seat> $result */
         $result = $this->entityManager->createQueryBuilder()
             ->select('s')
             ->from(Seat::class, 's')
@@ -64,7 +65,6 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
             ->setParameter('status', SeatStatus::Free)
             ->getQuery()
             ->getResult();
-        assert(is_array($result));
 
         return $result;
     }

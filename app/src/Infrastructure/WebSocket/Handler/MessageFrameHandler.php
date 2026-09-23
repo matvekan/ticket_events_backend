@@ -13,7 +13,9 @@ use App\Domain\Service\ChatAccessPolicy;
 use App\Domain\ValueObject\ChatRoomId;
 use App\Infrastructure\WebSocket\ChatSubscriptions;
 use App\Infrastructure\WebSocket\Dto\MessageFrame;
+use JsonException;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 final class MessageFrameHandler
 {
@@ -51,24 +53,33 @@ final class MessageFrameHandler
 
         try {
             $message = $this->chatService->createMessage($room, $sender, $frame->text());
-        } catch (\Throwable $exception) {
-            $this->logger->warning(\sprintf('Chat message rejected for %s: %s', $user->id(), $exception->getMessage()));
+        } catch (Throwable $exception) {
+            $this->logger->warning(sprintf('Chat message rejected for %s: %s', $user->id()->toString(), $exception->getMessage()));
             $this->sendError($client, 'Message rejected.');
 
             return;
         }
 
-        $payload = json_encode([
-            'type' => 'message',
-            'message' => $message,
-        ], \JSON_UNESCAPED_UNICODE);
+        try {
+            $payload = json_encode([
+                'type' => 'message',
+                'message' => $message,
+            ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return;
+        }
 
         $this->subscriptions->broadcast($frame->roomId(), $payload);
     }
 
     private function sendError(WebsocketClient $client, string $message): void
     {
-        $payload = json_encode(['type' => 'error', 'message' => $message], \JSON_UNESCAPED_UNICODE);
+        try {
+            $payload = json_encode(['type' => 'error', 'message' => $message], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return;
+        }
+
         $client->sendText($payload);
     }
 }

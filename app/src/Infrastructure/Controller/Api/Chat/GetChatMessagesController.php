@@ -7,7 +7,7 @@ namespace App\Infrastructure\Controller\Api\Chat;
 use App\Application\Query\Chat\GetChatMessagesQuery;
 use App\Application\Query\QueryBusInterface;
 use App\Domain\Exception\EntityNotFoundException;
-use App\Infrastructure\Security\DomainUserAdapter;
+use App\Infrastructure\Controller\Api\Shared\RequiresDomainUserTrait;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,6 +33,8 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 )]
 final class GetChatMessagesController
 {
+    use RequiresDomainUserTrait;
+
     public function __construct(
         private readonly QueryBusInterface $queryBus,
         private readonly Security $security,
@@ -42,11 +44,7 @@ final class GetChatMessagesController
     public function __invoke(string $id): JsonResponse
     {
         try {
-            $user = $this->security->getUser();
-            if (!$user instanceof DomainUserAdapter) {
-                throw new AccessDeniedException('Access denied.');
-            }
-            $viewerId = $user->id()->toString();
+            $viewerId = $this->getDomainUser($this->security)->id()->toString();
 
             return new JsonResponse(
                 $this->queryBus->dispatch(new GetChatMessagesQuery($id, $viewerId)),

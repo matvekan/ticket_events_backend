@@ -9,6 +9,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 final class AddSeatsRequest
 {
+    /** @var array<int, array{row: string, number: int|string, type: string, sector?: string|null}> */
     #[Assert\Count(min: 1)]
     #[Assert\All([
         new Assert\Collection(
@@ -22,6 +23,5 @@ final class AddSeatsRequest
             allowMissingFields: false,
         ),
     ])]
-    /** @var array<int, array{row: string, number: int|string, type: string, sector?: string|null}> */
     public array $seats = [];
 }

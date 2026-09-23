@@ -6,7 +6,7 @@ namespace App\Infrastructure\Controller\Api\Order;
 
 use App\Application\Command\CommandBusInterface;
 use App\Application\Command\Order\ReserveSeatsCommand;
-use App\Infrastructure\Security\DomainUserAdapter;
+use App\Infrastructure\Controller\Api\Shared\RequiresDomainUserTrait;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -14,7 +14,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 #[Route('/api/orders', name: 'order.reserve', methods: ['POST'])]
 #[OA\Tag(name: 'Orders')]
@@ -48,6 +47,8 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 )]
 final class ReserveSeatsController extends AbstractController
 {
+    use RequiresDomainUserTrait;
+
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly Security $security,
@@ -56,19 +57,27 @@ final class ReserveSeatsController extends AbstractController
 
     public function __invoke(Request $request): JsonResponse
     {
+        /** @var array<string, mixed> $payload */
         $payload = $request->toArray();
-        $seatIds = $payload['seatIds'] ?? [];
+        $seatIdsRaw = $payload['seatIds'] ?? [];
 
-        if (!\is_array($seatIds)) {
+        if (!is_array($seatIdsRaw)) {
             throw new BadRequestHttpException('seatIds must be an array of seat identifiers.');
         }
 
-        $user = $this->security->getUser();
-        if (!$user instanceof DomainUserAdapter) {
-            throw new AccessDeniedException('Access denied.');
+        /** @var array<int, string> $seatIds */
+        $seatIds = [];
+        foreach ($seatIdsRaw as $seatId) {
+            if (!is_string($seatId) || $seatId === '') {
+                throw new BadRequestHttpException('seatIds must be an array of seat identifiers.');
+            }
+
+            $seatIds[] = $seatId;
         }
+
+        $userId = $this->getDomainUser($this->security)->id()->toString();
         $this->commandBus->dispatch(new ReserveSeatsCommand(
-            userId: $user->id()->toString(),
+            userId: $userId,
             eventSeatIds: $seatIds,
         ));
 

@@ -54,6 +54,9 @@ final class UserFixtures extends Fixture
         }
     }
 
+    /**
+     * @param array<int, string> $roles
+     */
     private function createDemoUser(string $name, string $email, string $password, array $roles, ObjectManager $manager): void
     {
         $existing = $this->users->findByEmail(new Email($email));

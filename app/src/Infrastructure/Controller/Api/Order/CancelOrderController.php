@@ -6,12 +6,11 @@ namespace App\Infrastructure\Controller\Api\Order;
 
 use App\Application\Command\CommandBusInterface;
 use App\Application\Command\Order\CancelOrderCommand;
-use App\Infrastructure\Security\DomainUserAdapter;
+use App\Infrastructure\Controller\Api\Shared\RequiresDomainUserTrait;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 #[Route('/api/orders/{id}/cancel', name: 'order.cancel', methods: ['POST'])]
 #[OA\Tag(name: 'Orders')]
@@ -31,6 +30,8 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 )]
 final class CancelOrderController
 {
+    use RequiresDomainUserTrait;
+
     public function __construct(
         private readonly CommandBusInterface $commandBus,
         private readonly Security $security,
@@ -39,13 +40,7 @@ final class CancelOrderController
 
     public function __invoke(string $id): JsonResponse
     {
-        $user = $this->security->getUser();
-        $userId = null;
-        if ($user instanceof DomainUserAdapter) {
-            $userId = $user->id()->toString();
-        } elseif ($user !== null) {
-            throw new AccessDeniedException('Access denied.');
-        }
+        $userId = $this->getDomainUser($this->security)->id()->toString();
         $this->commandBus->dispatch(new CancelOrderCommand(
             orderId: $id,
             userId: $userId,

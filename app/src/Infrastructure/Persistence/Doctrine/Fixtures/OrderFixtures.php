@@ -17,6 +17,8 @@ use App\Domain\Repository\UserRepositoryInterface;
 use App\Domain\Shared\ClockInterface;
 use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\Email;
+use App\Domain\ValueObject\EventSeatId;
+use App\Domain\Entity\Ticket;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -88,9 +90,6 @@ final class OrderFixtures extends Fixture implements DependentFixtureInterface
 
         $order->pay($this->clock);
 
-        foreach ($order->tickets() as $ticket) {
-            $ticket->activate();
-        }
         foreach ($availableSeats as $seat) {
             $seat->sell();
         }
@@ -116,17 +115,14 @@ final class OrderFixtures extends Fixture implements DependentFixtureInterface
     private function createRefundedOrder(User $user, Event $event, ObjectManager $manager): void
     {
         $order = $this->createPaidOrder($user, $event, 1, $manager);
+
         if ($order === null) {
             return;
         }
 
         $order->refund($this->clock);
 
-        foreach ($order->tickets() as $ticket) {
-            $ticket->refund();
-        }
-
-        $seatIds = array_map(static fn ($t) => $t->eventSeatId(), $order->tickets());
+        $seatIds = array_map(static fn (Ticket $t): EventSeatId => $t->eventSeatId(), $order->tickets());
         $seats = $this->eventSeats->findByIds($seatIds);
 
         foreach ($seats as $seat) {
@@ -137,6 +133,9 @@ final class OrderFixtures extends Fixture implements DependentFixtureInterface
         $manager->flush();
     }
 
+    /**
+     * @return array<int, EventSeat>|null
+     */
     private function getAvailableSeats(Event $event, int $count): ?array
     {
         $availableSeats = array_filter(

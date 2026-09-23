@@ -8,8 +8,11 @@ use App\Application\Dto\EventDto;
 use App\Application\Dto\Factory\EventDtoFactory;
 use App\Domain\Repository\EventRepositoryInterface;
 use App\Domain\Repository\EventSearchInterface;
+use DateTimeImmutable;
 use Elastic\Elasticsearch\Client;
 use Psr\Log\LoggerInterface;
+use stdClass;
+use Throwable;
 
 final class ElasticsearchEventSearchService implements EventSearchInterface
 {
@@ -29,8 +32,8 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
     public function search(
         ?string $query,
         ?string $city,
-        ?\DateTimeImmutable $dateFrom,
-        ?\DateTimeImmutable $dateTo,
+        ?DateTimeImmutable $dateFrom,
+        ?DateTimeImmutable $dateTo,
         int $limit,
         ?string $cursor,
     ): array {
@@ -43,7 +46,7 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
             assert(method_exists($response, 'asArray'));
             /** @var array<string, mixed> $results */
             $results = $response->asArray();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->warning('Elasticsearch search failed, falling back to DB: {error}', ['error' => $e->getMessage()]);
             $events = $this->events->searchPublished($query, $city, $dateFrom, $dateTo, $limit, $cursor);
 
@@ -56,7 +59,7 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
     /**
      * @return array<string, mixed>
      */
-    private function buildQueryBody(?string $query, ?string $city, ?\DateTimeImmutable $dateFrom, ?\DateTimeImmutable $dateTo, int $limit, ?string $cursor): array
+    private function buildQueryBody(?string $query, ?string $city, ?DateTimeImmutable $dateFrom, ?DateTimeImmutable $dateTo, int $limit, ?string $cursor): array
     {
         $must = [];
 
@@ -86,7 +89,7 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
         $body = [
             'query' => [
                 'bool' => [
-                    'must' => $must !== [] ? $must : ['match_all' => new \stdClass()],
+                    'must' => $must !== [] ? $must : ['match_all' => new stdClass()],
                     'filter' => $filter,
                 ],
             ],
@@ -119,20 +122,50 @@ final class ElasticsearchEventSearchService implements EventSearchInterface
     {
         $events = [];
 
-        foreach ($results['hits']['hits'] ?? [] as $hit) {
-            $source = $hit['_source'];
+        $hitsWrapper = $results['hits'] ?? [];
+        assert(is_array($hitsWrapper));
+
+        $hits = $hitsWrapper['hits'] ?? [];
+        assert(is_array($hits));
+
+        foreach ($hits as $hit) {
+            assert(is_array($hit));
+
+            $source = $hit['_source'] ?? [];
+            assert(is_array($source));
+
+            $id = $hit['_id'] ?? '';
+            $title = $source['title'] ?? '';
+            $description = $source['description'] ?? '';
+            $date = $source['date'] ?? '';
+            $venueName = $source['venue_name'] ?? '';
+            $venueCity = $source['venue_city'] ?? '';
+            $priceMin = $source['price_min'] ?? 0;
+            $priceMax = $source['price_max'] ?? 0;
+            $priceCurrency = $source['price_currency'] ?? 'BYN';
+            $status = $source['status'] ?? '';
+            assert(is_scalar($id));
+            assert(is_scalar($title));
+            assert(is_scalar($description));
+            assert(is_scalar($date));
+            assert(is_scalar($venueName));
+            assert(is_scalar($venueCity));
+            assert(is_scalar($priceMin));
+            assert(is_scalar($priceMax));
+            assert(is_scalar($priceCurrency));
+            assert(is_scalar($status));
 
             $events[] = new EventDto(
-                id: $hit['_id'],
-                title: $source['title'],
-                description: $source['description'],
-                date: $source['date'],
-                venueName: $source['venue_name'],
-                venueCity: $source['venue_city'],
-                priceMin: (int) $source['price_min'],
-                priceMax: (int) $source['price_max'],
-                priceCurrency: $source['price_currency'] ?? 'BYN',
-                status: $source['status'],
+                id: (string) $id,
+                title: (string) $title,
+                description: (string) $description,
+                date: (string) $date,
+                venueName: (string) $venueName,
+                venueCity: (string) $venueCity,
+                priceMin: (int) $priceMin,
+                priceMax: (int) $priceMax,
+                priceCurrency: (string) $priceCurrency,
+                status: (string) $status,
             );
         }
 

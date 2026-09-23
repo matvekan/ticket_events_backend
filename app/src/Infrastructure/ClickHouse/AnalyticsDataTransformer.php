@@ -17,10 +17,17 @@ final class AnalyticsDataTransformer
         $result = [];
 
         foreach ($rows as $row) {
+            $day = $row['day'] ?? '';
+            $revenue = $row['revenue'] ?? 0;
+            $refunds = $row['refunds'] ?? 0;
+            assert(is_scalar($day));
+            assert(is_scalar($revenue));
+            assert(is_scalar($refunds));
+
             $result[] = new AnalyticsByDayDto(
-                day: (string) $row['day'],
-                revenue: (int) $row['revenue'],
-                refunds: (int) $row['refunds'],
+                day: (string) $day,
+                revenue: (int) $revenue,
+                refunds: (int) $refunds,
             );
         }
 

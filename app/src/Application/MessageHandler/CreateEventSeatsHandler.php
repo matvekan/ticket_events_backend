@@ -36,7 +36,7 @@ final readonly class CreateEventSeatsHandler
             }
 
             $seatIds = array_map(
-                static fn ($seatData) => new SeatId(\is_array($seatData) ? $seatData['seatId'] : $seatData->seatId),
+                static fn (array $seatData): SeatId => new SeatId($seatData['seatId']),
                 $message->seatsData
             );
 
@@ -48,8 +48,8 @@ final readonly class CreateEventSeatsHandler
             }
 
             foreach ($message->seatsData as $seatData) {
-                $seatIdStr = \is_array($seatData) ? $seatData['seatId'] : $seatData->seatId;
-                $priceAmount = \is_array($seatData) ? $seatData['priceAmount'] : $seatData->priceAmount;
+                $seatIdStr = $seatData['seatId'];
+                $priceAmount = $seatData['priceAmount'];
 
                 $seat = $seatById[$seatIdStr] ?? null;
 
