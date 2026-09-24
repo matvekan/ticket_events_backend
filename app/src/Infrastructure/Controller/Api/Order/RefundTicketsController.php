@@ -10,8 +10,7 @@ use App\Infrastructure\Controller\Api\Shared\RequiresDomainUserTrait;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[OA\Tag(name: 'Orders')]
@@ -55,32 +54,16 @@ final class RefundTicketsController
     ) {
     }
 
-    public function __invoke(string $id, Request $request): JsonResponse
-    {
-        /** @var array<string, mixed> $payload */
-        $payload = $request->toArray();
-        $ticketIdsRaw = $payload['ticketIds'] ?? [];
-
-        if (!is_array($ticketIdsRaw) || $ticketIdsRaw === []) {
-            throw new BadRequestHttpException('ticketIds must be a non-empty array of ticket identifiers.');
-        }
-
-        /** @var array<int, string> $ticketIds */
-        $ticketIds = [];
-        foreach ($ticketIdsRaw as $ticketId) {
-            if (!is_string($ticketId) || $ticketId === '') {
-                throw new BadRequestHttpException('ticketIds must be a non-empty array of ticket identifiers.');
-            }
-
-            $ticketIds[] = $ticketId;
-        }
-
+    public function __invoke(
+        string $id,
+        #[MapRequestPayload] RefundTicketsRequest $payload
+    ): JsonResponse {
         $userId = $this->getDomainUser($this->security)->id()->toString();
 
         $this->commandBus->dispatch(new RefundTicketsCommand(
             orderId: $id,
             userId: $userId,
-            ticketIds: $ticketIds,
+            ticketIds: $payload->ticketIds,
         ));
 
         return new JsonResponse(['message' => 'Tickets refunded successfully.']);
