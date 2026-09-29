@@ -40,9 +40,9 @@ final class PublishOutboxMessagesHandler
 
                 try {
                     $decoded = base64_decode($row->body(), true);
-                    assert(is_string($decoded));
+                    \assert(\is_string($decoded));
                     $data = unserialize($decoded, ['allowed_classes' => true]);
-                    assert(is_object($data));
+                    \assert(\is_object($data));
                     $this->eventsTransport->send(new Envelope(
                         $data,
                         [new BusNameStamp('event.bus')],

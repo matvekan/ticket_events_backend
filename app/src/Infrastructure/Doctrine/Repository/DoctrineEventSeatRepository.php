@@ -31,6 +31,7 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 
     /**
      * @param array<int, EventSeatId> $ids
+     *
      * @return array<int, EventSeat>
      */
     public function findByIds(array $ids): array
@@ -42,6 +43,7 @@ final class DoctrineEventSeatRepository implements EventSeatRepositoryInterface
 
     /**
      * @param array<int, EventSeatId> $ids
+     *
      * @return array<int, EventSeat>
      */
     public function lockAndFindByIds(array $ids): array

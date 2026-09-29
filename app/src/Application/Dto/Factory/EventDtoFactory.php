@@ -20,6 +20,7 @@ final readonly class EventDtoFactory
 
     /**
      * @param array<int, Event> $events
+     *
      * @return array<int, EventDto>
      */
     public function fromEventList(array $events): array
@@ -90,6 +91,7 @@ final readonly class EventDtoFactory
 
     /**
      * @param array<int, Event> $events
+     *
      * @return array{items: array<int, EventDto>, nextCursor: ?string}
      */
     public function createCursorPaginatedResponse(array $events, int $limit): array
@@ -114,6 +116,7 @@ final readonly class EventDtoFactory
 
     /**
      * @param array<int, EventDto> $dtos
+     *
      * @return array{items: array<int, EventDto>, nextCursor: ?string}
      */
     public function createCursorPaginatedResponseFromDtos(array $dtos, int $limit): array

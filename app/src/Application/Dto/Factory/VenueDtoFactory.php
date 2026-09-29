@@ -23,6 +23,7 @@ final class VenueDtoFactory
 
     /**
      * @param array<int, Venue> $venues
+     *
      * @return array<int, VenueDto>
      */
     public function fromVenueList(array $venues): array

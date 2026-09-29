@@ -10,6 +10,7 @@ use App\Application\Query\Event\GetEventDetailsQuery;
 use App\Application\Query\QueryHandlerInterface;
 use App\Domain\Repository\EventRepositoryInterface;
 use App\Domain\ValueObject\EventId;
+use App\Domain\ValueObject\EventStatus;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler(bus: 'query.bus')]
@@ -25,6 +26,9 @@ final class GetEventDetailsHandler implements QueryHandlerInterface
     {
         $event = $this->events->findById(new EventId($query->eventId));
         if (!$event) {
+            return null;
+        }
+        if ($event->status() === EventStatus::Draft || $event->status() === EventStatus::Cancelled) {
             return null;
         }
 

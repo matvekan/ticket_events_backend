@@ -13,7 +13,7 @@ interface EventRepositoryInterface
     public function findById(EventId $id): ?Event;
 
     /**
-     * @return array<int, \App\Domain\Entity\Event>
+     * @return array<int, Event>
      */
     public function findPublished(int $limit, int $offset): array;
 

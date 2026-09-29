@@ -13,14 +13,16 @@ interface EventSeatRepositoryInterface
     public function findById(EventSeatId $id): ?EventSeat;
 
     /**
-     * @param array<int, \App\Domain\ValueObject\EventSeatId> $ids
-     * @return array<int, \App\Domain\Entity\EventSeat>
+     * @param array<int, EventSeatId> $ids
+     *
+     * @return array<int, EventSeat>
      */
     public function findByIds(array $ids): array;
 
     /**
-     * @param array<int, \App\Domain\ValueObject\EventSeatId> $ids
-     * @return array<int, \App\Domain\Entity\EventSeat>
+     * @param array<int, EventSeatId> $ids
+     *
+     * @return array<int, EventSeat>
      */
     public function lockAndFindByIds(array $ids): array;
 

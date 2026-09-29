@@ -13,8 +13,9 @@ interface UserRepositoryInterface
     public function findById(UserId $id): ?User;
 
     /**
-     * @param array<int, \App\Domain\ValueObject\UserId> $ids
-     * @return array<string, \App\Domain\Entity\User>
+     * @param array<int, UserId> $ids
+     *
+     * @return array<string, User>
      */
     public function findByIds(array $ids): array;
 

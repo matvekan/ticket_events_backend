@@ -11,11 +11,9 @@ use App\Domain\Repository\EventRepositoryInterface;
 use App\Domain\Repository\EventSearchInterface;
 use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\EventStatus;
-use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
-use Throwable;
 
 final readonly class DoctrineEventRepository implements EventRepositoryInterface, EventSearchInterface
 {
@@ -172,14 +170,14 @@ final readonly class DoctrineEventRepository implements EventRepositoryInterface
             return;
         }
         $parts = explode('|', $decoded);
-        if (count($parts) === 2) {
+        if (\count($parts) === 2) {
             try {
-                $date = new DateTimeImmutable($parts[0]);
+                $date = new \DateTimeImmutable($parts[0]);
 
                 $qb->andWhere('(e.date < :cDate) OR (e.date = :cDate AND e.id < :cId)')
                     ->setParameter('cDate', $date)
                     ->setParameter('cId', $parts[1]);
-            } catch (Throwable) {
+            } catch (\Throwable) {
             }
         }
     }

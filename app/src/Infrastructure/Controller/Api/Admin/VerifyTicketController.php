@@ -42,7 +42,7 @@ final class VerifyTicketController
     public function __invoke(string $code): JsonResponse
     {
         $verification = $this->queryBus->dispatch(new GetTicketVerificationQuery($code));
-        assert($verification instanceof TicketVerificationDto);
+        \assert($verification instanceof TicketVerificationDto);
 
         return new JsonResponse([
             'valid' => $verification->valid,

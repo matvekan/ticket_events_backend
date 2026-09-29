@@ -12,7 +12,8 @@ final class ChatMessageDtoFactory
 {
     /**
      * @param array<int, ChatMessage> $messages
-     * @param array<string, User> $senders
+     * @param array<string, User>     $senders
+     *
      * @return array<int, ChatMessageDto>
      */
     public function fromMessageList(array $messages, array $senders): array

@@ -48,10 +48,8 @@ final class ChatRoomRepositoryTest extends KernelTestCase
         $roomEntity = $rooms->findByUserId($freshUser->id());
         $chat->createMessage($roomEntity, $freshUser, 'Hello support!');
 
-        // Act
         $dtos = $rooms->findSupportRooms();
 
-        // Assert: created room is listed with last message joined
         $found = null;
         foreach ($dtos as $dto) {
             if ($dto->id === $roomEntity->id()->toString()) {

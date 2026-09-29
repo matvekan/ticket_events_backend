@@ -61,7 +61,7 @@ final readonly class ChatService
 
             return $this->toDto($message, $sender);
         });
-        assert($result instanceof ChatMessageDto);
+        \assert($result instanceof ChatMessageDto);
 
         return $result;
     }

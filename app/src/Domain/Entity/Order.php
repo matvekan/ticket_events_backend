@@ -24,7 +24,7 @@ class Order implements AggregateRootInterface
     use EventRecordingCapability;
 
     /**
-     * @param iterable<int, \App\Domain\Entity\Ticket> $tickets
+     * @param iterable<int, Ticket> $tickets
      */
     private function __construct(
         private OrderId $id,
@@ -90,7 +90,7 @@ class Order implements AggregateRootInterface
     }
 
     /**
-     * @return array<int, \App\Domain\Entity\Ticket>
+     * @return array<int, Ticket>
      */
     public function tickets(): array
     {
@@ -201,7 +201,7 @@ class Order implements AggregateRootInterface
     }
 
     /**
-     * @return array<int, \App\Domain\Entity\Ticket>
+     * @return array<int, Ticket>
      */
     private function ticketList(): array
     {

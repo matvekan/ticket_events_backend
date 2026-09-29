@@ -67,15 +67,15 @@ final class DoctrineTicketRepository implements TicketRepositoryInterface
             return null;
         }
 
-        assert(is_string($row['code']));
-        assert(is_string($row['order_status']));
-        assert(is_string($row['event_status']));
-        assert(is_string($row['event_title']));
-        assert(is_string($row['venue_name']));
-        assert(is_string($row['seat_row']));
-        assert(is_string($row['ticket_status']));
-        assert(is_string($row['event_date']) || $row['event_date'] instanceof \DateTimeImmutable);
-        assert(is_string($row['seat_number']) || is_int($row['seat_number']));
+        \assert(\is_string($row['code']));
+        \assert(\is_string($row['order_status']));
+        \assert(\is_string($row['event_status']));
+        \assert(\is_string($row['event_title']));
+        \assert(\is_string($row['venue_name']));
+        \assert(\is_string($row['seat_row']));
+        \assert(\is_string($row['ticket_status']));
+        \assert(\is_string($row['event_date']) || $row['event_date'] instanceof \DateTimeImmutable);
+        \assert(\is_string($row['seat_number']) || \is_int($row['seat_number']));
         $eventDate = $row['event_date'] instanceof \DateTimeImmutable
             ? $row['event_date']
             : new \DateTimeImmutable($row['event_date']);

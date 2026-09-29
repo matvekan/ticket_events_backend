@@ -22,7 +22,7 @@ class Event implements AggregateRootInterface
     use EventRecordingCapability;
 
     /**
-     * @param iterable<int, \App\Domain\Entity\EventSeat> $eventSeats
+     * @param iterable<int, EventSeat> $eventSeats
      */
     private function __construct(
         private EventId $id,
@@ -157,7 +157,7 @@ class Event implements AggregateRootInterface
     }
 
     /**
-     * @return array<int, \App\Domain\Entity\EventSeat>
+     * @return array<int, EventSeat>
      */
     public function eventSeats(): array
     {
@@ -165,7 +165,7 @@ class Event implements AggregateRootInterface
     }
 
     /**
-     * @return array<int, \App\Domain\Entity\EventSeat>
+     * @return array<int, EventSeat>
      */
     private function eventSeatList(): array
     {

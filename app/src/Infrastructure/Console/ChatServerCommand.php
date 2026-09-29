@@ -41,7 +41,7 @@ final class ChatServerCommand extends Command
         $logger->pushHandler($handler);
 
         $server = SocketHttpServer::createForDirectAccess($logger);
-        assert($this->chatWsPort >= 0 && $this->chatWsPort <= 65535);
+        \assert($this->chatWsPort >= 0 && $this->chatWsPort <= 65535);
         $server->expose(new InternetAddress($this->chatWsBind, $this->chatWsPort));
 
         $websocket = new Websocket($server, $logger, new Rfc6455Acceptor(), $this->handler);

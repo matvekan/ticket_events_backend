@@ -29,6 +29,7 @@ final class DoctrineUserRepository implements UserRepositoryInterface
 
     /**
      * @param array<int, UserId> $ids
+     *
      * @return array<string, User>
      */
     public function findByIds(array $ids): array
@@ -45,13 +46,13 @@ final class DoctrineUserRepository implements UserRepositoryInterface
             ->setParameter('ids', array_values(array_unique($stringIds)))
             ->getQuery()
             ->getResult();
-        assert(is_array($result));
+        \assert(\is_array($result));
         $users = $result;
 
         /** @var array<string, User> $byId */
         $byId = [];
         foreach ($users as $user) {
-            assert($user instanceof User);
+            \assert($user instanceof User);
             $byId[$user->rawId()] = $user;
         }
 

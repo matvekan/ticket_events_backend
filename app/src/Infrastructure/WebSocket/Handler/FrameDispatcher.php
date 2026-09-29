@@ -36,7 +36,7 @@ final class FrameDispatcher
     private function sendError(WebsocketClient $client, string $message): void
     {
         $payload = json_encode(['type' => 'error', 'message' => $message], \JSON_UNESCAPED_UNICODE);
-        assert(is_string($payload));
+        \assert(\is_string($payload));
         $client->sendText($payload);
     }
 }

@@ -22,8 +22,8 @@ final class InitClickHouseCommand extends Command
             user_id String,
             amount Int64,
             timestamp DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY timestamp
+        ) ENGINE = ReplacingMergeTree()
+        ORDER BY order_id
         SQL;
 
     private const TABLES = [
@@ -42,15 +42,16 @@ final class InitClickHouseCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $database = $this->clickhouse->settings()->getDatabase();
-        assert(is_string($database));
+        \assert(\is_string($database));
 
         foreach (self::TABLES as $table) {
+            $this->clickhouse->write("DROP TABLE IF EXISTS {$database}.{$table}");
+
             $sql = str_replace(
                 ['{database}', '{table}'],
                 [$database, $table],
                 self::TABLE_SCHEMA,
             );
-
             $this->clickhouse->write($sql);
             $output->writeln(\sprintf('Table %s.%s is ready.', $database, $table));
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Service\Order;
 
+use App\Domain\Entity\EventSeat;
 use App\Domain\Entity\Order;
 use App\Domain\Entity\Service\OrderTicketFactoryInterface;
 use App\Domain\Entity\Ticket;
@@ -19,9 +20,9 @@ final readonly class OrderTicketFactory implements OrderTicketFactoryInterface
     }
 
     /**
-     * @param array<int, \App\Domain\Entity\EventSeat> $seats
+     * @param array<int, EventSeat> $seats
      */
-        public function create(
+    public function create(
         UserId $userId,
         array $seats,
         ClockInterface $clock,

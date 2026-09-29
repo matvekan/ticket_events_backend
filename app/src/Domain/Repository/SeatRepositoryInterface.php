@@ -14,8 +14,9 @@ interface SeatRepositoryInterface
     public function findById(SeatId $id): ?Seat;
 
     /**
-     * @param array<int, \App\Domain\ValueObject\SeatId> $ids
-     * @return array<int, \App\Domain\Entity\Seat>
+     * @param array<int, SeatId> $ids
+     *
+     * @return array<int, Seat>
      */
     public function findByIds(array $ids): array;
 
@@ -30,7 +31,7 @@ interface SeatRepositoryInterface
     public function findAvailableByEventId(EventId $eventId): array;
 
     /**
-     * @param array<int, \App\Domain\Entity\Seat> $seats
+     * @param array<int, Seat> $seats
      */
     public function saveAll(array $seats): void;
 }

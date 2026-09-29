@@ -11,5 +11,5 @@ interface SeatSelectionValidatorInterface
     /**
      * @param array<int, \App\Domain\Entity\EventSeat> $seats
      */
-        public function validate(array $seats, ClockInterface $clock): void;
+    public function validate(array $seats, ClockInterface $clock): void;
 }

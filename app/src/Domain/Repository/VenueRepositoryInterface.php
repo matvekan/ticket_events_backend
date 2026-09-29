@@ -12,7 +12,7 @@ interface VenueRepositoryInterface
     public function findById(VenueId $id): ?Venue;
 
     /**
-     * @return array<int, \App\Domain\Entity\Venue>
+     * @return array<int, Venue>
      */
     public function findAll(): array;
 

@@ -6,6 +6,7 @@ namespace App\Infrastructure\Controller\Api\Order;
 
 use App\Application\Command\CommandBusInterface;
 use App\Application\Command\Payment\StartPaymentCommand;
+use App\Application\Dto\PaymentDto;
 use App\Application\Query\Order\GetPaymentForOrderQuery;
 use App\Application\Query\QueryBusInterface;
 use App\Application\Service\Payment\StripePaymentService;
@@ -37,7 +38,7 @@ final class PayOrderController
         ));
 
         $payment = $this->queryBus->dispatch(new GetPaymentForOrderQuery($id, $userId));
-        assert($payment instanceof \App\Application\Dto\PaymentDto);
+        \assert($payment instanceof PaymentDto);
 
         $session = $this->stripeService->createCheckoutSession($id, $payment->id, $payment->amount);
 

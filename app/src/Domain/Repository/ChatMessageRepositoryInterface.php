@@ -10,7 +10,7 @@ use App\Domain\ValueObject\ChatRoomId;
 interface ChatMessageRepositoryInterface
 {
     /**
-     * @return array<int, \App\Domain\Entity\ChatMessage>
+     * @return array<int, ChatMessage>
      */
     public function findByRoomId(ChatRoomId $roomId): array;
 

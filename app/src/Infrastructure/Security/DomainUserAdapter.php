@@ -38,7 +38,7 @@ final class DomainUserAdapter implements UserInterface, PasswordAuthenticatedUse
     public function getUserIdentifier(): string
     {
         $id = $this->user->identifier();
-        assert($id !== '');
+        \assert($id !== '');
 
         return $id;
     }

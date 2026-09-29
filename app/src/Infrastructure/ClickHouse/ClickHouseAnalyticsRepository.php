@@ -11,7 +11,6 @@ use App\Application\Dto\Analytics\TableTotalsDto;
 use App\Application\Dto\Analytics\TopUserDto;
 use App\Application\Port\AnalyticsRepositoryInterface;
 use ClickHouseDB\Client as ClickHouseClient;
-use InvalidArgumentException;
 
 final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterface
 {
@@ -46,12 +45,12 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
         $refundsAmount = $row['refunds_amount'] ?? 0;
         $cancellationsCount = $row['cancellations_count'] ?? 0;
         $reservationsCount = $row['reservations_count'] ?? 0;
-        assert(is_scalar($paymentsCount));
-        assert(is_scalar($paymentsAmount));
-        assert(is_scalar($refundsCount));
-        assert(is_scalar($refundsAmount));
-        assert(is_scalar($cancellationsCount));
-        assert(is_scalar($reservationsCount));
+        \assert(\is_scalar($paymentsCount));
+        \assert(\is_scalar($paymentsAmount));
+        \assert(\is_scalar($refundsCount));
+        \assert(\is_scalar($refundsAmount));
+        \assert(\is_scalar($cancellationsCount));
+        \assert(\is_scalar($reservationsCount));
 
         return new AnalyticsTotalsDto(
             payments: new TableTotalsDto((int) $paymentsCount, (int) $paymentsAmount),
@@ -63,7 +62,7 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
 
     public function tableTotals(string $table): TableTotalsDto
     {
-        $row = $this->select(sprintf(
+        $row = $this->select(\sprintf(
             'SELECT count() AS cnt, coalesce(sum(amt), 0) AS total
              FROM (
                  SELECT order_id, any(amount) AS amt
@@ -75,8 +74,8 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
 
         $count = $row[0]['cnt'] ?? 0;
         $total = $row[0]['total'] ?? 0;
-        assert(is_scalar($count));
-        assert(is_scalar($total));
+        \assert(\is_scalar($count));
+        \assert(\is_scalar($total));
 
         return new TableTotalsDto(
             count: (int) $count,
@@ -86,10 +85,10 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
 
     public function countRows(string $table): int
     {
-        $row = $this->select(sprintf('SELECT count(DISTINCT order_id) AS cnt FROM %s', $this->table($table)));
+        $row = $this->select(\sprintf('SELECT count(DISTINCT order_id) AS cnt FROM %s', $this->table($table)));
 
         $count = $row[0]['cnt'] ?? 0;
-        assert(is_scalar($count));
+        \assert(\is_scalar($count));
 
         return (int) $count;
     }
@@ -140,7 +139,7 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
      */
     public function topUsers(): array
     {
-        $rows = $this->select(sprintf(
+        $rows = $this->select(\sprintf(
             'SELECT uid AS user_id, count() AS orders, sum(amt) AS revenue
              FROM (
                  SELECT order_id, any(user_id) AS uid, any(amount) AS amt
@@ -155,9 +154,9 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
             $userId = $row['user_id'] ?? '';
             $orders = $row['orders'] ?? 0;
             $revenue = $row['revenue'] ?? 0;
-            assert(is_scalar($userId));
-            assert(is_scalar($orders));
-            assert(is_scalar($revenue));
+            \assert(\is_scalar($userId));
+            \assert(\is_scalar($orders));
+            \assert(\is_scalar($revenue));
 
             return new TopUserDto(
                 userId: (string) $userId,
@@ -172,7 +171,7 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
      */
     public function recentPayments(): array
     {
-        $rows = $this->select(sprintf(
+        $rows = $this->select(\sprintf(
             'SELECT order_id, any(user_id) AS user_id, any(amount) AS amount, any(timestamp) AS timestamp
              FROM %s
              GROUP BY order_id
@@ -185,10 +184,10 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
             $userId = $row['user_id'] ?? '';
             $amount = $row['amount'] ?? 0;
             $timestamp = $row['timestamp'] ?? '';
-            assert(is_scalar($orderId));
-            assert(is_scalar($userId));
-            assert(is_scalar($amount));
-            assert(is_scalar($timestamp));
+            \assert(\is_scalar($orderId));
+            \assert(\is_scalar($userId));
+            \assert(\is_scalar($amount));
+            \assert(\is_scalar($timestamp));
 
             return new RecentPaymentDto(
                 orderId: (string) $orderId,
@@ -202,13 +201,13 @@ final class ClickHouseAnalyticsRepository implements AnalyticsRepositoryInterfac
     private function table(string $name): string
     {
         if (!preg_match('/^[a-z_]+$/', $name)) {
-            throw new InvalidArgumentException('Invalid analytics table name.');
+            throw new \InvalidArgumentException('Invalid analytics table name.');
         }
 
         $database = $this->clickhouse->settings()->getDatabase();
-        assert(is_string($database));
+        \assert(\is_string($database));
 
-        return sprintf('`%s`.`%s`', $database, $name);
+        return \sprintf('`%s`.`%s`', $database, $name);
     }
 
     /**

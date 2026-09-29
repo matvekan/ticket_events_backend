@@ -13,7 +13,7 @@ final readonly class SeatSelectionValidator implements SeatSelectionValidatorInt
     /**
      * @param array<int, \App\Domain\Entity\EventSeat> $seats
      */
-        public function validate(array $seats, ClockInterface $clock): void
+    public function validate(array $seats, ClockInterface $clock): void
     {
         if ($seats === []) {
             throw new BusinessRuleViolationException('No seats selected.');

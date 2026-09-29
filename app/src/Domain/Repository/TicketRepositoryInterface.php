@@ -12,7 +12,7 @@ use App\Domain\ValueObject\TicketCode;
 interface TicketRepositoryInterface
 {
     /**
-     * @return array<int, \App\Domain\Entity\Ticket>
+     * @return array<int, Ticket>
      */
     public function findByOrderId(OrderId $orderId): array;
 

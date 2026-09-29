@@ -12,7 +12,6 @@ use App\Domain\ValueObject\EventId;
 use App\Domain\ValueObject\OrderId;
 use App\Domain\ValueObject\OrderStatus;
 use App\Domain\ValueObject\UserId;
-use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 
@@ -43,7 +42,7 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
     /**
      * @return array<int, Order>
      */
-    public function findPendingExpired(DateTimeImmutable $cutoff): array
+    public function findPendingExpired(\DateTimeImmutable $cutoff): array
     {
         /** @var array<int, Order> $result */
         $result = $this->repository
@@ -111,7 +110,7 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
         /** @var array<string, array<int, array<string, mixed>>> $ordersById */
         $ordersById = [];
         foreach ($rows as $row) {
-            assert(is_string($row['id']));
+            \assert(\is_string($row['id']));
             $ordersById[$row['id']][] = $row;
         }
 
@@ -176,10 +175,10 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
     private function hydrate(array $rows): OrderDto
     {
         $first = $rows[0];
-        assert(is_string($first['id']));
-        assert(is_string($first['status']));
-        assert(is_string($first['total_currency']));
-        assert(is_scalar($first['total_amount']));
+        \assert(\is_string($first['id']));
+        \assert(\is_string($first['status']));
+        \assert(\is_string($first['total_currency']));
+        \assert(\is_scalar($first['total_amount']));
 
         return new OrderDto(
             id: $first['id'],
@@ -199,17 +198,17 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
      */
     private function hydrateTicket(array $row): TicketDto
     {
-        assert(is_string($row['ticket_id']));
-        assert(is_string($row['ticket_code']));
-        assert(is_string($row['event_seat_id']));
-        assert(is_string($row['price_currency']));
-        assert(is_string($row['ticket_status']));
-        assert(is_scalar($row['price_amount']));
+        \assert(\is_string($row['ticket_id']));
+        \assert(\is_string($row['ticket_code']));
+        \assert(\is_string($row['event_seat_id']));
+        \assert(\is_string($row['price_currency']));
+        \assert(\is_string($row['ticket_status']));
+        \assert(\is_scalar($row['price_amount']));
         if ($row['event_title'] !== null) {
-            assert(is_string($row['event_title']));
+            \assert(\is_string($row['event_title']));
         }
         if ($row['venue_name'] !== null) {
-            assert(is_string($row['venue_name']));
+            \assert(\is_string($row['venue_name']));
         }
 
         return new TicketDto(
@@ -229,12 +228,12 @@ final class DoctrineOrderRepository implements OrderRepositoryInterface
 
     private function formatDate(mixed $value): string
     {
-        if ($value instanceof DateTimeImmutable) {
+        if ($value instanceof \DateTimeImmutable) {
             return $value->format('c');
         }
-        assert(is_string($value));
+        \assert(\is_string($value));
 
-        return (new DateTimeImmutable($value))->format('c');
+        return (new \DateTimeImmutable($value))->format('c');
     }
 
     public function save(Order $order): void

@@ -14,7 +14,7 @@ interface OrderTicketFactoryInterface
     /**
      * @param array<int, \App\Domain\Entity\EventSeat> $seats
      */
-        public function create(
+    public function create(
         UserId $userId,
         array $seats,
         ClockInterface $clock,

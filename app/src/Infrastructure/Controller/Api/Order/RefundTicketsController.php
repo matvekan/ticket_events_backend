@@ -56,7 +56,8 @@ final class RefundTicketsController
 
     public function __invoke(
         string $id,
-        #[MapRequestPayload] RefundTicketsRequest $payload
+        #[MapRequestPayload]
+        RefundTicketsRequest $payload
     ): JsonResponse {
         $userId = $this->getDomainUser($this->security)->id()->toString();
 

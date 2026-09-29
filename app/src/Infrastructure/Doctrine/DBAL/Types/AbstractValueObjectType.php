@@ -22,7 +22,7 @@ abstract class AbstractValueObjectType extends Type
         if ($value === null || $value === '') {
             return null;
         }
-        assert(is_string($value));
+        \assert(\is_string($value));
 
         $class = $this->getValueObjectClass();
 
@@ -38,7 +38,7 @@ abstract class AbstractValueObjectType extends Type
         if ($value instanceof StringValueObjectInterface) {
             return $value->toString();
         }
-        assert(is_string($value));
+        \assert(\is_string($value));
 
         return $value;
     }

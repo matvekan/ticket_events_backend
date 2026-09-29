@@ -43,7 +43,7 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
     }
 
     /**
-     * @return array<int, \App\Application\Dto\ChatRoomDto>
+     * @return array<int, ChatRoomDto>
      */
     public function findSupportRooms(): array
     {
@@ -76,18 +76,18 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
         $rows = $qb->executeQuery()->fetchAllAssociative();
 
         return array_map(static function (array $row): ChatRoomDto {
-            assert(is_string($row['id']));
-            assert(is_string($row['user_id']));
-            assert(is_string($row['user_email']));
-            assert(is_string($row['created_at']));
+            \assert(\is_string($row['id']));
+            \assert(\is_string($row['user_id']));
+            \assert(\is_string($row['user_email']));
+            \assert(\is_string($row['created_at']));
             if ($row['last_message_id'] !== null) {
-                assert(is_string($row['last_message_id']));
-                assert(is_string($row['last_message_sender_id']));
-                assert(is_string($row['last_message_text']));
-                assert(is_string($row['last_message_created_at']));
+                \assert(\is_string($row['last_message_id']));
+                \assert(\is_string($row['last_message_sender_id']));
+                \assert(\is_string($row['last_message_text']));
+                \assert(\is_string($row['last_message_created_at']));
             }
             if ($row['last_message_sender_name'] !== null) {
-                assert(is_string($row['last_message_sender_name']));
+                \assert(\is_string($row['last_message_sender_name']));
             }
 
             return new ChatRoomDto(
@@ -110,10 +110,10 @@ final class DoctrineChatRoomRepository implements ChatRoomRepositoryInterface
 
     private static function senderIsSupport(mixed $rolesJson): bool
     {
-        if (is_string($rolesJson)) {
+        if (\is_string($rolesJson)) {
             $roles = json_decode($rolesJson, true);
         } else {
-            $roles = is_array($rolesJson) ? $rolesJson : null;
+            $roles = \is_array($rolesJson) ? $rolesJson : null;
         }
 
         return \is_array($roles) && \in_array('ROLE_ADMIN', $roles, true);

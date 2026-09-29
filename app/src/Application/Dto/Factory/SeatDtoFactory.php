@@ -23,6 +23,7 @@ final class SeatDtoFactory
 
     /**
      * @param array<int, Seat> $seats
+     *
      * @return array<int, SeatDto>
      */
     public function fromSeatList(array $seats): array

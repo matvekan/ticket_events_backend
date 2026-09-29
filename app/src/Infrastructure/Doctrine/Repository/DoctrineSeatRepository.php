@@ -40,6 +40,7 @@ final class DoctrineSeatRepository implements SeatRepositoryInterface
 
     /**
      * @param array<int, SeatId> $ids
+     *
      * @return array<int, Seat>
      */
     public function findByIds(array $ids): array

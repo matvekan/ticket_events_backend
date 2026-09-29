@@ -15,7 +15,7 @@ interface OrderRepositoryInterface
     public function findById(OrderId $id): ?Order;
 
     /**
-     * @return array<int, \App\Domain\Entity\Order>
+     * @return array<int, Order>
      */
     public function findByUserId(UserId $userId): array;
 
@@ -32,7 +32,7 @@ interface OrderRepositoryInterface
     public function findByIdAndUser(string $orderId, ?string $userId): ?OrderDto;
 
     /**
-     * @return array<int, \App\Application\Dto\OrderDto>
+     * @return array<int, OrderDto>
      */
     public function findOrderByUserId(string $userId): array;
 

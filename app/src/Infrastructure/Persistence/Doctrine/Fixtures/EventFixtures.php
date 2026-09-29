@@ -15,14 +15,11 @@ use App\Domain\Shared\IdGeneratorInterface;
 use App\Domain\ValueObject\EventDescription;
 use App\Domain\ValueObject\EventTitle;
 use App\Domain\ValueObject\SeatType;
-use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Generator;
-use function count;
-use function sprintf;
 
 final class EventFixtures extends Fixture implements DependentFixtureInterface
 {
@@ -45,23 +42,23 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
         for ($i = 0; $i < self::EVENT_COUNT; ++$i) {
             $venueIndex = $i % 6;
 
-            $venue = $this->getReference(sprintf('venue_%d', $venueIndex), Venue::class);
+            $venue = $this->getReference(\sprintf('venue_%d', $venueIndex), Venue::class);
 
-            $title = sprintf('%s — %s', $this->eventKind($i), (string) $venue->name());
+            $title = \sprintf('%s — %s', $this->eventKind($i), (string) $venue->name());
 
             if ($this->findByTitle($title) !== null) {
-                $this->addReference(sprintf('event_%d', $i), $this->findByTitle($title));
+                $this->addReference(\sprintf('event_%d', $i), $this->findByTitle($title));
 
                 continue;
             }
 
             $basePrice = $this->faker->randomElement([2000, 2500, 3000, 3500, 4500, 5000]);
-            assert(is_int($basePrice));
+            \assert(\is_int($basePrice));
 
             $event = Event::create(
                 new EventTitle(mb_substr($title, 0, 100)),
                 new EventDescription($this->faker->realText(300)),
-                new DateTimeImmutable(sprintf('+%d days +%d:00', $this->faker->numberBetween(5, 120), $this->faker->numberBetween(16, 21))),
+                new \DateTimeImmutable(\sprintf('+%d days +%d:00', $this->faker->numberBetween(5, 120), $this->faker->numberBetween(16, 21))),
                 $venue,
                 $this->clock,
                 $this->ids,
@@ -82,7 +79,7 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
                 $manager->flush();
             }
 
-            $this->addReference(sprintf('event_%d', $i), $event);
+            $this->addReference(\sprintf('event_%d', $i), $event);
         }
     }
 
@@ -104,7 +101,7 @@ final class EventFixtures extends Fixture implements DependentFixtureInterface
             'New Year Family Musical',
         ];
 
-        return $kinds[$index % count($kinds)];
+        return $kinds[$index % \count($kinds)];
     }
 
     private function findByTitle(string $title): ?Event

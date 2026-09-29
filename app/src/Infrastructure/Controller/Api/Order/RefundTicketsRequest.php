@@ -17,7 +17,7 @@ final class RefundTicketsRequest
         #[Assert\All([
             new Assert\NotBlank(),
             new Assert\Type('string'),
-            new Assert\Uuid()
+            new Assert\Uuid(),
         ])]
         public readonly array $ticketIds,
     ) {

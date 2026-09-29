@@ -52,9 +52,9 @@ final class DoctrinePaymentRepository implements PaymentRepositoryInterface
         if ($row === false) {
             return null;
         }
-        assert(is_string($row['id']));
-        assert(is_string($row['status']));
-        assert(is_int($row['amount']) || is_string($row['amount']));
+        \assert(\is_string($row['id']));
+        \assert(\is_string($row['status']));
+        \assert(\is_int($row['amount']) || \is_string($row['amount']));
 
         return new PaymentDto(
             id: $row['id'],

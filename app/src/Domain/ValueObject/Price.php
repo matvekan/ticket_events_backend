@@ -15,12 +15,12 @@ final class Price
             throw new \InvalidArgumentException('Price amount must be non-negative.');
         }
 
-        if (!preg_match('/^[A-Z]{3}$/', strtoupper($currency))) {
-            throw new \InvalidArgumentException('Currency must be a 3-letter ISO 4217 code (A-Z).');
+        if (strtoupper($currency) !== 'BYN') {
+            throw new \InvalidArgumentException('Only BYN currency is supported in this system.');
         }
 
         $this->amount = $amount;
-        $this->currency = strtoupper($currency);
+        $this->currency = 'BYN';
     }
 
     public static function fromAmount(int $amount, string $currency = 'BYN'): self
