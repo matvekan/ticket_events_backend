@@ -9,13 +9,21 @@ use App\Domain\Shared\IdGeneratorInterface;
 
 final class OutboxMessage
 {
+    private readonly string $messageClass;
+    private readonly string $body;
     private string $id;
     private \DateTimeImmutable $createdAt;
     private ?\DateTimeImmutable $sentAt = null;
     private int $attempts = 0;
 
-    public function __construct(private readonly string $messageClass, private readonly string $body, ClockInterface $clock, IdGeneratorInterface $ids)
-    {
+    public function __construct(
+        string $messageClass,
+        string $body,
+        ClockInterface $clock,
+        IdGeneratorInterface $ids
+    ) {
+        $this->messageClass = $messageClass;
+        $this->body = $body;
         $this->id = $ids->generate();
         $this->createdAt = $clock->now();
     }

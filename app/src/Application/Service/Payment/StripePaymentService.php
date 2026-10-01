@@ -6,19 +6,14 @@ namespace App\Application\Service\Payment;
 
 use Stripe\Checkout\Session;
 use Stripe\StripeClient;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 final readonly class StripePaymentService
 {
-    private StripeClient $stripe;
-
     public function __construct(
-        #[Autowire(env: 'STRIPE_SECRET_KEY')]
-        string $stripeSecretKey,
-        #[Autowire(env: 'FRONTEND_URL')]
+        private StripeClient $stripe,
+
         private string $frontendUrl,
     ) {
-        $this->stripe = new StripeClient($stripeSecretKey);
     }
 
     public function createCheckoutSession(string $orderId, string $paymentId, int $amount): Session
